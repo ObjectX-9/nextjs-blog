@@ -1,6 +1,6 @@
 # blog-boilerplate
 
-此项目是因为我喜欢onur的博客风格而极速模仿的，所有有不少硬编码的地方，建议可以看看最后的onur的repo，代码很值得一读，也算是nextjs14，app-router下的最佳实践了。
+来源：https://github.com/newObjectccc/blog-boilerplate
 
 > [!important]
 > 这是一个并没完全搭建完的模板，项目内组件数据基本都是硬编码，若使用，请记得解藕组件渲染和数据，并不要硬编码~
