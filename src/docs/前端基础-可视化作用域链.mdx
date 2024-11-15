@@ -1,0 +1,122 @@
+#
+
+## Js作用域链（Scope Chain）
+
+这是一篇我自己翻译的前端基础博文，原作者是Lydia Hallie。
+想看原文的小伙伴可以直接转到
+ [⚡️⛓JavaScript Visualized: Scope (Chain)](https://dev.to/lydiahallie/javascript-visualized-scope-chain-13pd)
+
+here we go！
+
+注意此文章需要你有一定的关于执行上下文的基础，需要知道`AO`,`GO`,`Execution Context`
+
+### 正文开始👉
+
+------------------------------------------------
+
+#### ⚡️⛓JavaScript 可视化: 作用域链 Scope (Chain)
+
+是时候学习作用域链了🕺🏼在这篇文章中我会假定你有执行上下文的基础知识：不过很快我会写一篇关于执行上下文的文章的。😃
+
+我们先来看看下面这段代码:
+
+```javascript
+const name = "Lydia"
+const age = 21
+const city = "San Francisco"
+
+
+function getPersonInfo() {
+  const name = "Sarah"
+  const age = 22
+
+  return `${name} is ${age} and lives in ${city}`
+}
+
+console.log(getPersonInfo())
+```
+
+我们调用了`getPersonInfo`函数，它返回一个包含`name`、`age`和`city`变量值的字符串：`Sarah is 22 and lives in San Francisco`. 但是，`getPersonInfo`函数中没有一个名为`city`的变量🤨？它是如何知道`city`的值的呢？
+
+首先，为不同的上下文设置了内存空间。我们有默认的全局上下文（在浏览器中是`window`，在`Node`中是`global`），以及调用的`getPersonInfo`函数的局部上下文。每个上下文还都有一个作用域链。
+
+对于`getPersonInfo`函数，作用域链大致如下（不要担心，现在不必理解）：
+
+![1](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope1.png)
+
+作用域链基本上是一个“引用链”，它包含了对包含在执行上下文中的可以在该执行上下文中引用的值（和其他作用域）的引用的对象。 (⛓:“嘿，这些都是你可以在这个上下文中引用的值。”) 作用域链是在创建执行上下文时创建的，也就是在运行时创建的！
+
+然而，在这篇文章中，我不会讨论激活对象`AO`（Activation Object）或一般的执行上下文，让我们只关注作用域！在以下示例中，执行上下文中的键值对表示作用域链对变量的引用。
+
+![2](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope2.png)
+
+全局执行上下文的作用域链引用了3个变量：`name`（值为Lydia）、`age`（值为21）和`city`（值为San Francisco）。在局部上下文中，我们引用了2个变量：`name`（值为Sarah）和`age`（值为22）。
+
+当我们尝试在getPersonInfo函数中访问变量时，引擎首先检查局部作用域链。
+
+![3](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope3.gif)
+
+在局部作用域链中，我们引用了`name`和`age`变量！`name`的值是Sarah，`age`的值是22。但是，当它尝试访问`city`变量时会发生什么呢？
+
+为了找到`city`变量的值，引擎会“沿着作用域链向上查找”。这基本上意味着引擎不会轻易放弃：它会努力查找在局部作用域所引用的外部作用域中，这种情况下是全局对象`GO`（Global Object），是否存在`city`变量的值。
+
+![4](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope4.gif)
+
+在全局上下文中，我们声明了一个值为San Francisco的`city`变量，并对它进行了引用。现在我们有了该变量的值，`getPersonInfo`函数就可以返回字符串"Sarah is 22 and lives in San Francisco"🎉
+
+我们可以沿着作用域链向下查找，但是不能沿着作用域链向上查找（好吧，这可能会让人感到困惑，因为有些人说向上而不是向下，所以我会重新表述一下：你可以进入外部作用域，但不能进入更内（更内。。。？）部的作用域。我喜欢把它想象成瀑布的形象：
+
+（*这里我本人稍微插一句，原作者说向上而不是向下，其实是按照执行栈的堆叠顺序来说的，因为执行栈 FILO, 我点出来，希望能帮你理解*）
+
+![5](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope5.png)
+
+或者更深：（*我本人继续插一句，更深就是向下的意思*）
+
+![6](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope6.png)
+
+让我们以这段代码为例：
+
+![7](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope7.png)
+
+几乎是一样的，但有一个很大的区别：我们现在仅在`getPersonInfo`函数中声明了`city`变量，而没有在全局作用域中声明它。我们也没有调用`getPersonInfo`函数，因此也没有创建局部上下文。然而，我们尝试在全局上下文中访问`name`、`age`和`city`的值。
+
+![8](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope8.gif)
+
+它抛出了一个`ReferenceError`！在全局作用域中找不到名为`city`的变量的引用，也没有外部作用域可以查找，它不能沿着作用域链向上查找。
+
+这样一来，你可以使用作用域来“保护”你的变量并重复使用变量名。
+
+除了全局和局部作用域之外，还有块级作用域。用`let`或`const`关键字声明的变量的作用域是以最近的花括号为作用域的（`{}`）。
+
+```javascript
+const age = 21
+
+function checkAge() {
+  if (age < 21) {
+    const message = "You cannot drink!"
+    return message
+  } else {
+    const message = "You can drink!"
+    return message
+  }
+} 
+```
+
+你可以将作用域看成这样：
+
+![9](https://cqrywhcb-test.oss-cn-chengdu.aliyuncs.com/scope9.png)
+
+我们有全局作用域、函数作用域和两个块级作用域。我们能够声明变量`message`两次，因为这些变量的作用域限定在花括号内部。
+
+简要回顾一下：
+
+- 我们可以将“作用域链”视为对当前上下文中可以访问的值的引用链。
+- 作用域还使得我们能够重复使用在作用域链较低位置定义的变量名，因为它只能顺着作用域链向下查找，而不能向上查找。
+(*我本人继续插一句，较低的位置也是指执行栈中的堆叠顺序，因为最后执行的函数一定是最后入栈的，如果你还是不清楚，请打开你的chrome浏览器，找到 Sources，找到 Call Stack 和 Scope，debugger一下就清楚了*)
+
+关于作用域（链）就是这样了！当我有空闲时间时，我可能会添加一些附加信息。如果你对任何内容感到困惑，请随时提问，我很乐意帮助！💕（*不要看我啊，是原作者说她要帮助你！*）
+
+------------------------------------------------
+
+😊okk~
+翻译完了，纯人工翻译，希望能够帮到各位，如有纰漏，欢迎指正~
