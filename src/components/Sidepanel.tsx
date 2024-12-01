@@ -7,15 +7,15 @@ import {
   Forward,
   Github,
   Home,
+  Laptop,
   PencilLine,
-  Shell,
   Slack,
   SquareDashedBottomCode,
   Terminal,
-  TrafficCone,
   Twitter,
   UnfoldVertical,
   Video,
+  Camera,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,10 +26,10 @@ const navList = [
     href: "/",
     prefix: <Home size={16} />,
   },
-  { title: "Writing", href: "/writing", prefix: <PencilLine size={16} /> },
-  { title: "Lify", href: "/lify", prefix: <Shell size={16} /> },
   { title: "Stack", href: "/stack", prefix: <Slack size={16} /> },
-  { title: "Workspace", href: "/workspace", prefix: <TrafficCone size={16} /> },
+  { title: "Lify_Writing", href: "/writing", prefix: <PencilLine size={16} /> },
+  { title: "Album", href: "/album", prefix: <Camera size={16} /> },
+  { title: "Workspace", href: "/workspace", prefix: <Laptop size={16} /> },
   { title: "Bookmarks", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
   { title: "Playground", href: "/playground", prefix: <Slack size={16} /> },
 ];

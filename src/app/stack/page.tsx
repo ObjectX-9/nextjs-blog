@@ -153,7 +153,7 @@ const stackList = [
 ];
 export default function Stack() {
   return (
-    <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-24 px-8">
+    <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
       <h1 className="text-3xl font-bold mb-6">Stack</h1>
       <div className="mb-4 last:mb-0">
         Here is my go-to stack. I use these tools to build and maintain my
