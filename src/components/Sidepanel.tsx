@@ -85,7 +85,7 @@ export default function Sidepanel() {
           <AvatarFallback>vesper</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="font-semibold tracking-tight">Vesper@之一</h1>
+          <h1 className="font-semibold tracking-tight">ObjectX-js.design</h1>
           <p className="text-gray-600">Front-End Engineer</p>
         </div>
       </div>
