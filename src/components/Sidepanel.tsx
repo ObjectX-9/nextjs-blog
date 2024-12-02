@@ -41,17 +41,17 @@ const navList = [
 const socialList = [
   {
     title: "GitHub",
-    href: "https://github.com/newObjectccc",
+    href: "",
     prefix: <Github size={16} />,
   },
   {
     title: "X (Twitter)",
-    href: "https://twitter.com/cccxy10086",
+    href: "",
     prefix: <Twitter size={16} />,
   },
   {
     title: "Bilibili",
-    href: "https://space.bilibili.com/270440208?spm_id_from=333.1007.0.0",
+    href: "",
     prefix: <Flower size={16} />,
   },
 ];
@@ -144,11 +144,11 @@ export default function Sidepanel() {
           </Link>
         ))}
       </nav>
-      <Separator className="my-5" />
-      <span className="px-2 text-xs mb-2 font-medium leading-relaxed text-gray-600">
+      {/* <Separator className="my-5" /> */}
+      {/* <span className="px-2 text-xs mb-2 font-medium leading-relaxed text-gray-600">
         Open Source
-      </span>
-      <nav className="flex flex-col gap-1">
+      </span> */}
+      {/* <nav className="flex flex-col gap-1">
         {openSourceList.map((openItem, index) => (
           <Link
             key={openItem.href}
@@ -163,7 +163,7 @@ export default function Sidepanel() {
             <Forward size={16} />
           </Link>
         ))}
-      </nav>
+      </nav> */}
     </aside>
   );
 }
