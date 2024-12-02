@@ -4,6 +4,8 @@ export interface Friend {
   title: string;
   description: string;
   link: string;
+  position?: string;
+  location?: string;
 }
 
 export const friends: Friend[] = [
@@ -12,14 +14,18 @@ export const friends: Friend[] = [
     name: "Evan You",
     title: "Creator of Vue.js & Vite",
     description: "Creator of Vue.js",
-    link: "https://github.com/yyx990803"
+    link: "https://github.com/yyx990803",
+    position: "Creator & Project Lead",
+    location: "Singapore"
   },
   {
     avatar: "https://avatars.githubusercontent.com/u/499550",
     name: "Dan Abramov",
     title: "Co-creator of Redux & Create React App",
     description: "Co-creator of Redux and Create React App",
-    link: "https://github.com/gaearon"
+    link: "https://github.com/gaearon",
+    position: "Software Engineer",
+    location: "London, UK"
   },
   {
     avatar: "https://avatars.githubusercontent.com/u/810438",
