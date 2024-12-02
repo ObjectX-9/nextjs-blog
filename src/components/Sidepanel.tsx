@@ -1,15 +1,13 @@
 "use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
-  Flower,
-  Folder,
-  FolderHeart,
   Forward,
-  Github,
   History,
   Home,
   Laptop,
+  Menu,
   PencilLine,
   Slack,
   SquareDashedBottomCode,
@@ -19,9 +17,14 @@ import {
   Users,
   Video,
   Camera,
+  X,
+  FolderHeart,
+  Github,
+  Flower,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const navList = [
   {
@@ -30,14 +33,11 @@ const navList = [
     prefix: <Home size={16} />,
   },
   { title: "Stack", href: "/stack", prefix: <Slack size={16} /> },
-  { title: "Lify_Writing", href: "/writing", prefix: <PencilLine size={16} /> },
+  { title: "Writing", href: "/writing", prefix: <PencilLine size={16} /> },
   { title: "Album", href: "/album", prefix: <Camera size={16} /> },
   { title: "Workspace", href: "/workspace", prefix: <Laptop size={16} /> },
   { title: "Bookmarks", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
-  { title: "Playground", href: "/playground", prefix: <Slack size={16} /> },
   { title: "Timeline", href: "/timeline", prefix: <History size={16} /> },
-  { title: "Projects", href: "/projects", prefix: <Folder size={16} /> },
-  { title: "Friends", href: "/friends", prefix: <Users size={16} /> },
 ];
 
 const socialList = [
@@ -81,10 +81,10 @@ const openSourceList = [
   },
 ];
 
-export default function Sidepanel() {
+const SidebarContent = () => {
   const currentPathname = usePathname();
   return (
-    <aside className="min-w-60 relative w-full flex-col text-sm hidden bg-zinc-50 p-3 lg:flex lg:flex-col lg:border-r lg:w-60 xl:w-72">
+    <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
       <div className="mb-4 p-2 flex flex-row flex-nowrap gap-2">
         <Avatar>
           <AvatarImage src="/avatar.png" alt="vespser" />
@@ -131,12 +131,12 @@ export default function Sidepanel() {
         Online
       </span>
       <nav className="flex flex-col gap-1">
-        {socialList.map((socialItem, index) => (
+        {socialList.map((socialItem) => (
           <Link
             key={socialItem.href}
             href={socialItem.href}
             target="_blank"
-            className="group flex items-center justify-between rounded-lg p-2"
+            className="group flex items-center justify-between rounded-lg p-2 hover:bg-gray-200"
           >
             <span className="flex items-center">
               {socialItem.prefix}
@@ -146,26 +146,67 @@ export default function Sidepanel() {
           </Link>
         ))}
       </nav>
-      {/* <Separator className="my-5" /> */}
-      {/* <span className="px-2 text-xs mb-2 font-medium leading-relaxed text-gray-600">
-        Open Source
-      </span> */}
-      {/* <nav className="flex flex-col gap-1">
-        {openSourceList.map((openItem, index) => (
-          <Link
-            key={openItem.href}
-            href={openItem.href}
-            target="_blank"
-            className="group flex items-center justify-between rounded-lg p-2"
-          >
-            <span className="flex items-center">
-              {openItem.prefix}
-              <span className="ml-2 font-medium">{openItem.title}</span>
-            </span>
-            <Forward size={16} />
-          </Link>
-        ))}
-      </nav> */}
-    </aside>
+    </div>
+  );
+};
+
+export default function Sidepanel() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {/* Mobile Navigation Button */}
+      <div className="fixed bottom-6 right-6 z-40 lg:hidden">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-colors hover:bg-gray-800"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      </div>
+
+      {/* Mobile Drawer */}
+      <div
+        className={`fixed inset-0 z-50 transform transition-all duration-300 ease-in-out lg:hidden ${
+          isOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
+            isOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setIsOpen(false)}
+        />
+
+        {/* Drawer Panel */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-[90vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+            isOpen ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          {/* Drawer Header */}
+          <div className="relative border-b px-4 py-3">
+            <div className="absolute left-1/2 top-1 h-1 w-12 -translate-x-1/2 rounded-full bg-gray-300" />
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-gray-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Drawer Content */}
+          <div className="h-[calc(90vh-57px)] overflow-y-auto overscroll-contain">
+            <SidebarContent />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <aside className="min-w-60 relative hidden w-60 flex-col border-r bg-zinc-50 p-3 lg:flex xl:w-72">
+        <SidebarContent />
+      </aside>
+    </>
   );
 }
