@@ -15,9 +15,9 @@ export default function Friends() {
       <div className="container">
         {/* Avatars Grid */}
         <ul className="avatars grid grid-cols-3 gap-3 relative">
-          {friends.map((friend) => (
+          {friends.map((friend, index) => (
             <li
-              key={friend.name}
+              key={`avatar-${friend.name}-${index}`}
               style={
                 {
                   "--for": `--${friend.name
@@ -30,6 +30,7 @@ export default function Friends() {
               onMouseLeave={() => setHoveredName(null)}
             >
               <Image
+                key={`image-${friend.name}-${index}`}
                 src={friend.avatar}
                 alt={friend.name}
                 fill
@@ -50,9 +51,9 @@ export default function Friends() {
 
         {/* Links List */}
         <ul className="links space-y-2">
-          {friends.map((friend) => (
+          {friends.map((friend, index) => (
             <li
-              key={friend.name}
+              key={`link-${friend.name}-${index}`}
               style={
                 {
                   "--for": `--${friend.name
@@ -65,6 +66,7 @@ export default function Friends() {
               onMouseLeave={() => setHoveredName(null)}
             >
               <Link
+                key={`link-${friend.name}-${index}`}
                 href={friend.link}
                 target="_blank"
                 className={`transition-colors duration-300 ${
@@ -80,7 +82,7 @@ export default function Friends() {
               >
                 {friend.name}
               </Link>
-              <span className="text-gray-700">: {friend.title}</span>
+              <span key={`span-${friend.name}-${index}`} className="text-gray-700">: {friend.title}</span>
             </li>
           ))}
         </ul>
