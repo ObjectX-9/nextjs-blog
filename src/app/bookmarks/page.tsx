@@ -1,8 +1,117 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { bookmarkData } from "./data";
+import Image from "next/image";
+import Link from "next/link";
+
+interface Screenshot {
+  url: string;
+  screenshot?: string;
+}
+
 export default function Bookmarks() {
+  const [selectedCategory, setSelectedCategory] = useState("Apps & Tools");
+  const [screenshots, setScreenshots] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const currentBookmarks =
+      bookmarkData.find((cat) => cat.name === selectedCategory)?.bookmarks ||
+      [];
+
+    currentBookmarks.forEach(async (bookmark) => {
+      if (screenshots[bookmark.url] || bookmark.imageUrl) return;
+
+      try {
+        const response = await fetch(
+          `/api/screenshot?url=${encodeURIComponent(bookmark.url)}`
+        );
+        const data = await response.json();
+
+        if (data.screenshot) {
+          setScreenshots((prev) => ({
+            ...prev,
+            [bookmark.url]: data.screenshot,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch screenshot:", error);
+      }
+    });
+  }, [selectedCategory]);
+
   return (
-    <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-24 px-8">
-      <h1 className="text-3xl font-bold">Bookmarks</h1>
-      <p className="text-lg">Articles about programming and life</p>
-    </main>
+    <div className="min-h-screen bg-white">
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-64 p-8 border-r border-gray-200">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold mb-2">Bookmarks</h1>
+            <div className="flex items-center space-x-4">
+              <Link href="/rss" className="text-gray-600 hover:text-gray-900">
+                RSS feed
+              </Link>
+              <button className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800">
+                Submit
+              </button>
+            </div>
+          </div>
+
+          {/* Categories */}
+          <nav>
+            {bookmarkData.map((category) => (
+              <button
+                key={category.name}
+                onClick={() => setSelectedCategory(category.name)}
+                className={`w-full text-left py-3 px-4 rounded-lg mb-2 ${
+                  selectedCategory === category.name
+                    ? "bg-black text-white"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                <div className="font-medium">{category.name}</div>
+                <div className="text-sm opacity-70">
+                  {category.count} bookmarks
+                </div>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Main Content */}
+        <main className="flex-1 p-8">
+          <h2 className="text-4xl font-bold mb-8">{selectedCategory}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {bookmarkData
+              .find((cat) => cat.name === selectedCategory)
+              ?.bookmarks.map((bookmark, index) => (
+                <Link
+                  href={bookmark.url}
+                  key={index}
+                  className="block p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors"
+                >
+                  {(bookmark.imageUrl || screenshots[bookmark.url]) && (
+                    <div className="relative w-full h-48 mb-4 rounded-lg overflow-hidden bg-gray-100">
+                      <Image
+                        src={bookmark.imageUrl || screenshots[bookmark.url]}
+                        alt={bookmark.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  <h3 className="text-xl font-semibold mb-2">
+                    {bookmark.title}
+                  </h3>
+                  <div className="text-gray-600 text-sm mb-2">
+                    {new URL(bookmark.url).hostname}
+                  </div>
+                  <p className="text-gray-700">{bookmark.description}</p>
+                </Link>
+              ))}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
