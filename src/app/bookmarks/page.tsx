@@ -38,7 +38,7 @@ export default function Bookmarks() {
         console.error("Failed to fetch screenshot:", error);
       }
     });
-  }, [selectedCategory]);
+  }, [selectedCategory, screenshots]);
 
   return (
     <div className="min-h-screen bg-white">
