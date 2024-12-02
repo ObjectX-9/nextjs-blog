@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const navList = [
   {
@@ -46,17 +46,17 @@ const navList = [
 const socialList = [
   {
     title: "GitHub",
-    href: "",
+    href: "https://github.com",
     prefix: <Github size={16} />,
   },
   {
     title: "X (Twitter)",
-    href: "",
+    href: "https://twitter.com",
     prefix: <Twitter size={16} />,
   },
   {
     title: "Bilibili",
-    href: "",
+    href: "https://bilibili.com",
     prefix: <Flower size={16} />,
   },
 ];
@@ -84,7 +84,7 @@ const openSourceList = [
   },
 ];
 
-const SidebarContent = () => {
+const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const currentPathname = usePathname();
   return (
     <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
@@ -114,6 +114,7 @@ const SidebarContent = () => {
             <Link
               key={navItem.href}
               href={navItem.href}
+              onClick={onNavClick}
               className={`${commonClasses} ${selectedClasses}`}
             >
               <span className="flex items-center">
@@ -155,6 +156,39 @@ const SidebarContent = () => {
 
 export default function Sidepanel() {
   const [isOpen, setIsOpen] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!drawerRef.current) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY;
+    
+    if (deltaY > 0) { // Only allow downward swipe
+      drawerRef.current.style.transform = `translateY(${deltaY}px)`;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!drawerRef.current) return;
+    
+    const currentY = e.changedTouches[0].clientY;
+    const deltaY = currentY - startY;
+    
+    if (deltaY > 50) { // If swiped down more than 50px, close the drawer
+      setIsOpen(false);
+    }
+    drawerRef.current.style.transform = '';
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
   return (
     <>
@@ -179,29 +213,34 @@ export default function Sidepanel() {
           className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
             isOpen ? "opacity-100" : "opacity-0"
           }`}
-          onClick={() => setIsOpen(false)}
+          onClick={handleClose}
         />
 
         {/* Drawer Panel */}
         <div
-          className={`absolute bottom-0 left-0 right-0 h-[90vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+          ref={drawerRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className={`absolute bottom-0 left-0 right-0 h-[65vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${
             isOpen ? "translate-y-0" : "translate-y-full"
           }`}
         >
           {/* Drawer Header */}
-          <div className="relative border-b px-4 py-3">
-            <div className="absolute left-1/2 top-1 h-1 w-12 -translate-x-1/2 rounded-full bg-gray-300" />
+          <div className="relative flex h-14 items-center justify-between border-b px-4">
+            <div className="absolute left-1/2 top-1/2 h-1 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gray-300" />
+            <div className="flex-1" />
             <button
-              onClick={() => setIsOpen(false)}
-              className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-gray-100"
+              onClick={handleClose}
+              className="rounded-full p-2 text-gray-400 hover:bg-gray-100"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Drawer Content */}
-          <div className="h-[calc(90vh-57px)] overflow-y-auto overscroll-contain">
-            <SidebarContent />
+          <div className="h-[calc(65vh-3.5rem)] overflow-y-auto overscroll-contain">
+            <SidebarContent onNavClick={handleClose} />
           </div>
         </div>
       </div>
