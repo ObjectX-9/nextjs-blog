@@ -193,15 +193,15 @@ export default function Index() {
           className="mb-4 mt-8 font-semibold cursor-pointer text-lg hover:underline text-gray-900 underline-offset-4"
           href="/writing"
         >
-          Writing
+          📒 时间笔记
         </Link>
         <div className="text-sm">
           <div className="grid grid-cols-6 py-2 mt-4 mb-1 font-medium text-gray-500 border-b border-gray-200">
-            <span className="col-span-1 text-left md:grid">Year</span>
+            <span className="col-span-1 text-left md:grid">年份</span>
             <span className="col-span-5 md:col-span-5">
               <span className="grid grid-cols-4 items-center md:grid-cols-8">
-                <span className="col-span-1 text-left">Date</span>
-                <span className="col-span-3 md:col-span-6">Title</span>
+                <span className="col-span-1 text-left">日期</span>
+                <span className="col-span-3 md:col-span-6">标题</span>
               </span>
             </span>
           </div>

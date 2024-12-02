@@ -47,7 +47,8 @@ export default async function Workspace() {
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-24 px-8">
-      <h1 className="text-3xl font-bold mb-6">Workspace</h1>
+      <h1 className="text-3xl font-bold mb-6">工作空间</h1>
+      <div className="mb-6 last:mb-0">工作空间，记录了工作用到的产品和工具</div>
       <div className="mx-6 mb-4 flex snap-x snap-mandatory gap-6 overflow-x-scroll pb-4 md:mx-0 md:grid md:snap-none md:grid-cols-2 md:overflow-x-auto md:pb-0">
         {imgList.map((imgSrc) => (
           // next/image is very expensive, so i use img tag here

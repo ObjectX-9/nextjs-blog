@@ -154,10 +154,9 @@ const stackList = [
 export default function Stack() {
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
-      <h1 className="text-3xl font-bold mb-6">Stack</h1>
+      <h1 className="text-3xl font-bold mb-6">技术栈</h1>
       <div className="mb-4 last:mb-0">
-        Here is my go-to stack. I use these tools to build and maintain my
-        projects.
+        这里是我的常用栈，我使用这些工具来构建和维护我的项目。
       </div>
       <ul className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
         {stackList.map((stackItem) => (

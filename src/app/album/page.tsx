@@ -20,7 +20,10 @@ export default function Album() {
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
-      <h1 className="text-3xl font-bold mb-8">Adventure Photo Album</h1>
+      <h1 className="text-3xl font-bold mb-8">生活相册</h1>
+      <div className="mb-6 last:mb-0">
+        这里是我的生活相册，记录了我的生活中的美好时刻。
+      </div>
       <div className="photo-album-container w-full max-w-[2000px] mx-auto">
         <PhotoAlbum
           layout="masonry"

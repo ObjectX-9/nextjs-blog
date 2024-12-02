@@ -21,6 +21,7 @@ import {
   FolderHeart,
   Github,
   Flower,
+  Folder,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,16 +29,18 @@ import { useState } from "react";
 
 const navList = [
   {
-    title: "Home",
+    title: "首页&简介",
     href: "/",
     prefix: <Home size={16} />,
   },
-  { title: "Stack", href: "/stack", prefix: <Slack size={16} /> },
-  { title: "Writing", href: "/writing", prefix: <PencilLine size={16} /> },
-  { title: "Album", href: "/album", prefix: <Camera size={16} /> },
-  { title: "Workspace", href: "/workspace", prefix: <Laptop size={16} /> },
-  { title: "Bookmarks", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
-  { title: "Timeline", href: "/timeline", prefix: <History size={16} /> },
+  { title: "技术栈", href: "/stack", prefix: <Slack size={16} /> },
+  { title: "时间笔记", href: "/writing", prefix: <PencilLine size={16} /> },
+  { title: "生活相册", href: "/album", prefix: <Camera size={16} /> },
+  { title: "工作空间", href: "/workspace", prefix: <Laptop size={16} /> },
+  { title: "导航站", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
+  { title: "时间轴", href: "/timeline", prefix: <History size={16} /> },
+  { title: "项目", href: "/projects", prefix: <Folder size={16} /> },
+  { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];
 
 const socialList = [
@@ -88,11 +91,11 @@ const SidebarContent = () => {
       <div className="mb-4 p-2 flex flex-row flex-nowrap gap-2">
         <Avatar>
           <AvatarImage src="/avatar.png" alt="vespser" />
-          <AvatarFallback>vesper</AvatarFallback>
+          <AvatarFallback>ObjectX</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="font-semibold tracking-tight">ObjectX-js.design</h1>
-          <p className="text-gray-600">Front-End Engineer</p>
+          <h1 className="font-semibold tracking-tight">ObjectX-不知名程序员</h1>
+          <p className="text-gray-600">👨🏻‍💻 前端工程师</p>
         </div>
       </div>
       <nav className="flex flex-col gap-1">

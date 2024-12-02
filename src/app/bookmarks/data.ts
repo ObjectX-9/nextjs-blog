@@ -13,7 +13,7 @@ export interface BookmarkCategory {
 
 export const bookmarkData: BookmarkCategory[] = [
   {
-    name: "Apps & Tools",
+    name: "软件 & 工具",
     count: 141,
     bookmarks: [
       {

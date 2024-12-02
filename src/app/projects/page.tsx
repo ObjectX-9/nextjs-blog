@@ -28,9 +28,12 @@ const gradientColors = [
 ];
 
 export default function Projects() {
-  const [selectedCategory, setSelectedCategory] = useState("Web Applications");
+  const [selectedCategory, setSelectedCategory] =
+    useState("网页应用 & 一些demo");
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
-  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>({});
+  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>(
+    {}
+  );
 
   // 为每个项目生成一个固定的渐变色
   const projectGradients = useMemo(() => {
@@ -84,7 +87,7 @@ export default function Projects() {
       // Extract owner and repo from GitHub URL
       const match = project.github.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (!match) return;
-      
+
       const [, owner, repo] = match;
 
       try {
@@ -97,14 +100,14 @@ export default function Projects() {
         // Only check starred status if token exists
         let isStarred = false;
         const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
-        
+
         if (token) {
           try {
             const starredResponse = await fetch(
               `https://api.github.com/user/starred/${owner}/${repo}`,
               {
                 headers: {
-                  Accept: 'application/vnd.github.v3+json',
+                  Accept: "application/vnd.github.v3+json",
                   Authorization: `Bearer ${token}`,
                 },
               }
@@ -131,24 +134,26 @@ export default function Projects() {
   const handleStar = async (githubUrl: string) => {
     const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
     if (!token) {
-      console.error("GitHub token not found. Please set NEXT_PUBLIC_GITHUB_TOKEN in your .env.local file");
+      console.error(
+        "GitHub token not found. Please set NEXT_PUBLIC_GITHUB_TOKEN in your .env.local file"
+      );
       return;
     }
 
     const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
     if (!match) return;
-    
+
     const [, owner, repo] = match;
     const currentStats = githubStats[githubUrl];
-    
+
     try {
-      const method = currentStats?.isStarred ? 'DELETE' : 'PUT';
+      const method = currentStats?.isStarred ? "DELETE" : "PUT";
       const response = await fetch(
         `https://api.github.com/user/starred/${owner}/${repo}`,
         {
           method,
           headers: {
-            Accept: 'application/vnd.github.v3+json',
+            Accept: "application/vnd.github.v3+json",
             Authorization: `Bearer ${token}`,
           },
         }
@@ -158,7 +163,8 @@ export default function Projects() {
         setGithubStats((prev) => ({
           ...prev,
           [githubUrl]: {
-            stars: (currentStats?.stars || 0) + (currentStats?.isStarred ? -1 : 1),
+            stars:
+              (currentStats?.stars || 0) + (currentStats?.isStarred ? -1 : 1),
             isStarred: !currentStats?.isStarred,
           },
         }));
@@ -184,135 +190,137 @@ export default function Projects() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-64 p-8 border-r border-gray-200">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">Projects</h1>
-            <p className="text-gray-600 text-sm">
-              A collection of my personal and professional projects
-            </p>
-          </div>
-
-          {/* Categories */}
-          <nav>
-            {projectData.map((category) => (
-              <button
-                key={category.name}
-                onClick={() => setSelectedCategory(category.name)}
-                className={`w-full text-left py-3 px-4 rounded-lg mb-2 ${
-                  selectedCategory === category.name
-                    ? "bg-black text-white"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                <div className="font-medium">{category.name}</div>
-                <div className="text-sm opacity-70">{category.description}</div>
-              </button>
-            ))}
-          </nav>
+    <main className="flex h-screen w-full box-border">
+      {/* Sidebar */}
+      <div className="w-64 flex-none p-8 border-r border-gray-200 overflow-y-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2">项目</h1>
+          <p className="text-gray-600 text-sm">个人和专业项目的集合</p>
         </div>
 
-        {/* Main Content */}
-        <main className="flex-1 p-8">
-          <h2 className="text-4xl font-bold mb-8">{selectedCategory}</h2>
-          <div className="grid grid-cols-1 gap-6">
-            {projectData
-              .find((cat) => cat.name === selectedCategory)
-              ?.projects.map((project, index) => (
-                <div
-                  key={index}
-                  className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors h-[500px] flex flex-col"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-semibold mb-2">
-                        {project.title}
-                      </h3>
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                          project.status
-                        )}`}
-                      >
-                        {project.status.replace("-", " ")}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      {project.github && (
-                        <>
+        {/* Categories */}
+        <nav>
+          {projectData.map((category) => (
+            <button
+              key={category.name}
+              onClick={() => setSelectedCategory(category.name)}
+              className={`w-full text-left py-3 px-4 rounded-lg mb-2 ${
+                selectedCategory === category.name
+                  ? "bg-black text-white"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              <div className="font-medium">{category.name}</div>
+              <div className="text-sm opacity-70">{category.description}</div>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            <h2 className="text-4xl font-bold mb-8">{selectedCategory}</h2>
+            <div className="grid grid-cols-1 gap-6">
+              {projectData
+                .find((cat) => cat.name === selectedCategory)
+                ?.projects.map((project, index) => (
+                  <div
+                    key={index}
+                    className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors flex flex-col"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-2xl font-semibold mb-2">
+                          {project.title}
+                        </h3>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                            project.status
+                          )}`}
+                        >
+                          {project.status.replace("-", " ")}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {project.github && (
+                          <>
+                            <Link
+                              href={project.github}
+                              className="p-2 hover:bg-gray-100 rounded-full inline-flex items-center justify-center"
+                              target="_blank"
+                            >
+                              <Github size={20} />
+                            </Link>
+                            <button
+                              onClick={() => handleStar(project.github!)}
+                              className="flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
+                            >
+                              <Star
+                                size={16}
+                                className={
+                                  githubStats[project.github!]?.isStarred
+                                    ? "fill-current"
+                                    : ""
+                                }
+                              />
+                              {githubStats[project.github!]?.stars || 0}
+                            </button>
+                          </>
+                        )}
+                        {project.url && (
                           <Link
-                            href={project.github}
+                            href={project.url}
                             className="p-2 hover:bg-gray-100 rounded-full inline-flex items-center justify-center"
                             target="_blank"
                           >
-                            <Github size={20} />
+                            <span className="sr-only">Visit project</span>
+                            🔗
                           </Link>
-                          <button
-                            onClick={() => handleStar(project.github!)}
-                            className="flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
-                          >
-                            <Star
-                              size={16}
-                              className={githubStats[project.github!]?.isStarred ? "fill-current" : ""}
-                            />
-                            {githubStats[project.github!]?.stars || 0}
-                          </button>
-                        </>
-                      )}
-                      {project.url && (
-                        <Link
-                          href={project.url}
-                          className="p-2 hover:bg-gray-100 rounded-full inline-flex items-center justify-center"
-                          target="_blank"
-                        >
-                          <span className="sr-only">Visit project</span>
-                          🔗
-                        </Link>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      className="relative w-full h-48 mb-4 rounded-lg overflow-hidden flex items-center justify-center"
+                      style={{
+                        background: projectGradients[project.title],
+                      }}
+                    >
+                      {(project.imageUrl ||
+                        (project.url && screenshots[project.url])) && (
+                        <Image
+                          src={
+                            project.imageUrl ||
+                            (project.url ? screenshots[project.url] : "")
+                          }
+                          alt={project.title}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
                       )}
                     </div>
-                  </div>
 
-                  <div
-                    className="relative w-full h-48 mb-4 rounded-lg overflow-hidden flex items-center justify-center"
-                    style={{
-                      background: projectGradients[project.title],
-                    }}
-                  >
-                    {(project.imageUrl ||
-                      (project.url && screenshots[project.url])) && (
-                      <Image
-                        src={
-                          project.imageUrl ||
-                          (project.url ? screenshots[project.url] : "")
-                        }
-                        alt={project.title}
-                        fill
-                        className="object-contain"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    )}
-                  </div>
+                    <p className="text-gray-700 mb-4">{project.description}</p>
 
-                  <p className="text-gray-700 mb-4 flex-grow line-clamp-4">
-                    {project.description}
-                  </p>
-
-                  <div className="flex flex-wrap gap-2">
-                    {project.tags.map((tag, tagIndex) => (
-                      <span
-                        key={tagIndex}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    <div className="flex flex-wrap gap-2">
+                      {project.tags.map((tag, tagIndex) => (
+                        <span
+                          key={tagIndex}
+                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+            </div>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

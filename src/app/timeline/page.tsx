@@ -20,10 +20,11 @@ export default function Timeline() {
     <main className="flex-1 h-screen overflow-hidden">
       <div className="h-full overflow-y-auto px-4 py-16">
         <div className="w-full max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold mb-16">Journey</h1>
+          <h1 className="text-3xl font-bold mb-6">时间轴</h1>
+          <div className="mb-6 last:mb-0">记录了生活中的重要时刻</div>
           {years.map((year) => (
             <div key={year} className="relative">
-              <div className="text-4xl font-medium mb-12">{year}</div>
+              <div className="text-2xl font-medium mb-8">{year}</div>
               <div className="relative">
                 {eventsByYear[year]
                   .sort((a, b) => b.month - a.month)

@@ -16,13 +16,13 @@ export interface ProjectCategory {
 
 export const projectData: ProjectCategory[] = [
   {
-    name: "Web Applications",
-    description: "Full-stack web applications and websites",
+    name: "网页应用 & 一些demo",
+    description: "🍀 网页应用 & 一些demo",
     projects: [
       {
-        title: "Personal Blog",
+        title: "个人博客",
         description:
-          "A modern blog built with Next.js 13, featuring server components, MDX support, and a clean design",
+          "一个使用 Next.js 13 构建的现代博客,具有服务器组件、MDX 支持和清爽的设计",
         github: "https://github.com/ObjectX-9/react_demo",
         url: "https://yourblog.com",
         tags: ["Next.js", "React", "TypeScript", "Tailwind CSS"],
@@ -40,8 +40,8 @@ export const projectData: ProjectCategory[] = [
     ],
   },
   {
-    name: "Open Source",
-    description: "Contributions and personal open source projects",
+    name: "参与的开源项目",
+    description: "💐 贡献过 & 个人的开源项目",
     projects: [
       {
         title: "React Component Library",
@@ -62,8 +62,8 @@ export const projectData: ProjectCategory[] = [
     ],
   },
   {
-    name: "Mobile Applications",
-    description: "Cross-platform and native mobile apps",
+    name: "移动端项目",
+    description: "🌼 移动端项目 & 或者一些跨端项目",
     projects: [
       {
         title: "Fitness Tracker",

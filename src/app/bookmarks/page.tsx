@@ -11,7 +11,7 @@ interface Screenshot {
 }
 
 export default function Bookmarks() {
-  const [selectedCategory, setSelectedCategory] = useState("Apps & Tools");
+  const [selectedCategory, setSelectedCategory] = useState("软件 & 工具");
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -46,13 +46,13 @@ export default function Bookmarks() {
         {/* Sidebar */}
         <div className="w-64 p-8 border-r border-gray-200">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">Bookmarks</h1>
+            <h1 className="text-2xl font-bold mb-2">导航站</h1>
             <div className="flex items-center space-x-4">
               <Link href="/rss" className="text-gray-600 hover:text-gray-900">
-                RSS feed
+                RSS 订阅
               </Link>
               <button className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800">
-                Submit
+                提交
               </button>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function Bookmarks() {
               >
                 <div className="font-medium">{category.name}</div>
                 <div className="text-sm opacity-70">
-                  {category.count} bookmarks
+                  {category.count} 个站点
                 </div>
               </button>
             ))}

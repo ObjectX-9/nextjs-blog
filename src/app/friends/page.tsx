@@ -11,7 +11,8 @@ export default function Friends() {
 
   return (
     <section className="speakers py-8 px-8">
-      <h1 className="text-2xl font-bold mb-2">Friends</h1>
+      <h1 className="text-2xl font-bold mb-6">🔗 友情链接</h1>
+      <div className="mb-6 last:mb-0">友情链接，记录生活中的朋友们。</div>
       <div className="container">
         {/* Avatars Grid */}
         <ul className="avatars grid grid-cols-3 gap-3 relative">
@@ -82,7 +83,12 @@ export default function Friends() {
               >
                 {friend.name}
               </Link>
-              <span key={`span-${friend.name}-${index}`} className="text-gray-700">: {friend.title}</span>
+              <span
+                key={`span-${friend.name}-${index}`}
+                className="text-gray-700"
+              >
+                : {friend.title}
+              </span>
             </li>
           ))}
         </ul>

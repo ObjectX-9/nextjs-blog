@@ -9,7 +9,7 @@ export default function Writing({ params }: { params: { slug: string } }) {
     <main className="flex w-full h-screen box-border">
       <div className="overflow-y-auto flex-col hidden bg-zinc-50 lg:flex lg:flex-col lg:border-r flex-grow lg:max-w-96">
         <div className="sticky top-0 z-10 border-b bg-zinc-50 px-5 py-4 text-sm font-semibold tracking-tight">
-          Writing
+          📝 时间笔记-记录日常
         </div>
         <div className="bg-zinc-50 p-3">
           <div className="flex flex-col gap-1 text-sm">
