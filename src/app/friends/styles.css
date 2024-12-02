@@ -1,0 +1,137 @@
+@layer anchor {
+  [style*="--is:"] {
+    anchor-name: var(--is);
+  }
+
+  [style*="--for:"]:is(:hover, :focus-visible)::after {
+    content: "";
+    position: absolute;
+    top: anchor(var(--for) top);
+    right: anchor(var(--for) right);
+    bottom: anchor(var(--for) bottom);
+    left: anchor(var(--for) left);
+  }
+
+  .avatars [style*="--for:"]:is(:hover, :focus-visible)::after {
+    background: rgb(139, 92, 246);
+    mix-blend-mode: difference;
+    filter: hue-rotate(300deg);
+    animation: lightSpeedInLeft 0.28s ease-out both;
+  }
+
+  .links [style*="--for:"]:is(:hover, :focus-visible)::after {
+    background: var(--bg) no-repeat center / cover;
+    border-radius: 5px;
+    animation: zoomIn 0.28s linear both;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    scale: 0;
+    opacity: 0;
+  }
+  to {
+    scale: 2;
+    opacity: 1;
+  }
+}
+
+@keyframes lightSpeedInLeft {
+  from {
+    transform: translate3d(-100%, 0, 0) skewX(30deg);
+    opacity: 0;
+  }
+
+  60% {
+    transform: skewX(-20deg);
+    opacity: 1;
+  }
+
+  80% {
+    transform: skewX(5deg);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideHighlight {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+.speakers {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.speakers .container {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.avatars {
+  width: 40%;
+  position: relative;
+}
+
+.avatars img {
+  transition: transform 0.3s ease-out, brightness 0.3s ease-out;
+  will-change: transform, brightness;
+}
+
+.links {
+  width: 60%;
+  list-style: none;
+  padding: 0;
+}
+
+.links li {
+  position: relative;
+  line-height: 1.8;
+}
+
+.links a {
+  text-decoration: none;
+  border-bottom: 1px dotted;
+  color: rgb(139, 92, 246);
+  position: relative;
+  display: inline-block;
+  padding: 0 0.25em;
+  transition: color 0.3s ease-out;
+  will-change: color;
+}
+
+.links a::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(139, 92, 246);
+  transform-origin: left;
+  transform: scaleX(0);
+  opacity: 1;
+  z-index: -1;
+  transition: transform 0.3s ease-out;
+  will-change: transform;
+}
+
+.links a:hover::before,
+.links a.active::before {
+  transform: scaleX(1);
+}
+
+.links a:hover,
+.links a.active {
+  color: white;
+  mix-blend-mode: difference;
+}

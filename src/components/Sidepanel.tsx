@@ -16,6 +16,7 @@ import {
   Terminal,
   Twitter,
   UnfoldVertical,
+  Users,
   Video,
   Camera,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const navList = [
   { title: "Playground", href: "/playground", prefix: <Slack size={16} /> },
   { title: "Timeline", href: "/timeline", prefix: <History size={16} /> },
   { title: "Projects", href: "/projects", prefix: <Folder size={16} /> },
+  { title: "Friends", href: "/friends", prefix: <Users size={16} /> },
 ];
 
 const socialList = [
