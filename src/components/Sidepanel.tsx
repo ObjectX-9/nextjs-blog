@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Flower,
+  Folder,
   FolderHeart,
   Forward,
   Github,
@@ -33,7 +34,8 @@ const navList = [
   { title: "Workspace", href: "/workspace", prefix: <Laptop size={16} /> },
   { title: "Bookmarks", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
   { title: "Playground", href: "/playground", prefix: <Slack size={16} /> },
-  { title: "timeline", href: "/timeline", prefix: <History size={16} /> },
+  { title: "Timeline", href: "/timeline", prefix: <History size={16} /> },
+  { title: "Projects", href: "/projects", prefix: <Folder size={16} /> },
 ];
 
 const socialList = [
