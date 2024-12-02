@@ -165,25 +165,27 @@ export default function Sidepanel() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!drawerRef.current) return;
-    
+
     const currentY = e.touches[0].clientY;
     const deltaY = currentY - startY;
-    
-    if (deltaY > 0) { // Only allow downward swipe
+
+    if (deltaY > 0) {
+      // Only allow downward swipe
       drawerRef.current.style.transform = `translateY(${deltaY}px)`;
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!drawerRef.current) return;
-    
+
     const currentY = e.changedTouches[0].clientY;
     const deltaY = currentY - startY;
-    
-    if (deltaY > 50) { // If swiped down more than 50px, close the drawer
+
+    if (deltaY > 50) {
+      // If swiped down more than 50px, close the drawer
       setIsOpen(false);
     }
-    drawerRef.current.style.transform = '';
+    drawerRef.current.style.transform = "";
   };
 
   const handleClose = () => {

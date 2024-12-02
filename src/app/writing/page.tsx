@@ -4,12 +4,12 @@ import Link from "next/link";
 export default function Writing() {
   const docsList = getDocsList();
   return (
-    <main className="flex h-screen w-full box-border">
-      <div className="overflow-y-auto relative w-full flex-col hidden bg-zinc-50 lg:flex lg:flex-col lg:border-r lg:w-80 xl:w-96">
+    <main className="flex flex-col lg:flex-row h-screen w-full box-border">
+      <div className="overflow-y-auto relative w-full flex flex-col bg-zinc-50 border-b lg:border-r lg:w-80 xl:w-96">
         <div className="sticky top-0 z-10 border-b bg-zinc-50 px-5 py-3 text-sm font-semibold tracking-tight">
           📝 时间笔记-记录日常
         </div>
-        <div className="bg-zinc-50 p-3">
+        <div className="bg-zinc-50 p-3 flex-1">
           <div className="flex flex-col gap-1 text-sm">
             {docsList.map((navItem) => {
               const commonClasses =
@@ -33,7 +33,7 @@ export default function Writing() {
           </div>
         </div>
       </div>
-      <div className="bg-dots bg-dots-size bg-dots-position flex-1"></div>
+      <div className="hidden lg:block bg-dots bg-dots-size bg-dots-position flex-1"></div>
     </main>
   );
 }
