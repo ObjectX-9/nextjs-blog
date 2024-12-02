@@ -23,7 +23,7 @@ export const projectData: ProjectCategory[] = [
         title: "Personal Blog",
         description:
           "A modern blog built with Next.js 13, featuring server components, MDX support, and a clean design",
-        github: "https://github.com/yourusername/blog",
+        github: "https://github.com/ObjectX-9/react_demo",
         url: "https://yourblog.com",
         tags: ["Next.js", "React", "TypeScript", "Tailwind CSS"],
         status: "completed",
