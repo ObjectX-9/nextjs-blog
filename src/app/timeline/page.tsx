@@ -17,21 +17,23 @@ export default function Timeline() {
     .sort((a, b) => b - a);
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center overflow-y-auto py-16 px-4">
-      <div className="w-full max-w-3xl">
-        <h1 className="text-3xl font-bold mb-16">Journey</h1>
-        {years.map((year) => (
-          <div key={year} className="relative">
-            <div className="text-4xl font-medium mb-12">{year}</div>
-            <div className="relative">
-              {eventsByYear[year]
-                .sort((a, b) => b.month - a.month)
-                .map((event, index) => (
-                  <TimelineEvent key={index} event={event} />
-                ))}
+    <main className="flex-1 h-screen overflow-hidden">
+      <div className="h-full overflow-y-auto px-4 py-16">
+        <div className="w-full max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold mb-16">Journey</h1>
+          {years.map((year) => (
+            <div key={year} className="relative">
+              <div className="text-4xl font-medium mb-12">{year}</div>
+              <div className="relative">
+                {eventsByYear[year]
+                  .sort((a, b) => b.month - a.month)
+                  .map((event, index) => (
+                    <TimelineEvent key={index} event={event} />
+                  ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </main>
   );
