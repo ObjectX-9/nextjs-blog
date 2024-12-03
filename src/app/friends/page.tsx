@@ -1,16 +1,19 @@
 "use client";
 
-import { friends as allFriends, Friend } from "@/config/friends";
+import { Friend } from "@/config/friends";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import "./styles.css";
 
+interface FriendWithId extends Friend {
+  _id: string;
+}
+
 // 过滤出审核通过的友链
-const friends = allFriends.filter((friend: Friend) => friend.isApproved);
 
 // Mobile card view component
-const MobileCard = ({ friend }: { friend: Friend }) => (
+const MobileCard = ({ friend }: { friend: FriendWithId }) => (
   <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex items-center p-3 gap-4">
     <div className="relative h-16 w-16 flex-shrink-0">
       <Image
@@ -46,7 +49,7 @@ const DesktopView = ({
   hoveredName,
   setHoveredName,
 }: {
-  friends: Friend[];
+  friends: FriendWithId[];
   hoveredName: string | null;
   setHoveredName: (name: string | null) => void;
 }) => (
@@ -145,6 +148,23 @@ export default function Friends() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFriend, setNewFriend] = useState<Friend>(initialNewFriend);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [friends, setFriends] = useState<FriendWithId[]>([]);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const response = await fetch("/api/friends?approved=true");
+        const data = await response.json();
+        if (data.success) {
+          setFriends(data.friends);
+        }
+      } catch (error) {
+        console.error("Error fetching friends:", error);
+      }
+    };
+
+    fetchFriends();
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
