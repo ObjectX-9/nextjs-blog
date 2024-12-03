@@ -9,6 +9,7 @@ const navItems = [
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
   { name: "项目管理", href: "/admin/projects" },
+  { name: "技术栈", href: "/admin/stacks" },
 ];
 
 export default function AdminLayout({
