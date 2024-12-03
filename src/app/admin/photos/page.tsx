@@ -19,6 +19,9 @@ export default function PhotosManagementPage() {
     date: new Date().toISOString().split("T")[0],
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const updatePhotos = async (updatedPhotos: Photo[]) => {
     setIsUpdating(true);
@@ -44,11 +47,116 @@ export default function PhotosManagementPage() {
     }
   };
 
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('上传文件失败，请重试。');
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({
+          width: img.width,
+          height: img.height
+        });
+        URL.revokeObjectURL(img.src); // Clean up
+      };
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+        URL.revokeObjectURL(img.src); // Clean up
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleFileSelect = async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+
+    try {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+
+      // Get image dimensions
+      const dimensions = await getImageDimensions(file);
+      setNewPhoto(prev => ({
+        ...prev,
+        width: dimensions.width,
+        height: dimensions.height
+      }));
+    } catch (error) {
+      console.error('Error getting image dimensions:', error);
+      alert('获取图片尺寸失败');
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
   const handleAddPhoto = async () => {
-    if (newPhoto.src && newPhoto.title) {
-      const updatedPhotos = [...photos, { ...newPhoto }];
+    if (!selectedFile) {
+      alert('请选择要上传的图片');
+      return;
+    }
+
+    if (!newPhoto.title) {
+      alert('请输入照片标题');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const url = await uploadFile(selectedFile);
+      const photoToAdd = {
+        ...newPhoto,
+        src: url
+      };
+      const updatedPhotos = [...photos, photoToAdd];
       await updatePhotos(updatedPhotos);
       setShowAddPhoto(false);
+      setSelectedFile(null);
+      setPreviewUrl('');
       setNewPhoto({
         src: "",
         width: 4,
@@ -57,7 +165,16 @@ export default function PhotosManagementPage() {
         location: "",
         date: new Date().toISOString().split("T")[0],
       });
+    } catch (error) {
+      // Error already handled in uploadFile
+    } finally {
+      setIsUploading(false);
     }
+  };
+
+  const resetFileInput = () => {
+    setSelectedFile(null);
+    setPreviewUrl('');
   };
 
   const handleEditPhoto = async () => {
@@ -147,28 +264,99 @@ export default function PhotosManagementPage() {
 
       {/* 添加照片模态框 */}
       {showAddPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-[500px]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-[500px] max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">添加照片</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">图片链接</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={newPhoto.src}
-                  onChange={(e) => setNewPhoto({ ...newPhoto, src: e.target.value })}
-                  placeholder="请输入图片链接"
-                />
+                <label className="block text-sm font-medium mb-1">图片</label>
+                <div
+                  onClick={() => !isUploading && document.getElementById('file-upload')?.click()}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isUploading 
+                      ? 'border-gray-300 bg-gray-50 cursor-not-allowed' 
+                      : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                  }`}
+                >
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileInputChange}
+                    disabled={isUploading}
+                  />
+                  
+                  <div className="text-center">
+                    {!previewUrl ? (
+                      <>
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <div className="mt-2 text-sm text-gray-600">
+                          <p className="font-medium text-blue-600">点击选择图片或拖拽到此处</p>
+                          <p className="mt-1 text-xs text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="relative group">
+                        <img
+                          src={previewUrl}
+                          alt="Preview"
+                          className="mx-auto max-h-48 rounded-lg object-contain"
+                        />
+                        {!isUploading && (
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                resetFileInput();
+                              }}
+                              className="bg-white text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-100"
+                            >
+                              重新选择
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
+                        <div className="text-center">
+                          <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <p className="mt-2 text-sm text-gray-600">正在上传...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+              
               <div>
-                <label className="block text-sm font-medium mb-1">标题</label>
+                <label className="block text-sm font-medium mb-1">标题 <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className="w-full p-2 border rounded"
                   value={newPhoto.title}
                   onChange={(e) => setNewPhoto({ ...newPhoto, title: e.target.value })}
                   placeholder="请输入标题"
+                  disabled={isUploading}
                 />
               </div>
               <div>
@@ -186,33 +374,34 @@ export default function PhotosManagementPage() {
                   <label className="block text-sm font-medium mb-1">宽度</label>
                   <input
                     type="number"
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border rounded bg-gray-50"
                     value={newPhoto.width}
-                    onChange={(e) => setNewPhoto({ ...newPhoto, width: Number(e.target.value) })}
+                    readOnly
                   />
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-1">高度</label>
                   <input
                     type="number"
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border rounded bg-gray-50"
                     value={newPhoto.height}
-                    onChange={(e) => setNewPhoto({ ...newPhoto, height: Number(e.target.value) })}
+                    readOnly
                   />
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button
-                className="px-4 py-2 bg-gray-500 text-white rounded"
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setShowAddPhoto(false)}
+                disabled={isUploading}
               >
                 取消
               </button>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleAddPhoto}
-                disabled={isUpdating}
+                disabled={isUploading || !selectedFile || !newPhoto.title}
               >
                 确定
               </button>

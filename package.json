@@ -24,7 +24,9 @@
     "@radix-ui/react-tooltip": "^1.0.7",
     "@shadcn/ui": "^0.0.4",
     "@tailwindcss/typography": "^0.5.12",
+    "@types/ali-oss": "^6.16.11",
     "@types/mdx": "^2.0.12",
+    "@types/uuid": "^10.0.0",
     "@udecode/cn": "^31.0.0",
     "@udecode/plate-alignment": "^31.0.0",
     "@udecode/plate-autoformat": "^31.0.0",
@@ -66,6 +68,7 @@
     "@udecode/plate-table": "^31.3.3",
     "@udecode/plate-toggle": "^31.1.0",
     "@udecode/plate-trailing-block": "^31.0.0",
+    "ali-oss": "^6.21.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^1.0.0",
@@ -101,6 +104,7 @@
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
     "unified": "^11.0.5",
+    "uuid": "^11.0.3",
     "yet-another-react-lightbox": "^3.21.7"
   },
   "devDependencies": {
