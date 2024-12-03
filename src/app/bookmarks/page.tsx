@@ -85,12 +85,12 @@ export default function Bookmarks() {
       {/* Sidebar */}
       <div className="w-64 min-h-screen border-r border-gray-100 flex-shrink-0">
         <div className="p-4 flex justify-between items-center border-b border-gray-100">
-          <Link href="/rss" className="text-sm text-gray-600 hover:text-gray-900">
+          <Link
+            href="/rss"
+            className="px-3 py-1 bg-black text-white text-sm rounded-md hover:bg-gray-800"
+          >
             RSS 订阅
           </Link>
-          <button className="px-3 py-1 bg-black text-white text-sm rounded-md hover:bg-gray-800">
-            提交
-          </button>
         </div>
 
         {/* Categories */}
@@ -98,7 +98,9 @@ export default function Bookmarks() {
           {categories.map((category) => (
             <button
               key={category._id?.toString()}
-              onClick={() => setSelectedCategory(category._id?.toString() || null)}
+              onClick={() =>
+                setSelectedCategory(category._id?.toString() || null)
+              }
               className={`w-full text-left p-2 rounded-lg mb-2 ${
                 selectedCategory === category._id?.toString()
                   ? "bg-black text-white"
@@ -119,16 +121,19 @@ export default function Bookmarks() {
       {/* Main Content */}
       <main className="flex-1 p-8">
         <h2 className="text-2xl font-bold mb-6">
-          {categories.find((cat) => cat._id?.toString() === selectedCategory)?.name}
+          {
+            categories.find((cat) => cat._id?.toString() === selectedCategory)
+              ?.name
+          }
         </h2>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6 w-full">
           {bookmarks.map((bookmark) => (
             <Link
               href={bookmark.url}
               key={bookmark._id?.toString()}
               target="_blank"
               rel="noopener noreferrer"
-              className="block border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+              className="block border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow w-full"
             >
               <div className="aspect-video bg-gray-100 p-4">
                 {(bookmark.imageUrl || screenshots[bookmark.url]) && (
@@ -143,7 +148,9 @@ export default function Bookmarks() {
               </div>
               <div className="p-4">
                 <h3 className="font-medium mb-2">{bookmark.title}</h3>
-                <p className="text-sm text-gray-600 mb-2">{bookmark.description}</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  {bookmark.description}
+                </p>
                 <div className="text-sm text-gray-500">
                   {new URL(bookmark.url).hostname}
                 </div>
@@ -172,7 +179,11 @@ export default function Bookmarks() {
             </div>
             <div className="px-4 pb-3">
               <h2 className="text-xl font-bold">
-                {categories.find((cat) => cat._id?.toString() === selectedCategory)?.name}
+                {
+                  categories.find(
+                    (cat) => cat._id?.toString() === selectedCategory
+                  )?.name
+                }
               </h2>
             </div>
           </div>
@@ -198,7 +209,9 @@ export default function Bookmarks() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-medium mb-2">{bookmark.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{bookmark.description}</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {bookmark.description}
+                  </p>
                   <div className="text-sm text-gray-500">
                     {new URL(bookmark.url).hostname}
                   </div>

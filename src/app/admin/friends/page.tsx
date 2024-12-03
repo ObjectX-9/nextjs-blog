@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Friend, friends as initialFriends } from "@/config/friends";
+import { useState, useEffect } from "react";
+import { Friend } from "@/config/friends";
+import { ObjectId } from "mongodb";
+
+interface FriendWithId extends Friend {
+  _id: string;
+}
 
 export default function FriendsManagementPage() {
-  const [friends, setFriends] = useState<Friend[]>(initialFriends);
+  const [friends, setFriends] = useState<FriendWithId[]>([]);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [editingFriend, setEditingFriend] = useState<{
     index: number;
-    friend: Friend;
+    friend: FriendWithId;
   } | null>(null);
   const [newFriend, setNewFriend] = useState<Friend>({
     avatar: "",
@@ -22,62 +27,100 @@ export default function FriendsManagementPage() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const updateFriends = async (updatedFriends: Friend[]) => {
-    setIsUpdating(true);
+  useEffect(() => {
+    fetchFriends();
+  }, []);
+
+  const fetchFriends = async () => {
     try {
-      const response = await fetch("/api/friends", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ friends: updatedFriends }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update friends");
+      const response = await fetch("/api/friends");
+      const data = await response.json();
+      if (data.success) {
+        setFriends(data.friends);
       }
-
-      setFriends(updatedFriends);
     } catch (error) {
-      console.error("Error updating friends:", error);
-      alert("更新友链失败，请重试。");
-    } finally {
-      setIsUpdating(false);
+      console.error("Error fetching friends:", error);
+      alert("获取友链失败，请重试。");
     }
   };
 
   const handleAddFriend = async () => {
     if (newFriend.name && newFriend.link) {
-      const updatedFriends = [...friends, newFriend];
-      await updateFriends(updatedFriends);
-      setNewFriend({
-        avatar: "",
-        name: "",
-        title: "",
-        description: "",
-        link: "",
-        position: "",
-        location: "",
-        isApproved: false,
-      });
-      setShowAddFriend(false);
+      try {
+        const response = await fetch("/api/friends", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newFriend),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchFriends();
+          setNewFriend({
+            avatar: "",
+            name: "",
+            title: "",
+            description: "",
+            link: "",
+            position: "",
+            location: "",
+            isApproved: false,
+          });
+          setShowAddFriend(false);
+        } else {
+          throw new Error(data.error || "Failed to add friend");
+        }
+      } catch (error) {
+        console.error("Error adding friend:", error);
+        alert("添加友链失败，请重试。");
+      }
     }
   };
 
-  const handleDeleteFriend = async (index: number) => {
+  const handleDeleteFriend = async (_id: string) => {
     if (confirm("确定要删除这个友链吗？")) {
-      const updatedFriends = [...friends];
-      updatedFriends.splice(index, 1);
-      await updateFriends(updatedFriends);
+      try {
+        const response = await fetch(`/api/friends?id=${_id}`, {
+          method: "DELETE",
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchFriends();
+        } else {
+          throw new Error(data.error || "Failed to delete friend");
+        }
+      } catch (error) {
+        console.error("Error deleting friend:", error);
+        alert("删除友链失败，请重试。");
+      }
     }
   };
 
   const handleEditFriendSave = async () => {
     if (editingFriend) {
-      const updatedFriends = [...friends];
-      updatedFriends[editingFriend.index] = editingFriend.friend;
-      await updateFriends(updatedFriends);
-      setEditingFriend(null);
+      try {
+        const response = await fetch(`/api/friends?id=${editingFriend.friend._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editingFriend.friend),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchFriends();
+          setEditingFriend(null);
+        } else {
+          throw new Error(data.error || "Failed to update friend");
+        }
+      } catch (error) {
+        console.error("Error updating friend:", error);
+        alert("更新友链失败，请重试。");
+      }
     }
   };
 
@@ -119,17 +162,26 @@ export default function FriendsManagementPage() {
                     />
                   </td>
                   <td className="p-4">
-                    <span className="block max-w-[100px] truncate" title={friend.name}>
+                    <span
+                      className="block max-w-[100px] truncate"
+                      title={friend.name}
+                    >
                       {friend.name}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className="block max-w-[150px] truncate" title={friend.title}>
+                    <span
+                      className="block max-w-[150px] truncate"
+                      title={friend.title}
+                    >
                       {friend.title}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className="block max-w-[200px] truncate" title={friend.description}>
+                    <span
+                      className="block max-w-[200px] truncate"
+                      title={friend.description}
+                    >
                       {friend.description}
                     </span>
                   </td>
@@ -145,17 +197,26 @@ export default function FriendsManagementPage() {
                     </a>
                   </td>
                   <td className="p-4">
-                    <span className="block max-w-[150px] truncate" title={friend.position || ''}>
-                      {friend.position || '-'}
+                    <span
+                      className="block max-w-[150px] truncate"
+                      title={friend.position || ""}
+                    >
+                      {friend.position || "-"}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className="block max-w-[150px] truncate" title={friend.location || ''}>
-                      {friend.location || '-'}
+                    <span
+                      className="block max-w-[150px] truncate"
+                      title={friend.location || ""}
+                    >
+                      {friend.location || "-"}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className="block max-w-[100px] truncate" title={friend.isApproved ? "已审核" : "待审核"}>
+                    <span
+                      className="block max-w-[100px] truncate"
+                      title={friend.isApproved ? "已审核" : "待审核"}
+                    >
                       {friend.isApproved ? "已审核" : "待审核"}
                     </span>
                   </td>
@@ -174,7 +235,7 @@ export default function FriendsManagementPage() {
                       </button>
                       <button
                         className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                        onClick={() => handleDeleteFriend(index)}
+                        onClick={() => handleDeleteFriend(friend._id)}
                       >
                         删除
                       </button>
@@ -193,7 +254,9 @@ export default function FriendsManagementPage() {
             <h3 className="text-lg font-semibold mb-4">添加友链</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">头像链接</label>
+                <label className="block text-sm font-medium mb-1">
+                  头像链接
+                </label>
                 <input
                   className="w-full p-2 border rounded"
                   value={newFriend.avatar}
@@ -305,7 +368,9 @@ export default function FriendsManagementPage() {
             <h3 className="text-lg font-semibold mb-4">编辑友链</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">头像链接</label>
+                <label className="block text-sm font-medium mb-1">
+                  头像链接
+                </label>
                 <input
                   className="w-full p-2 border rounded"
                   value={editingFriend.friend.avatar}
