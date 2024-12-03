@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { projectData } from "../../config/projects";
 import Image from "next/image";
 import Link from "next/link";
 import { Github, Star } from "lucide-react";
@@ -39,36 +38,86 @@ const gradientColors = [
   ["#4ECDC4", "#95E1D3"],
 ];
 
+interface Project {
+  _id: string;
+  title: string;
+  description: string;
+  status: string;
+  tags: string[];
+  github?: string;
+  url?: string;
+  imageUrl?: string;
+  categoryId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ProjectCategory {
+  _id: string;
+  name: string;
+  description: string;
+}
+
 export default function Projects() {
-  const [selectedCategory, setSelectedCategory] =
-    useState("网页应用 & 一些demo");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
-  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>(
-    {}
-  );
+  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>({});
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 为每个项目生成一个固定的渐变色
-  const projectGradients = useMemo(() => {
-    const gradients: Record<string, string> = {};
-    projectData.forEach((category) => {
-      category.projects.forEach((project) => {
-        const colors =
-          gradientColors[Math.floor(Math.random() * gradientColors.length)];
-        gradients[
-          project.title
-        ] = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
-      });
-    });
-    return gradients;
-  }, []);
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/projects');
+        const data = await response.json();
+        if (data.success) {
+          setProjects(data.projects);
+          if (!selectedCategory && data.projects.length > 0) {
+            setSelectedCategory(data.projects[0].categoryId);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
+    };
+
+    fetchProjects();
+  }, [selectedCategory]);
 
   useEffect(() => {
-    const currentProjects =
-      projectData.find((cat) => cat.name === selectedCategory)?.projects || [];
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/project-categories');
+        const data = await response.json();
+        if (data.success) {
+          setCategories(data.categories);
+          // 如果还没有选择分类，设置第一个分类作为默认选择
+          if (!selectedCategory && data.categories.length > 0) {
+            setSelectedCategory(data.categories[0]._id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, [selectedCategory]);
+
+  const projectGradients = useMemo(() => {
+    const gradients: Record<string, string> = {};
+    projects.forEach((project) => {
+      const colors = gradientColors[Math.floor(Math.random() * gradientColors.length)];
+      gradients[project.title] = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+    });
+    return gradients;
+  }, [projects]);
+
+  useEffect(() => {
+    const currentProjects = projects.filter((project) => project.categoryId === selectedCategory);
 
     currentProjects.forEach(async (project) => {
-      // 确保 project.url 存在且不是空字符串
       if (!project.url || screenshots[project.url] || project.imageUrl) return;
 
       try {
@@ -78,39 +127,34 @@ export default function Projects() {
         const data = await response.json();
 
         if (data.screenshot && project.url) {
-          // 再次检查 project.url 存在
           setScreenshots((prev) => ({
             ...prev,
-            [project.url!]: data.screenshot, // 使用非空断言
+            [project.url!]: data.screenshot,
           }));
         }
       } catch (error) {
         console.error("Failed to fetch screenshot:", error);
       }
     });
-  }, [selectedCategory, screenshots]);
+  }, [selectedCategory, screenshots, projects]);
 
   useEffect(() => {
-    const currentProjects =
-      projectData.find((cat) => cat.name === selectedCategory)?.projects || [];
+    const currentProjects = projects.filter((project) => project.categoryId === selectedCategory);
 
     currentProjects.forEach(async (project) => {
       if (!project.github) return;
 
-      // Extract owner and repo from GitHub URL
       const match = project.github.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (!match) return;
 
       const [, owner, repo] = match;
 
       try {
-        // Get star count (public data, no token needed)
         const starsResponse = await fetch(
           `https://api.github.com/repos/${owner}/${repo}`
         );
         const repoData = await starsResponse.json();
 
-        // Only check starred status if token exists
         let isStarred = false;
         const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
 
@@ -142,7 +186,7 @@ export default function Projects() {
         console.error("Failed to fetch GitHub stats:", error);
       }
     });
-  }, [selectedCategory]);
+  }, [selectedCategory, projects]);
 
   const handleStar = async (githubUrl: string) => {
     const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
@@ -202,36 +246,39 @@ export default function Projects() {
     }
   };
 
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => project.categoryId === selectedCategory);
+  }, [selectedCategory, projects]);
+
   return (
     <main className="flex flex-col sm:flex-row h-screen w-full box-border">
-      {/* Sidebar - 在移动端变为顶部导航 */}
       <div className="sm:w-64 flex-none sm:p-8 border-b sm:border-b-0 sm:border-r border-gray-200 overflow-y-auto">
         <div className="p-4 sm:p-0 sm:mb-8">
           <h1 className="text-2xl font-bold mb-2">项目</h1>
           <p className="text-gray-600 text-sm">个人和专业项目的集合</p>
         </div>
 
-        {/* Categories */}
         <nav
           className="flex sm:block relative overflow-x-auto sm:overflow-visible whitespace-nowrap sm:whitespace-normal px-4 sm:px-0 pb-4 sm:pb-0 no-scrollbar scroll-smooth"
           ref={scrollRef}
         >
-          {projectData.map((category, index) => (
+          {/* 分类导航 */}
+          {categories.map((category, index) => (
             <button
-              key={category.name}
+              key={category._id}
               onClick={() => {
-                setSelectedCategory(category.name);
+                setSelectedCategory(category._id);
                 // Scroll to center the selected tab on mobile
                 if (scrollRef.current && window.innerWidth < 640) {
                   const button = scrollRef.current.children[
                     index
                   ] as HTMLElement;
-                  const nav = scrollRef.current;
-                  const buttonLeft = button.offsetLeft;
-                  const buttonWidth = button.offsetWidth;
-                  const navWidth = nav.offsetWidth;
-                  const scrollLeft = buttonLeft - (navWidth - buttonWidth) / 2;
-                  nav.scrollTo({
+                  const container = scrollRef.current;
+                  const scrollLeft =
+                    button.offsetLeft -
+                    container.offsetWidth / 2 +
+                    button.offsetWidth / 2;
+                  container.scrollTo({
                     left: scrollLeft,
                     behavior: "smooth",
                   });
@@ -240,12 +287,12 @@ export default function Projects() {
               className={`flex-1 sm:w-full text-left py-2 px-4 rounded-lg sm:mb-2 relative transition-all duration-300 ease-in-out
                 flex items-center h-10 justify-center
                 sm:block sm:h-auto sm:justify-start ${
-                  selectedCategory === category.name
+                  selectedCategory === category._id
                     ? "bg-black text-white scale-[0.98] sm:scale-100"
                     : "text-black hover:bg-gray-100"
                 }`}
               style={{
-                minWidth: `${100 / Math.min(projectData.length, 3)}%`,
+                minWidth: `${100 / Math.min(categories.length, 3)}%`,
               }}
             >
               <div className="font-medium relative z-10 max-w-[120px] sm:max-w-none truncate">
@@ -259,110 +306,107 @@ export default function Projects() {
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-8">
-            <h2 className="hidden sm:block text-4xl font-bold mb-8">
-              {selectedCategory}
+          <div className="p-4 sm:p-6">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6">
+              {categories.find(c => c._id === selectedCategory)?.name || '加载中...'}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:gap-6">
-              {projectData
-                .find((cat) => cat.name === selectedCategory)
-                ?.projects.map((project, index) => (
-                  <div
-                    key={index}
-                    className="p-4 sm:p-6 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors flex flex-col"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl sm:text-2xl font-semibold mb-2">
-                          {project.title}
-                        </h3>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            project.status
-                          )}`}
-                        >
-                          {project.status.replace("-", " ")}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        {project.github && (
-                          <>
-                            <Link
-                              href={project.github}
-                              className="p-2 hover:bg-gray-100 rounded-full inline-flex items-center justify-center"
-                              target="_blank"
-                            >
-                              <Github size={18} className="sm:w-5 sm:h-5" />
-                            </Link>
-                            <button
-                              onClick={() => handleStar(project.github!)}
-                              className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
-                            >
-                              <Star
-                                size={14}
-                                className={`sm:w-4 sm:h-4 ${
-                                  githubStats[project.github!]?.isStarred
-                                    ? "fill-current"
-                                    : ""
-                                }`}
-                              />
-                              {githubStats[project.github!]?.stars || 0}
-                            </button>
-                          </>
-                        )}
-                        {project.url && (
+              {filteredProjects.map((project, index) => (
+                <div
+                  key={index}
+                  className="p-4 sm:p-6 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors flex flex-col"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-semibold mb-2">
+                        {project.title}
+                      </h3>
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                          project.status
+                        )}`}
+                      >
+                        {project.status.replace("-", " ")}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      {project.github && (
+                        <>
                           <Link
-                            href={project.url}
+                            href={project.github}
                             className="p-2 hover:bg-gray-100 rounded-full inline-flex items-center justify-center"
                             target="_blank"
                           >
-                            <span className="sr-only">Visit project</span>
-                            🔗
+                            <Github size={18} className="sm:w-5 sm:h-5" />
                           </Link>
-                        )}
-                      </div>
-                    </div>
-
-                    <div
-                      className="relative w-full h-36 sm:h-48 mb-4 rounded-lg overflow-hidden flex items-center justify-center"
-                      style={{
-                        background: projectGradients[project.title],
-                      }}
-                    >
-                      {(project.imageUrl ||
-                        (project.url && screenshots[project.url])) && (
-                        <Image
-                          src={
-                            project.imageUrl ||
-                            (project.url ? screenshots[project.url] : "")
-                          }
-                          alt={project.title}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
+                          <button
+                            onClick={() => handleStar(project.github!)}
+                            className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
+                          >
+                            <Star
+                              size={14}
+                              className={`sm:w-4 sm:h-4 ${
+                                githubStats[project.github!]?.isStarred
+                                  ? "fill-current"
+                                  : ""
+                              }`}
+                            />
+                            {githubStats[project.github!]?.stars || 0}
+                          </button>
+                        </>
+                      )}
+                      {project.url && (
+                        <Link
+                          href={project.url}
+                          className="p-2 hover:bg-gray-100 rounded-full inline-flex items-center justify-center"
+                          target="_blank"
+                        >
+                          <span className="sr-only">Visit project</span>
+                          🔗
+                        </Link>
                       )}
                     </div>
-
-                    <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                      {project.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag, tagIndex) => (
-                        <span
-                          key={tagIndex}
-                          className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs sm:text-sm"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
                   </div>
-                ))}
+
+                  <div
+                    className="relative w-full h-36 sm:h-48 mb-4 rounded-lg overflow-hidden flex items-center justify-center"
+                    style={{
+                      background: projectGradients[project.title],
+                    }}
+                  >
+                    {(project.imageUrl ||
+                      (project.url && screenshots[project.url])) && (
+                      <Image
+                        src={
+                          project.imageUrl ||
+                          (project.url ? screenshots[project.url] : "")
+                        }
+                        alt={project.title}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      />
+                    )}
+                  </div>
+
+                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                    {project.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    {project.tags.map((tag, tagIndex) => (
+                      <span
+                        key={tagIndex}
+                        className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs sm:text-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

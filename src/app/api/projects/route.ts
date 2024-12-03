@@ -16,8 +16,12 @@ interface ProjectUpdateInput extends Partial<Omit<Project, 'categoryId'>> {
 // Create a new project
 export async function POST(request: Request) {
   try {
+    console.log('Starting POST request for new project');
     const data = await request.json() as ProjectInput;
+    console.log('Received project data:', data);
+    
     const db = await getDb();
+    console.log('Database connection established');
 
     const project: Omit<ProjectDB, "_id"> = {
       title: data.title,
@@ -31,12 +35,16 @@ export async function POST(request: Request) {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-
+    
+    console.log('Attempting to insert project:', project);
     const result = await db
       .collection<ProjectDB>("projects")
       .insertOne(project as ProjectDB);
+    
+    console.log('Insert result:', result);
 
     if (result.acknowledged) {
+      console.log('Project inserted successfully, updating category');
       // Add project reference to category
       await db
         .collection<ProjectCategoryDB>("projectCategories")
@@ -54,6 +62,10 @@ export async function POST(request: Request) {
     throw new Error("Failed to insert project");
   } catch (error) {
     console.error("Error creating project:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
       { error: "Failed to create project" },
       { status: 500 }
