@@ -10,6 +10,7 @@ const navItems = [
   { name: "相册管理", href: "/admin/photos" },
   { name: "项目管理", href: "/admin/projects" },
   { name: "技术栈", href: "/admin/stacks" },
+  { name: "时间轴", href: "/admin/timelines" },
 ];
 
 export default function AdminLayout({
