@@ -11,6 +11,7 @@ const navItems = [
   { name: "项目管理", href: "/admin/projects" },
   { name: "技术栈", href: "/admin/stacks" },
   { name: "时间轴", href: "/admin/timelines" },
+  { name: "工作空间", href: "/admin/workspaces" },
 ];
 
 export default function AdminLayout({

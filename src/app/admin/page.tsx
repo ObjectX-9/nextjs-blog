@@ -27,6 +27,12 @@ export default function AdminPage() {
         >
           友链管理
         </Link>
+        <Link
+          href="/admin/workspaces"
+          className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          工作空间管理
+        </Link>
       </div>
     </div>
   );
