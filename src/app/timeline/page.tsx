@@ -1,7 +1,43 @@
-import { TimelineEvent } from "./TimelineEvent";
-import { timelineEvents } from "../../config/timelines";
+import { TimelineEvent as TimelineEventComponent } from "./TimelineEvent";
+import { headers } from 'next/headers';
 
-export default function Timeline() {
+interface TimelineLink {
+  text: string;
+  url: string;
+}
+
+interface TimelineEvent {
+  _id: string;
+  year: number;
+  month: number;
+  title: string;
+  location?: string;
+  description: string;
+  tweetUrl?: string;
+  imageUrl?: string;
+  links?: TimelineLink[];
+}
+
+async function getTimelineEvents(): Promise<TimelineEvent[]> {
+  const headersList = headers();
+  const host = headersList.get('host');
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+  
+  const res = await fetch(`${protocol}://${host}/api/timelines`, {
+    cache: 'no-store'
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to fetch timeline events');
+  }
+
+  const data = await res.json();
+  return data.events;
+}
+
+export default async function Timeline() {
+  const timelineEvents = await getTimelineEvents();
+
   // Group events by year
   const eventsByYear = timelineEvents.reduce((acc, event) => {
     if (!acc[event.year]) {
@@ -9,7 +45,7 @@ export default function Timeline() {
     }
     acc[event.year].push(event);
     return acc;
-  }, {} as Record<number, typeof timelineEvents>);
+  }, {} as Record<number, TimelineEvent[]>);
 
   // Sort years in descending order
   const years = Object.keys(eventsByYear)
@@ -34,8 +70,8 @@ export default function Timeline() {
               <div className="relative">
                 {eventsByYear[year]
                   .sort((a, b) => b.month - a.month)
-                  .map((event, index) => (
-                    <TimelineEvent key={index} event={event} />
+                  .map((event) => (
+                    <TimelineEventComponent key={event._id} event={event} />
                   ))}
               </div>
             </div>

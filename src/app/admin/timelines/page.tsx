@@ -1,38 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import { TimelineEvent, TimelineLink, timelineEvents } from "@/config/timelines";
+import { useState, useEffect } from "react";
+
+interface TimelineLink {
+  text: string;
+  url: string;
+}
+
+interface TimelineEvent {
+  _id?: string;
+  year: number;
+  month: number;
+  title: string;
+  location?: string;
+  description: string;
+  tweetUrl?: string;
+  imageUrl?: string;
+  links?: TimelineLink[];
+}
 
 export default function TimelinesAdmin() {
-  const [events, setEvents] = useState<TimelineEvent[]>(timelineEvents);
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<{ [key: number]: boolean }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const saveToAPI = async (newEvents: TimelineEvent[]) => {
+  // Fetch events on component mount
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/timelines', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ events: newEvents }),
-      });
-
+      const response = await fetch('/api/timelines');
       if (!response.ok) {
-        throw new Error('Failed to save timeline events');
+        throw new Error('Failed to fetch timeline events');
       }
-
       const data = await response.json();
-      if (data.success) {
-        setEvents(newEvents);
-      } else {
-        throw new Error('Failed to save timeline events');
-      }
+      setEvents(data.events);
     } catch (error) {
-      console.error('Error saving timeline events:', error);
-      alert('保存失败，请重试');
+      console.error('Error fetching timeline events:', error);
+      alert('加载失败，请刷新页面重试');
     }
   };
 
@@ -53,11 +62,29 @@ export default function TimelinesAdmin() {
     setEditingIndex(index);
   };
 
-  const handleDeleteEvent = async (index: number) => {
+  const handleDeleteEvent = async (event: TimelineEvent) => {
+    if (!event._id) return;
+    
     if (confirm('确定要删除这个时间轴事件吗？')) {
-      const newEvents = [...events];
-      newEvents.splice(index, 1);
-      await saveToAPI(newEvents);
+      try {
+        const response = await fetch(`/api/timelines?id=${event._id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete timeline event');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchEvents(); // Refresh the events list
+        } else {
+          throw new Error('Failed to delete timeline event');
+        }
+      } catch (error) {
+        console.error('Error deleting timeline event:', error);
+        alert('删除失败，请重试');
+      }
     }
   };
 
@@ -106,23 +133,34 @@ export default function TimelinesAdmin() {
       return;
     }
 
-    const newEvents = [...events];
-    if (editingIndex !== null) {
-      newEvents[editingIndex] = editingEvent;
-    } else {
-      newEvents.push(editingEvent);
+    try {
+      const method = editingEvent._id ? 'PUT' : 'POST';
+      const url = '/api/timelines';
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingEvent._id ? editingEvent : { events: [editingEvent] }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save timeline event');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchEvents(); // Refresh the events list
+        setEditingEvent(null);
+        setEditingIndex(null);
+        setErrors({});
+      } else {
+        throw new Error('Failed to save timeline event');
+      }
+    } catch (error) {
+      console.error('Error saving timeline event:', error);
+      alert('保存失败，请重试');
     }
-
-    // Sort events by date (newest first)
-    newEvents.sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year;
-      return b.month - a.month;
-    });
-
-    await saveToAPI(newEvents);
-    setEditingEvent(null);
-    setEditingIndex(null);
-    setErrors({});
   };
 
   const handleAddLink = () => {
@@ -251,7 +289,7 @@ export default function TimelinesAdmin() {
                   编辑
                 </button>
                 <button
-                  onClick={() => handleDeleteEvent(index)}
+                  onClick={() => handleDeleteEvent(event)}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                 >
                   删除
