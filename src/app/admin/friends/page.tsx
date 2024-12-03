@@ -18,6 +18,7 @@ export default function FriendsManagementPage() {
     link: "",
     position: "",
     location: "",
+    isApproved: false,
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -57,6 +58,7 @@ export default function FriendsManagementPage() {
         link: "",
         position: "",
         location: "",
+        isApproved: false,
       });
       setShowAddFriend(false);
     }
@@ -102,6 +104,7 @@ export default function FriendsManagementPage() {
                 <th className="p-4 text-left">链接</th>
                 <th className="p-4 text-left">职位</th>
                 <th className="p-4 text-left">地址</th>
+                <th className="p-4 text-left">状态</th>
                 <th className="p-4 text-left">操作</th>
               </tr>
             </thead>
@@ -149,6 +152,11 @@ export default function FriendsManagementPage() {
                   <td className="p-4">
                     <span className="block max-w-[150px] truncate" title={friend.location || ''}>
                       {friend.location || '-'}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="block max-w-[100px] truncate" title={friend.isApproved ? "已审核" : "待审核"}>
+                      {friend.isApproved ? "已审核" : "待审核"}
                     </span>
                   </td>
                   <td className="p-4">
@@ -260,6 +268,17 @@ export default function FriendsManagementPage() {
                   }
                   placeholder="请输入地点（可选）"
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={newFriend.isApproved}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, isApproved: e.target.checked })
+                  }
+                  className="form-checkbox h-5 w-5 text-blue-600"
+                />
+                <span className="text-gray-700">审核通过</span>
               </div>
               <div className="flex gap-2 justify-end">
                 <button
@@ -396,6 +415,23 @@ export default function FriendsManagementPage() {
                     })
                   }
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={editingFriend.friend.isApproved}
+                  onChange={(e) =>
+                    setEditingFriend({
+                      ...editingFriend,
+                      friend: {
+                        ...editingFriend.friend,
+                        isApproved: e.target.checked,
+                      },
+                    })
+                  }
+                  className="form-checkbox h-5 w-5 text-blue-600"
+                />
+                <span className="text-gray-700">审核通过</span>
               </div>
               <div className="flex gap-2 justify-end">
                 <button

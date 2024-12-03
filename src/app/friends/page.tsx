@@ -1,10 +1,13 @@
 "use client";
 
-import { friends, Friend } from "@/config/friends";
+import { friends as allFriends, Friend } from "@/config/friends";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import "./styles.css";
+
+// 过滤出审核通过的友链
+const friends = allFriends.filter((friend) => friend.isApproved);
 
 // Mobile card view component
 const MobileCard = ({ friend }: { friend: Friend }) => (
@@ -21,7 +24,10 @@ const MobileCard = ({ friend }: { friend: Friend }) => (
       <h3 className="font-medium text-base mb-0.5 truncate">{friend.name}</h3>
       <p className="text-gray-600 text-sm mb-1 truncate">{friend.title}</p>
       {friend.location && (
-        <p className="text-gray-500 text-xs mb-1 truncate"> {friend.location}</p>
+        <p className="text-gray-500 text-xs mb-1 truncate">
+          {" "}
+          {friend.location}
+        </p>
       )}
       <Link
         href={friend.link}
@@ -130,25 +136,28 @@ export default function Friends() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768); // 768px 是 Tailwind md 断点
     };
-    
+
     checkMobile();
 
     // 监听窗口大小变化
-    window.addEventListener('resize', checkMobile);
-    
+    window.addEventListener("resize", checkMobile);
+
     // 清理监听器
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   return (
     <section className="speakers py-8 px-8">
       <h1 className="text-2xl font-bold mb-6">🔗 友情链接</h1>
       <div className="mb-6 last:mb-0">友情链接，记录生活中的朋友们。</div>
-      
+
       {isMobile ? (
         <div className="grid grid-cols-1 gap-6">
           {friends.map((friend, index) => (
-            <MobileCard key={`mobile-${friend.name}-${index}`} friend={friend} />
+            <MobileCard
+              key={`mobile-${friend.name}-${index}`}
+              friend={friend}
+            />
           ))}
         </div>
       ) : (

@@ -8,6 +8,7 @@ export interface IFriend extends Document {
   link: string;
   position?: string;
   location?: string;
+  isApproved: boolean;
 }
 
 const friendSchema = new Schema<IFriend>({
@@ -17,7 +18,8 @@ const friendSchema = new Schema<IFriend>({
   description: { type: String, required: true },
   link: { type: String, required: true },
   position: { type: String },
-  location: { type: String }
+  location: { type: String },
+  isApproved: { type: Boolean, default: false }
 }, {
   timestamps: true
 });
