@@ -2,65 +2,8 @@ import { getDocsList } from "@/components/Markdown";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-
-const socialLinks = [
-  {
-    name: "博客",
-    icon: "🌐",
-    url: "https://blog.example.com",
-    bgColor: "#e8f5e9",
-  },
-  {
-    name: "掘金",
-    icon: "📍",
-    url: "#",
-    bgColor: "#ffebee",
-  },
-  {
-    name: "Github",
-    icon: "👨‍💻",
-    url: "https://github.com",
-    bgColor: "#f3e5f5",
-  },
-  {
-    name: "Codesandbox",
-    icon: "🐥",
-    url: "https://codesandbox.io",
-    bgColor: "#fff3e0",
-  },
-  {
-    name: "灵感笔记",
-    icon: "📝",
-    url: "#",
-    bgColor: "#fff8e1",
-  },
-  {
-    name: "Follow",
-    icon: "👀",
-    url: "#",
-    bgColor: "#e3f2fd",
-  },
-] as const;
-
-interface WorkExperience {
-  company: string;
-  companyUrl: string;
-  position: string;
-  description: string;
-  startDate: string;
-  endDate: string | null; // null means current position
-}
-
-const workExperiences: WorkExperience[] = [
-  {
-    company: "js.design",
-    companyUrl: "https://js.design/",
-    position: "前端【图形编辑器方向】",
-    description: "实习和校招目前在北京即时设计",
-    startDate: "2022-07-01",
-    endDate: null, // current position
-  },
-];
+import { socialLinks } from "@/config/social-links";
+import { WorkExperience, workExperiences } from "@/config/work-experience";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);

@@ -7,10 +7,11 @@ const navItems = [
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
+  { name: "时间线管理", href: "/admin/timelines" },
   { name: "项目管理", href: "/admin/projects" },
   { name: "技术栈", href: "/admin/stacks" },
-  { name: "时间轴", href: "/admin/timelines" },
-  { name: "工作空间", href: "/admin/workspaces" },
+  { name: "工作空间管理", href: "/admin/workspaces" },
+  { name: "社交链接管理", href: "/admin/social-links" },
 ];
 
 export default function AdminLayout({

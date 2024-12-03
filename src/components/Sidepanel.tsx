@@ -22,10 +22,15 @@ import {
   Github,
   Flower,
   Folder,
+  Globe,
+  MapPin,
+  FileEdit,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef } from "react";
+import { socialLinks } from "@/config/social-links";
 
 const navList = [
   {
@@ -43,23 +48,20 @@ const navList = [
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];
 
-const socialList = [
-  {
-    title: "GitHub",
-    href: "https://github.com",
-    prefix: <Github size={16} />,
-  },
-  {
-    title: "X (Twitter)",
-    href: "https://twitter.com",
-    prefix: <Twitter size={16} />,
-  },
-  {
-    title: "Bilibili",
-    href: "https://bilibili.com",
-    prefix: <Flower size={16} />,
-  },
-];
+const iconMap = {
+  "博客": <Globe size={16} />,
+  "掘金": <MapPin size={16} />,
+  "Github": <Github size={16} />,
+  "Codesandbox": <FileEdit size={16} />,
+  "灵感笔记": <FileEdit size={16} />,
+  "Follow": <Eye size={16} />,
+} as const;
+
+const socialList = socialLinks.map((link) => ({
+  title: link.name,
+  href: link.url,
+  prefix: iconMap[link.name as keyof typeof iconMap],
+}));
 
 // const openSourceList = [
 //   {
