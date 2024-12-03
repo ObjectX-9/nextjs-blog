@@ -12,6 +12,7 @@ const navItems = [
   { name: "技术栈", href: "/admin/stacks" },
   { name: "工作空间管理", href: "/admin/workspaces" },
   { name: "社交链接管理", href: "/admin/social-links" },
+  { name: "工作经历管理", href: "/admin/work-experience" },
 ];
 
 export default function AdminLayout({
