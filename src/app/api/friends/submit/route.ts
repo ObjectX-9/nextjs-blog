@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+import { getDb } from "@/lib/mongodb";
 import { Friend } from "@/config/friends";
 
 // 简单的内存缓存来实现速率限制
@@ -47,46 +46,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // 读取现有的friends数据
-    const configPath = path.join(process.cwd(), "src", "config", "friends.ts");
-    const configContent = await fs.readFile(configPath, "utf-8");
+    // 连接数据库并插入新友链
+    const db = await getDb();
+    const result = await db.collection("friends").insertOne({
+      ...friend,
+      isApproved: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
 
-    // 提取现有的friends数组
-    const friendsMatch = configContent.match(/export const friends: Friend\[\] = \[([\s\S]*?)\];/);
-    if (!friendsMatch) {
-      throw new Error("Could not find friends array in config file");
+    if (!result.acknowledged) {
+      throw new Error("Failed to insert friend");
     }
-
-    // 格式化新的friend对象
-    const newFriendStr = `  {
-    avatar: "${friend.avatar}",
-    name: "${friend.name}",
-    title: "${friend.title || ""}",
-    description: "${friend.description || ""}",
-    link: "${friend.link}",
-    position: "${friend.position || ""}",
-    location: "${friend.location || ""}",
-    isApproved: false,
-  },\n`;
-
-    // 在数组的开头插入新的friend
-    const updatedFriends = friendsMatch[0].replace(
-      "export const friends: Friend[] = [",
-      `export const friends: Friend[] = [\n${newFriendStr}`
-    );
-
-    // 更新整个文件内容
-    const updatedContent = configContent.replace(
-      /export const friends: Friend\[\] = \[([\s\S]*?)\];/,
-      updatedFriends
-    );
-
-    // 写入文件
-    await fs.writeFile(configPath, updatedContent, "utf-8");
 
     return NextResponse.json({ 
       success: true,
-      message: "友链提交成功，等待审核" 
+      message: "友链提交成功，等待审核",
+      friend: { ...friend, _id: result.insertedId }
     });
   } catch (error) {
     console.error("Error submitting friend:", error);

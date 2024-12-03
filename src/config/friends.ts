@@ -12,6 +12,17 @@ export interface Friend {
 export const friends: Friend[] = [
   {
     avatar: "https://avatars.githubusercontent.com/u/263385",
+    name: "测试21321321",
+    title: "测试21321321",
+    description: "测试213213212132132999999",
+    link: "https://object-x.com.cn/",
+    position: "21321",
+    location: "32132132",
+    isApproved: false,
+  },
+
+  {
+    avatar: "https://avatars.githubusercontent.com/u/263385",
     name: "2132",
     title: "3213",
     description: "32132",
