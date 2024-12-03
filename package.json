@@ -110,6 +110,7 @@
     "yet-another-react-lightbox": "^3.21.7"
   },
   "devDependencies": {
+    "@types/mongoose": "^5.11.97",
     "@types/node": "^20",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",

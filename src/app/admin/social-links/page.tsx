@@ -1,38 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { socialLinks, SocialLink } from "@/config/social-links";
+import { useState, useEffect } from "react";
+import { ISocialLink } from "@/app/model/social-link";
+
+interface SocialLinkWithId extends ISocialLink {
+  _id: string;
+}
 
 export default function SocialLinksManagementPage() {
-  const [items, setItems] = useState<SocialLink[]>(socialLinks);
-  const [editingItem, setEditingItem] = useState<SocialLink | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [items, setItems] = useState<SocialLinkWithId[]>([]);
+  const [editingItem, setEditingItem] = useState<Partial<SocialLinkWithId> | null>(null);
 
-  const saveToAPI = async (newItems: SocialLink[]) => {
+  useEffect(() => {
+    fetchSocialLinks();
+  }, []);
+
+  const fetchSocialLinks = async () => {
     try {
-      const response = await fetch("/api/social-links", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ socialLinks: newItems }),
-      });
-
+      const response = await fetch("/api/social-links");
       if (!response.ok) {
-        throw new Error("Failed to save social links");
+        throw new Error("Failed to fetch social links");
       }
-
       const data = await response.json();
       if (data.success) {
-        setItems(newItems);
-        setEditingItem(null);
-        setEditingIndex(null);
-      } else {
-        throw new Error("Failed to save social links");
+        setItems(data.socialLinks);
       }
     } catch (error) {
-      console.error("Error saving social links:", error);
-      alert("保存失败，请重试");
+      console.error("Error fetching social links:", error);
+      alert("获取数据失败，请刷新重试");
     }
   };
 
@@ -43,32 +38,64 @@ export default function SocialLinksManagementPage() {
       url: "",
       bgColor: "#ffffff",
     });
-    setEditingIndex(null);
   };
 
-  const handleEditItem = (item: SocialLink, index: number) => {
+  const handleEditItem = (item: SocialLinkWithId) => {
     setEditingItem({ ...item });
-    setEditingIndex(index);
   };
 
-  const handleDeleteItem = (index: number) => {
+  const handleDeleteItem = async (id: string) => {
     if (confirm("确定要删除这个社交链接吗？")) {
-      const newItems = [...items];
-      newItems.splice(index, 1);
-      saveToAPI(newItems);
+      try {
+        const response = await fetch(`/api/social-links?id=${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete social link");
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchSocialLinks();
+        } else {
+          throw new Error(data.error || "Failed to delete social link");
+        }
+      } catch (error) {
+        console.error("Error deleting social link:", error);
+        alert("删除失败，请重试");
+      }
     }
   };
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (!editingItem) return;
 
-    const newItems = [...items];
-    if (editingIndex !== null) {
-      newItems[editingIndex] = editingItem;
-    } else {
-      newItems.push(editingItem);
+    try {
+      const method = editingItem._id ? "PUT" : "POST";
+      const response = await fetch("/api/social-links", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editingItem),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${editingItem._id ? "update" : "create"} social link`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchSocialLinks();
+        setEditingItem(null);
+      } else {
+        throw new Error(data.error || `Failed to ${editingItem._id ? "update" : "create"} social link`);
+      }
+    } catch (error) {
+      console.error("Error saving social link:", error);
+      alert("保存失败，请重试");
     }
-    saveToAPI(newItems);
   };
 
   return (
@@ -85,8 +112,8 @@ export default function SocialLinksManagementPage() {
 
       <div className="flex-1 p-6 overflow-auto">
         <div className="space-y-4 w-full">
-          {items.map((item, index) => (
-            <div key={index} className="border rounded-lg p-4 bg-white w-full">
+          {items.map((item) => (
+            <div key={item._id} className="border rounded-lg p-4 bg-white w-full">
               <div className="flex justify-between items-start w-full">
                 <div className="flex flex-col flex-grow">
                   <div className="flex items-center gap-4">
@@ -111,13 +138,13 @@ export default function SocialLinksManagementPage() {
                 </div>
                 <div className="flex gap-2 ml-4">
                   <button
-                    onClick={() => handleEditItem(item, index)}
+                    onClick={() => handleEditItem(item)}
                     className="px-4 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     编辑
                   </button>
                   <button
-                    onClick={() => handleDeleteItem(index)}
+                    onClick={() => handleDeleteItem(item._id)}
                     className="px-4 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
                   >
                     删除
@@ -133,7 +160,7 @@ export default function SocialLinksManagementPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl mx-4">
             <h2 className="text-xl font-semibold mb-4">
-              {editingIndex !== null ? "编辑社交链接" : "添加社交链接"}
+              {editingItem._id ? "编辑社交链接" : "添加社交链接"}
             </h2>
             <div className="space-y-4">
               <div>
@@ -203,7 +230,6 @@ export default function SocialLinksManagementPage() {
               <button
                 onClick={() => {
                   setEditingItem(null);
-                  setEditingIndex(null);
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >

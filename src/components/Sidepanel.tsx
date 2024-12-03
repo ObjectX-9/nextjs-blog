@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useRef } from "react";
-import { socialLinks } from "@/config/social-links";
+import { useState, useRef, useEffect } from "react";
+import { ISocialLink } from "@/app/model/social-link";
 
 const navList = [
   {
@@ -48,12 +48,6 @@ const navList = [
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];
 
-const socialList = socialLinks.map((link) => ({
-  title: link.name,
-  href: link.url,
-  prefix: link.name === "博客" ? <Globe size={16} /> : link.name === "掘金" ? <MapPin size={16} /> : link.name === "Github" ? <Github size={16} /> : link.name === "Codesandbox" ? <FileEdit size={16} /> : link.name === "灵感笔记" ? <FileEdit size={16} /> : link.name === "Follow" ? <Eye size={16} /> : <></>,
-}));
-
 const iconMap = {
   "博客": <Globe size={16} />,
   "掘金": <MapPin size={16} />,
@@ -65,6 +59,33 @@ const iconMap = {
 
 const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const currentPathname = usePathname();
+  const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
+
+  useEffect(() => {
+    const fetchSocialLinks = async () => {
+      try {
+        const response = await fetch("/api/social-links");
+        if (!response.ok) {
+          throw new Error("Failed to fetch social links");
+        }
+        const data = await response.json();
+        if (data.success) {
+          setSocialLinks(data.socialLinks);
+        }
+      } catch (error) {
+        console.error("Error fetching social links:", error);
+      }
+    };
+
+    fetchSocialLinks();
+  }, []);
+
+  const socialList = socialLinks.map((link) => ({
+    title: link.name,
+    href: link.url,
+    prefix: iconMap[link.name as keyof typeof iconMap] || <></>,
+  }));
+
   return (
     <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
       <div className="mb-4 p-2 flex flex-row flex-nowrap gap-2">
@@ -122,7 +143,7 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
             className="group flex items-center justify-between rounded-lg p-2 hover:bg-gray-200"
           >
             <span className="flex items-center">
-              {iconMap[socialItem.title as keyof typeof iconMap]}
+              {socialItem.prefix}
               <span className="ml-2 font-medium">{socialItem.title}</span>
             </span>
             <Forward size={16} />

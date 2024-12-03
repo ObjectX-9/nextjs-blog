@@ -2,8 +2,9 @@ import { getDocsList } from "@/components/Markdown";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { socialLinks } from "@/config/social-links";
-import { WorkExperience, workExperiences } from "@/config/work-experience";
+import { workExperiences } from "@/config/work-experience";
+import { ISocialLink } from "@/app/model/social-link";
+import { getDb } from "@/lib/mongodb";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);
@@ -16,8 +17,24 @@ const calculateDuration = (startDate: string, endDate: string | null) => {
   return { years, months };
 };
 
-export default function Index() {
+async function getSocialLinks() {
+  try {
+    const db = await getDb();
+    const socialLinks = await db
+      .collection<ISocialLink>("socialLinks")
+      .find()
+      .toArray();
+    return socialLinks;
+  } catch (error) {
+    console.error("Error fetching social links:", error);
+    return [];
+  }
+}
+
+export default async function Index() {
   const docsList = getDocsList();
+  const socialLinks = await getSocialLinks();
+
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
       <div className="relative w-full">
