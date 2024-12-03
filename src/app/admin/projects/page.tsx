@@ -1,88 +1,158 @@
 "use client";
 
-import { useState } from "react";
-import { Project, ProjectCategory, projectData } from "@/config/projects";
+import { useEffect, useState } from "react";
+import { Project, ProjectCategory } from "@/app/model/project";
 
-interface EditProjectForm extends Project {
-  categoryIndex: number;
-  projectIndex?: number;
+interface EditProjectForm extends Omit<Project, 'categoryId'> {
+  categoryId?: string;
+  _id?: string;
+}
+
+interface Category extends Omit<ProjectCategory, '_id'> {
+  _id?: string;
 }
 
 export default function ProjectsAdmin() {
-  const [categories, setCategories] = useState<ProjectCategory[]>(projectData);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [projects, setProjects] = useState<(Project & { _id: string })[]>([]);
   const [editingProject, setEditingProject] = useState<EditProjectForm | null>(null);
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
-  const [editingCategory, setEditingCategory] = useState<{ index: number; data: ProjectCategory } | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ _id: string; data: Category } | null>(null);
 
-  const saveToAPI = async (newCategories: ProjectCategory[]) => {
+  // Fetch categories and projects
+  const fetchData = async () => {
     try {
+      // Fetch categories
+      const categoriesRes = await fetch('/api/projects/categories');
+      const categoriesData = await categoriesRes.json();
+      if (categoriesData.success) {
+        setCategories(categoriesData.categories);
+      }
+
+      // Fetch all projects
+      const projectsRes = await fetch('/api/projects');
+      const projectsData = await projectsRes.json();
+      if (projectsData.success) {
+        setProjects(projectsData.projects);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      alert('加载数据失败，请刷新页面重试');
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleSaveProject = async (project: EditProjectForm) => {
+    try {
+      const method = project._id ? 'PUT' : 'POST';
       const response = await fetch('/api/projects', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ categories: newCategories }),
+        body: JSON.stringify(project),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save projects');
+        throw new Error('Failed to save project');
       }
 
-      const data = await response.json();
-      if (data.success) {
-        setCategories(newCategories);
-      } else {
-        throw new Error('Failed to save projects');
-      }
+      await fetchData();
+      setEditingProject(null);
     } catch (error) {
-      console.error('Error saving projects:', error);
+      console.error('Error saving project:', error);
       alert('保存失败，请重试');
     }
   };
 
-  const handleSaveProject = async (project: EditProjectForm) => {
-    const newCategories = [...categories];
-    const { categoryIndex, projectIndex, ...projectData } = project;
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/projects?id=${projectId}`, {
+        method: 'DELETE',
+      });
 
-    if (projectIndex !== undefined) {
-      // Edit existing project
-      newCategories[categoryIndex].projects[projectIndex] = projectData;
-    } else {
-      // Add new project
-      newCategories[categoryIndex].projects.push(projectData);
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('删除失败，请重试');
     }
-
-    await saveToAPI(newCategories);
-    setEditingProject(null);
-  };
-
-  const handleDeleteProject = async (categoryIndex: number, projectIndex: number) => {
-    const newCategories = [...categories];
-    newCategories[categoryIndex].projects.splice(projectIndex, 1);
-    await saveToAPI(newCategories);
   };
 
   const handleAddCategory = async () => {
     if (newCategory.name && newCategory.description) {
-      const newCategories = [...categories, { ...newCategory, projects: [] }];
-      await saveToAPI(newCategories);
-      setNewCategory({ name: "", description: "" });
+      try {
+        const response = await fetch('/api/projects/categories', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newCategory),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to add category');
+        }
+
+        await fetchData();
+        setNewCategory({ name: "", description: "" });
+      } catch (error) {
+        console.error('Error adding category:', error);
+        alert('添加分类失败，请重试');
+      }
     }
   };
 
-  const handleDeleteCategory = async (categoryIndex: number) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     if (confirm('确定要删除这个分类吗？该分类下的所有项目都会被删除。')) {
-      const newCategories = [...categories];
-      newCategories.splice(categoryIndex, 1);
-      await saveToAPI(newCategories);
+      try {
+        const response = await fetch(`/api/projects/categories?id=${categoryId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete category');
+        }
+
+        await fetchData();
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        alert('删除失败，请重试');
+      }
     }
   };
 
-  const handleSaveCategory = async (index: number, updatedCategory: ProjectCategory) => {
-    const newCategories = [...categories];
-    newCategories[index] = updatedCategory;
-    await saveToAPI(newCategories);
-    setEditingCategory(null);
+  const handleSaveCategory = async (categoryId: string, updatedCategory: Category) => {
+    try {
+      const response = await fetch('/api/projects/categories', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ _id: categoryId, ...updatedCategory }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update category');
+      }
+
+      await fetchData();
+      setEditingCategory(null);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      alert('更新失败，请重试');
+    }
+  };
+
+  // Group projects by category
+  const getProjectsByCategory = (categoryId: string) => {
+    return projects.filter(project => project.categoryId.toString() === categoryId);
   };
 
   return (
@@ -117,96 +187,98 @@ export default function ProjectsAdmin() {
       </div>
 
       {/* Project Categories */}
-      {categories.map((category, categoryIndex) => (
-        <div key={categoryIndex} className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-xl font-semibold">{category.name}</h2>
-              <p className="text-gray-600">{category.description}</p>
+      {categories.map((category) => {
+        const categoryProjects = getProjectsByCategory(category._id!);
+        return (
+          <div key={category._id} className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">{category.name}</h2>
+                <p className="text-gray-600">{category.description}</p>
+              </div>
+              <div className="space-x-2">
+                <button
+                  onClick={() => setEditingCategory({
+                    _id: category._id!,
+                    data: {
+                      name: category.name,
+                      description: category.description,
+                      projects: category.projects
+                    }
+                  })}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  编辑分类
+                </button>
+                <button
+                  onClick={() => handleDeleteCategory(category._id!)}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  删除分类
+                </button>
+              </div>
             </div>
-            <div className="space-x-2">
-              <button
-                onClick={() => setEditingCategory({
-                  index: categoryIndex,
-                  data: {
-                    name: category.name,
-                    description: category.description,
-                    projects: category.projects
-                  }
-                })}
-                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                编辑分类
-              </button>
-              <button
-                onClick={() => handleDeleteCategory(categoryIndex)}
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                删除分类
-              </button>
-            </div>
-          </div>
-          <div className="space-y-4">
-            {category.projects.map((project, projectIndex) => (
-              <div key={projectIndex} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{project.title}</h3>
-                    <p className="text-gray-600">{project.description}</p>
-                    <div className="mt-2 space-x-2">
-                      {project.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-block px-2 py-1 text-sm bg-gray-100 rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+            <div className="space-y-4">
+              {categoryProjects.map((project) => (
+                <div key={project._id} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold">{project.title}</h3>
+                      <p className="text-gray-600">{project.description}</p>
+                      <div className="mt-2 space-x-2">
+                        {project.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-block px-2 py-1 text-sm bg-gray-100 rounded"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-x-2">
+                      <button
+                        onClick={() => setEditingProject({
+                          ...project,
+                          categoryId: category._id
+                        })}
+                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project._id)}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        删除
+                      </button>
                     </div>
                   </div>
-                  <div className="space-x-2">
-                    <button
-                      onClick={() => setEditingProject({
-                        ...project,
-                        categoryIndex,
-                        projectIndex
-                      })}
-                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      编辑
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProject(categoryIndex, projectIndex)}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                      删除
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
-            <button
-              onClick={() => setEditingProject({
-                title: "",
-                description: "",
-                tags: [],
-                status: "planned",
-                categoryIndex
-              })}
-              className="px-4 py-2 border border-dashed rounded-lg w-full text-gray-500 hover:bg-gray-50"
-            >
-              + 添加新项目
-            </button>
+              ))}
+              <button
+                onClick={() => setEditingProject({
+                  title: "",
+                  description: "",
+                  tags: [],
+                  status: "planned",
+                  categoryId: category._id
+                })}
+                className="px-4 py-2 border border-dashed rounded-lg w-full text-gray-500 hover:bg-gray-50"
+              >
+                + 添加新项目
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Edit Project Modal */}
       {editingProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
             <h2 className="text-xl font-semibold mb-4">
-              {editingProject.projectIndex !== undefined ? "编辑项目" : "添加新项目"}
+              {editingProject._id ? "编辑项目" : "添加新项目"}
             </h2>
             <div className="space-y-4">
               <input
@@ -243,7 +315,7 @@ export default function ProjectsAdmin() {
                 value={editingProject.tags.join(", ")}
                 onChange={(e) => setEditingProject({
                   ...editingProject,
-                  tags: e.target.value.split(",").map(tag => tag.trim())
+                  tags: e.target.value.split(",").map(tag => tag.trim()).filter(Boolean)
                 })}
               />
               <select
@@ -311,7 +383,7 @@ export default function ProjectsAdmin() {
                   取消
                 </button>
                 <button
-                  onClick={() => handleSaveCategory(editingCategory.index, editingCategory.data)}
+                  onClick={() => handleSaveCategory(editingCategory._id, editingCategory.data)}
                   className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                   保存
