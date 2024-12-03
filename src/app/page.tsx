@@ -2,8 +2,8 @@ import { getDocsList } from "@/components/Markdown";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { workExperiences } from "@/config/work-experience";
 import { ISocialLink } from "@/app/model/social-link";
+import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
@@ -31,9 +31,25 @@ async function getSocialLinks() {
   }
 }
 
+async function getWorkExperiences() {
+  try {
+    const db = await getDb();
+    const workExperiences = await db
+      .collection<IWorkExperience>("workExperiences")
+      .find()
+      .sort({ startDate: -1 }) // Sort by start date in descending order
+      .toArray();
+    return workExperiences;
+  } catch (error) {
+    console.error("Error fetching work experiences:", error);
+    return [];
+  }
+}
+
 export default async function Index() {
   const docsList = getDocsList();
   const socialLinks = await getSocialLinks();
+  const workExperiences = await getWorkExperiences();
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
@@ -118,13 +134,13 @@ export default async function Index() {
             工作经历
           </h1>
           <div className="space-y-8">
-            {workExperiences.map((experience, index) => {
+            {workExperiences.map((experience) => {
               const { years, months } = calculateDuration(
                 experience.startDate,
                 experience.endDate
               );
               return (
-                <div key={index} className="mb-8">
+                <div key={experience._id.toString()} className="mb-8">
                   <div className="mb-4">
                     <p className="text-gray-800">
                       {experience.description}{" "}

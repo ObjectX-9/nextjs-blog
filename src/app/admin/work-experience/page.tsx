@@ -1,38 +1,76 @@
 "use client";
 
-import { useState } from "react";
-import { workExperiences, WorkExperience } from "@/config/work-experience";
+import { useState, useEffect } from "react";
+import { IWorkExperience } from "@/app/model/work-experience";
 
 export default function WorkExperienceManagementPage() {
-  const [items, setItems] = useState<WorkExperience[]>(workExperiences);
-  const [editingItem, setEditingItem] = useState<WorkExperience | null>(null);
+  const [items, setItems] = useState<IWorkExperience[]>([]);
+  const [editingItem, setEditingItem] = useState<IWorkExperience | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const saveToAPI = async (newItems: WorkExperience[]) => {
+  useEffect(() => {
+    fetchWorkExperiences();
+  }, []);
+
+  const fetchWorkExperiences = async () => {
     try {
+      const response = await fetch("/api/work-experience");
+      const data = await response.json();
+      if (data.success) {
+        setItems(data.workExperiences);
+      } else {
+        throw new Error("Failed to fetch work experiences");
+      }
+    } catch (error) {
+      console.error("Error fetching work experiences:", error);
+      alert("获取工作经历失败，请刷新重试");
+    }
+  };
+
+  const handleSaveItem = async () => {
+    if (!editingItem) return;
+
+    try {
+      const method = editingItem._id ? "PUT" : "POST";
       const response = await fetch("/api/work-experience", {
-        method: "POST",
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ workExperiences: newItems }),
+        body: JSON.stringify(editingItem),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save work experiences");
-      }
 
       const data = await response.json();
       if (data.success) {
-        setItems(newItems);
+        await fetchWorkExperiences();
         setEditingItem(null);
         setEditingIndex(null);
       } else {
-        throw new Error("Failed to save work experiences");
+        throw new Error(data.error || "Failed to save work experience");
       }
     } catch (error) {
-      console.error("Error saving work experiences:", error);
+      console.error("Error saving work experience:", error);
       alert("保存失败，请重试");
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    if (!confirm("确定要删除这条工作经历吗？")) return;
+
+    try {
+      const response = await fetch(`/api/work-experience?id=${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchWorkExperiences();
+      } else {
+        throw new Error(data.error || "Failed to delete work experience");
+      }
+    } catch (error) {
+      console.error("Error deleting work experience:", error);
+      alert("删除失败，请重试");
     }
   };
 
@@ -48,29 +86,9 @@ export default function WorkExperienceManagementPage() {
     setEditingIndex(null);
   };
 
-  const handleEditItem = (item: WorkExperience, index: number) => {
+  const handleEditItem = (item: IWorkExperience, index: number) => {
     setEditingItem({ ...item });
     setEditingIndex(index);
-  };
-
-  const handleDeleteItem = (index: number) => {
-    if (confirm("确定要删除这条工作经历吗？")) {
-      const newItems = [...items];
-      newItems.splice(index, 1);
-      saveToAPI(newItems);
-    }
-  };
-
-  const handleSaveItem = () => {
-    if (!editingItem) return;
-
-    const newItems = [...items];
-    if (editingIndex !== null) {
-      newItems[editingIndex] = editingItem;
-    } else {
-      newItems.push(editingItem);
-    }
-    saveToAPI(newItems);
   };
 
   return (
@@ -88,7 +106,7 @@ export default function WorkExperienceManagementPage() {
       <div className="flex-1 p-6 overflow-auto">
         <div className="space-y-4 w-full">
           {items.map((item, index) => (
-            <div key={index} className="border rounded-lg p-4 bg-white w-full">
+            <div key={item._id} className="border rounded-lg p-4 bg-white w-full">
               <div className="flex justify-between items-start w-full">
                 <div className="flex flex-col flex-grow">
                   <div className="flex items-center gap-4">
@@ -119,7 +137,7 @@ export default function WorkExperienceManagementPage() {
                     编辑
                   </button>
                   <button
-                    onClick={() => handleDeleteItem(index)}
+                    onClick={() => handleDeleteItem(item._id)}
                     className="px-4 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
                   >
                     删除
