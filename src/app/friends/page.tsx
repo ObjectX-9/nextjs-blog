@@ -127,29 +127,167 @@ const DesktopView = ({
   </div>
 );
 
+// 新友链的初始状态
+const initialNewFriend: Friend = {
+  avatar: "",
+  name: "",
+  title: "",
+  description: "",
+  link: "",
+  position: "",
+  location: "",
+  isApproved: false
+};
+
 export default function Friends() {
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newFriend, setNewFriend] = useState<Friend>(initialNewFriend);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // 初始检查
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // 768px 是 Tailwind md 断点
+      setIsMobile(window.innerWidth < 768);
     };
-
     checkMobile();
-
-    // 监听窗口大小变化
     window.addEventListener("resize", checkMobile);
-
-    // 清理监听器
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/friends/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ friend: newFriend }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit friend");
+      }
+
+      setNewFriend(initialNewFriend);
+      setShowAddForm(false);
+      alert("提交成功！请等待审核。");
+    } catch (error) {
+      console.error("Error submitting friend:", error);
+      alert("提交失败，请重试。");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="speakers py-8 px-8">
-      <h1 className="text-2xl font-bold mb-6">🔗 友情链接</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">🔗 友情链接</h1>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          提交友链
+        </button>
+      </div>
       <div className="mb-6 last:mb-0">友情链接，记录生活中的朋友们。</div>
+
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">提交友链</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.avatar}
+                  onChange={(e) => setNewFriend({ ...newFriend, avatar: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="头像URL"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.name}
+                  onChange={(e) => setNewFriend({ ...newFriend, name: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="名字"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.title}
+                  onChange={(e) => setNewFriend({ ...newFriend, title: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="标题"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.description}
+                  onChange={(e) => setNewFriend({ ...newFriend, description: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="描述"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.link}
+                  onChange={(e) => setNewFriend({ ...newFriend, link: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="链接"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.position}
+                  onChange={(e) => setNewFriend({ ...newFriend, position: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="职位（可选）"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={newFriend.location}
+                  onChange={(e) => setNewFriend({ ...newFriend, location: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  placeholder="地点（可选）"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800 transition-colors disabled:bg-gray-300"
+                >
+                  {isSubmitting ? "提交中..." : "提交"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {isMobile ? (
         <div className="grid grid-cols-1 gap-6">

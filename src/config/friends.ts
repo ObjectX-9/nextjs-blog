@@ -6,10 +6,19 @@ export interface Friend {
   link: string;
   position?: string;
   location?: string;
-  isApproved: boolean;
 }
 
 export const friends: Friend[] = [
+  {
+    "avatar": "https://avatars.githubusercontent.com/u/263385",
+    "name": "2132",
+    "title": "3213",
+    "description": "32132",
+    "link": "https://avatars.githubusercontent.com/u/263385",
+    "position": "321321",
+    "location": "321321",
+    "isApproved": true
+  },
   {
     "avatar": "https://avatars.githubusercontent.com/u/6128107",
     "name": "Evan You",
