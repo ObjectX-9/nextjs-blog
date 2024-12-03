@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import "./styles.css";
 
 // 过滤出审核通过的友链
-const friends = allFriends.filter((friend) => friend.isApproved);
+const friends = allFriends.filter((friend: Friend) => friend.isApproved);
 
 // Mobile card view component
 const MobileCard = ({ friend }: { friend: Friend }) => (
@@ -136,7 +136,7 @@ const initialNewFriend: Friend = {
   link: "",
   position: "",
   location: "",
-  isApproved: false
+  isApproved: false,
 };
 
 export default function Friends() {
@@ -204,7 +204,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.avatar}
-                  onChange={(e) => setNewFriend({ ...newFriend, avatar: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, avatar: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="头像URL"
                   required
@@ -214,7 +216,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.name}
-                  onChange={(e) => setNewFriend({ ...newFriend, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, name: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="名字"
                   required
@@ -224,7 +228,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.title}
-                  onChange={(e) => setNewFriend({ ...newFriend, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, title: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="标题"
                   required
@@ -234,7 +240,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.description}
-                  onChange={(e) => setNewFriend({ ...newFriend, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, description: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="描述"
                   required
@@ -244,7 +252,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.link}
-                  onChange={(e) => setNewFriend({ ...newFriend, link: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, link: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="链接"
                   required
@@ -254,7 +264,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.position}
-                  onChange={(e) => setNewFriend({ ...newFriend, position: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, position: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="职位（可选）"
                 />
@@ -263,7 +275,9 @@ export default function Friends() {
                 <input
                   type="text"
                   value={newFriend.location}
-                  onChange={(e) => setNewFriend({ ...newFriend, location: e.target.value })}
+                  onChange={(e) =>
+                    setNewFriend({ ...newFriend, location: e.target.value })
+                  }
                   className="w-full p-2 border rounded"
                   placeholder="地点（可选）"
                 />
