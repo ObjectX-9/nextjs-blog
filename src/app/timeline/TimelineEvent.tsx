@@ -1,6 +1,6 @@
 import { TimelineEvent as TimelineEventType } from "../../config/timelines";
 import Image from "next/image";
-import { Tweet } from "react-tweet";
+import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
 
 const monthNames = [
@@ -17,6 +17,10 @@ const monthNames = [
   "11月",
   "12月",
 ];
+
+const Tweet = dynamic(() => import("react-tweet").then((mod) => mod.Tweet), {
+  ssr: false,
+});
 
 export function TimelineEvent({ event }: { event: TimelineEventType }) {
   return (
