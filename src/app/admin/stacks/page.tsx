@@ -1,43 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { stackList } from "@/config/stacks";
+import { useState, useEffect } from "react";
+import { IStack } from "@/app/model/stack";
 
-interface StackItem {
-  title: string;
-  description: string;
-  link: string;
-  iconSrc: string;
+interface StackWithId extends IStack {
+  _id: string;
 }
 
 export default function StacksAdmin() {
-  const [stacks, setStacks] = useState<StackItem[]>(stackList);
-  const [editingStack, setEditingStack] = useState<StackItem | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [stacks, setStacks] = useState<StackWithId[]>([]);
+  const [editingStack, setEditingStack] = useState<Partial<StackWithId> | null>(null);
 
-  const saveToAPI = async (newStacks: StackItem[]) => {
+  useEffect(() => {
+    fetchStacks();
+  }, []);
+
+  const fetchStacks = async () => {
     try {
-      const response = await fetch('/api/stacks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ stacks: newStacks }),
-      });
-
+      const response = await fetch('/api/stacks');
       if (!response.ok) {
-        throw new Error('Failed to save stacks');
+        throw new Error('Failed to fetch stacks');
       }
-
       const data = await response.json();
       if (data.success) {
-        setStacks(newStacks);
-      } else {
-        throw new Error('Failed to save stacks');
+        setStacks(data.stacks);
       }
     } catch (error) {
-      console.error('Error saving stacks:', error);
-      alert('保存失败，请重试');
+      console.error('Error fetching stacks:', error);
+      alert('获取数据失败，请刷新重试');
     }
   };
 
@@ -48,35 +38,64 @@ export default function StacksAdmin() {
       link: "",
       iconSrc: "",
     });
-    setEditingIndex(null);
   };
 
-  const handleEditStack = (stack: StackItem, index: number) => {
+  const handleEditStack = (stack: StackWithId) => {
     setEditingStack({ ...stack });
-    setEditingIndex(index);
   };
 
-  const handleDeleteStack = async (index: number) => {
+  const handleDeleteStack = async (id: string) => {
     if (confirm('确定要删除这个技术栈吗？')) {
-      const newStacks = [...stacks];
-      newStacks.splice(index, 1);
-      await saveToAPI(newStacks);
+      try {
+        const response = await fetch(`/api/stacks?id=${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete stack');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchStacks();
+        } else {
+          throw new Error(data.error || 'Failed to delete stack');
+        }
+      } catch (error) {
+        console.error('Error deleting stack:', error);
+        alert('删除失败，请重试');
+      }
     }
   };
 
   const handleSaveStack = async () => {
     if (!editingStack) return;
 
-    const newStacks = [...stacks];
-    if (editingIndex !== null) {
-      newStacks[editingIndex] = editingStack;
-    } else {
-      newStacks.push(editingStack);
-    }
+    try {
+      const method = editingStack._id ? 'PUT' : 'POST';
+      const response = await fetch('/api/stacks', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingStack),
+      });
 
-    await saveToAPI(newStacks);
-    setEditingStack(null);
-    setEditingIndex(null);
+      if (!response.ok) {
+        throw new Error(`Failed to ${editingStack._id ? 'update' : 'create'} stack`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchStacks();
+        setEditingStack(null);
+      } else {
+        throw new Error(data.error || `Failed to ${editingStack._id ? 'update' : 'create'} stack`);
+      }
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('保存失败，请重试');
+    }
   };
 
   return (
@@ -92,8 +111,8 @@ export default function StacksAdmin() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {stacks.map((stack, index) => (
-          <div key={index} className="border rounded-lg p-4">
+        {stacks.map((stack) => (
+          <div key={stack._id} className="border rounded-lg p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
                 <img
@@ -105,13 +124,13 @@ export default function StacksAdmin() {
               </div>
               <div className="space-x-2">
                 <button
-                  onClick={() => handleEditStack(stack, index)}
+                  onClick={() => handleEditStack(stack)}
                   className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                   编辑
                 </button>
                 <button
-                  onClick={() => handleDeleteStack(index)}
+                  onClick={() => handleDeleteStack(stack._id)}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                 >
                   删除
@@ -136,7 +155,7 @@ export default function StacksAdmin() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
             <h2 className="text-xl font-semibold mb-4">
-              {editingIndex !== null ? "编辑技术栈" : "添加技术栈"}
+              {editingStack._id ? "编辑技术栈" : "添加技术栈"}
             </h2>
             <div className="space-y-4">
               <div>
@@ -197,7 +216,6 @@ export default function StacksAdmin() {
                 <button
                   onClick={() => {
                     setEditingStack(null);
-                    setEditingIndex(null);
                   }}
                   className="px-4 py-2 border rounded hover:bg-gray-50"
                 >
