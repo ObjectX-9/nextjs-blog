@@ -39,7 +39,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-1">
       <aside className="w-64 border-r bg-gray-50">
         <div className="p-4 border-b flex justify-between items-center">
           <h1 className="text-xl font-bold">后台管理</h1>

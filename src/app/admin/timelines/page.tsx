@@ -23,7 +23,9 @@ export default function TimelinesAdmin() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<{ [key: number]: boolean }>({});
+  const [expandedDescriptions, setExpandedDescriptions] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Fetch events on component mount
@@ -33,15 +35,15 @@ export default function TimelinesAdmin() {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/timelines');
+      const response = await fetch("/api/timelines");
       if (!response.ok) {
-        throw new Error('Failed to fetch timeline events');
+        throw new Error("Failed to fetch timeline events");
       }
       const data = await response.json();
       setEvents(data.events);
     } catch (error) {
-      console.error('Error fetching timeline events:', error);
-      alert('加载失败，请刷新页面重试');
+      console.error("Error fetching timeline events:", error);
+      alert("加载失败，请刷新页面重试");
     }
   };
 
@@ -64,26 +66,26 @@ export default function TimelinesAdmin() {
 
   const handleDeleteEvent = async (event: TimelineEvent) => {
     if (!event._id) return;
-    
-    if (confirm('确定要删除这个时间轴事件吗？')) {
+
+    if (confirm("确定要删除这个时间轴事件吗？")) {
       try {
         const response = await fetch(`/api/timelines?id=${event._id}`, {
-          method: 'DELETE',
+          method: "DELETE",
         });
 
         if (!response.ok) {
-          throw new Error('Failed to delete timeline event');
+          throw new Error("Failed to delete timeline event");
         }
 
         const data = await response.json();
         if (data.success) {
           await fetchEvents(); // Refresh the events list
         } else {
-          throw new Error('Failed to delete timeline event');
+          throw new Error("Failed to delete timeline event");
         }
       } catch (error) {
-        console.error('Error deleting timeline event:', error);
-        alert('删除失败，请重试');
+        console.error("Error deleting timeline event:", error);
+        alert("删除失败，请重试");
       }
     }
   };
@@ -92,7 +94,7 @@ export default function TimelinesAdmin() {
     if (!url) return true; // Optional URLs are allowed to be empty
     try {
       const urlObj = new URL(url);
-      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+      return urlObj.protocol === "http:" || urlObj.protocol === "https:";
     } catch {
       return false;
     }
@@ -100,7 +102,7 @@ export default function TimelinesAdmin() {
 
   const validateImageUrl = (url: string): boolean => {
     if (!url) return true; // Optional URLs are allowed to be empty
-    return url.startsWith('/') || validateUrl(url);
+    return url.startsWith("/") || validateUrl(url);
   };
 
   const handleSaveEvent = async () => {
@@ -112,18 +114,20 @@ export default function TimelinesAdmin() {
 
     // Validate URLs
     if (editingEvent.tweetUrl && !validateUrl(editingEvent.tweetUrl)) {
-      newErrors.tweetUrl = '请输入有效的URL（以http://或https://开头）';
+      newErrors.tweetUrl = "请输入有效的URL（以http://或https://开头）";
     }
 
     if (editingEvent.imageUrl && !validateImageUrl(editingEvent.imageUrl)) {
-      newErrors.imageUrl = '请输入有效的图片URL（以/开头的相对路径或以http://、https://开头的完整URL）';
+      newErrors.imageUrl =
+        "请输入有效的图片URL（以/开头的相对路径或以http://、https://开头的完整URL）";
     }
 
     // Validate links
     if (editingEvent.links) {
       editingEvent.links.forEach((link, index) => {
         if (!validateUrl(link.url)) {
-          newErrors[`link_${index}`] = '请输入有效的URL（以http://或https://开头）';
+          newErrors[`link_${index}`] =
+            "请输入有效的URL（以http://或https://开头）";
         }
       });
     }
@@ -134,18 +138,20 @@ export default function TimelinesAdmin() {
     }
 
     try {
-      const method = editingEvent._id ? 'PUT' : 'POST';
-      const url = '/api/timelines';
+      const method = editingEvent._id ? "PUT" : "POST";
+      const url = "/api/timelines";
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(editingEvent._id ? editingEvent : { events: [editingEvent] }),
+        body: JSON.stringify(
+          editingEvent._id ? editingEvent : { events: [editingEvent] }
+        ),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save timeline event');
+        throw new Error("Failed to save timeline event");
       }
 
       const data = await response.json();
@@ -155,11 +161,11 @@ export default function TimelinesAdmin() {
         setEditingIndex(null);
         setErrors({});
       } else {
-        throw new Error('Failed to save timeline event');
+        throw new Error("Failed to save timeline event");
       }
     } catch (error) {
-      console.error('Error saving timeline event:', error);
-      alert('保存失败，请重试');
+      console.error("Error saving timeline event:", error);
+      alert("保存失败，请重试");
     }
   };
 
@@ -176,15 +182,19 @@ export default function TimelinesAdmin() {
     setEditingEvent({ ...editingEvent, links: newLinks });
   };
 
-  const handleUpdateLink = (index: number, field: keyof TimelineLink, value: string) => {
+  const handleUpdateLink = (
+    index: number,
+    field: keyof TimelineLink,
+    value: string
+  ) => {
     if (!editingEvent?.links) return;
     const newLinks = [...editingEvent.links];
     newLinks[index] = { ...newLinks[index], [field]: value };
     setEditingEvent({ ...editingEvent, links: newLinks });
-    
+
     // Clear error when user starts typing
-    if (field === 'url') {
-      setErrors(prev => {
+    if (field === "url") {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[`link_${index}`];
         return newErrors;
@@ -194,7 +204,7 @@ export default function TimelinesAdmin() {
 
   const handleDateChange = (value: string) => {
     if (!editingEvent) return;
-    
+
     const date = new Date(value);
     setEditingEvent({
       ...editingEvent,
@@ -204,13 +214,13 @@ export default function TimelinesAdmin() {
   };
 
   const formatDateValue = (year: number, month: number) => {
-    return `${year}-${month.toString().padStart(2, '0')}`;
+    return `${year}-${month.toString().padStart(2, "0")}`;
   };
 
   const toggleDescription = (index: number) => {
-    setExpandedDescriptions(prev => ({
+    setExpandedDescriptions((prev) => ({
       ...prev,
-      [index]: !prev[index]
+      [index]: !prev[index],
     }));
   };
 
@@ -252,10 +262,17 @@ export default function TimelinesAdmin() {
                   </h3>
                 </div>
                 {event.location && (
-                  <p className="text-sm text-gray-500 mt-1">📍 {event.location}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    📍 {event.location}
+                  </p>
                 )}
                 <div className="mt-2 text-gray-600">
-                  <p>{truncateDescription(event.description, !!expandedDescriptions[index])}</p>
+                  <p>
+                    {truncateDescription(
+                      event.description,
+                      !!expandedDescriptions[index]
+                    )}
+                  </p>
                   {event.description.length > 100 && (
                     <button
                       onClick={() => toggleDescription(index)}
@@ -341,7 +358,10 @@ export default function TimelinesAdmin() {
                   className="w-full px-3 py-2 border rounded"
                   value={editingEvent.location || ""}
                   onChange={(e) =>
-                    setEditingEvent({ ...editingEvent, location: e.target.value })
+                    setEditingEvent({
+                      ...editingEvent,
+                      location: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -368,13 +388,16 @@ export default function TimelinesAdmin() {
                 <input
                   type="text"
                   className={`w-full px-3 py-2 border rounded ${
-                    errors.tweetUrl ? 'border-red-500' : ''
+                    errors.tweetUrl ? "border-red-500" : ""
                   }`}
                   value={editingEvent.tweetUrl || ""}
                   onChange={(e) => {
-                    setEditingEvent({ ...editingEvent, tweetUrl: e.target.value });
+                    setEditingEvent({
+                      ...editingEvent,
+                      tweetUrl: e.target.value,
+                    });
                     // Clear error when user starts typing
-                    setErrors(prev => {
+                    setErrors((prev) => {
                       const newErrors = { ...prev };
                       delete newErrors.tweetUrl;
                       return newErrors;
@@ -393,13 +416,16 @@ export default function TimelinesAdmin() {
                 <input
                   type="text"
                   className={`w-full px-3 py-2 border rounded ${
-                    errors.imageUrl ? 'border-red-500' : ''
+                    errors.imageUrl ? "border-red-500" : ""
                   }`}
                   value={editingEvent.imageUrl || ""}
                   onChange={(e) => {
-                    setEditingEvent({ ...editingEvent, imageUrl: e.target.value });
+                    setEditingEvent({
+                      ...editingEvent,
+                      imageUrl: e.target.value,
+                    });
                     // Clear error when user starts typing
-                    setErrors(prev => {
+                    setErrors((prev) => {
                       const newErrors = { ...prev };
                       delete newErrors.imageUrl;
                       return newErrors;
@@ -411,7 +437,7 @@ export default function TimelinesAdmin() {
                   <p className="text-red-500 text-sm mt-1">{errors.imageUrl}</p>
                 )}
               </div>
-              
+
               {/* Links Section */}
               <div>
                 <div className="flex justify-between items-center mb-2">
@@ -433,20 +459,26 @@ export default function TimelinesAdmin() {
                       placeholder="链接文本"
                       className="flex-1 px-3 py-2 border rounded"
                       value={link.text}
-                      onChange={(e) => handleUpdateLink(index, "text", e.target.value)}
+                      onChange={(e) =>
+                        handleUpdateLink(index, "text", e.target.value)
+                      }
                     />
                     <div className="flex-1">
                       <input
                         type="text"
                         placeholder="https://"
                         className={`w-full px-3 py-2 border rounded ${
-                          errors[`link_${index}`] ? 'border-red-500' : ''
+                          errors[`link_${index}`] ? "border-red-500" : ""
                         }`}
                         value={link.url}
-                        onChange={(e) => handleUpdateLink(index, "url", e.target.value)}
+                        onChange={(e) =>
+                          handleUpdateLink(index, "url", e.target.value)
+                        }
                       />
                       {errors[`link_${index}`] && (
-                        <p className="text-red-500 text-sm mt-1">{errors[`link_${index}`]}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors[`link_${index}`]}
+                        </p>
                       )}
                     </div>
                     <button
