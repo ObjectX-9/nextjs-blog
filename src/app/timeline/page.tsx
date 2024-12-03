@@ -1,5 +1,5 @@
 import { TimelineEvent } from "./TimelineEvent";
-import { timelineEvents } from "./types";
+import { timelineEvents } from "../../config/timelines";
 
 export default function Timeline() {
   // Group events by year
@@ -20,11 +20,17 @@ export default function Timeline() {
     <main className="flex-1 h-screen overflow-hidden">
       <div className="h-full overflow-y-auto px-4 sm:px-4 py-8 sm:py-16">
         <div className="w-full max-w-3xl mx-auto">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">时间轴</h1>
-          <div className="mb-4 sm:mb-6 last:mb-0 text-sm sm:text-base">记录了生活中的重要时刻</div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
+            时间轴
+          </h1>
+          <div className="mb-4 sm:mb-6 last:mb-0 text-sm sm:text-base">
+            记录了生活中的重要时刻
+          </div>
           {years.map((year) => (
             <div key={year} className="relative">
-              <div className="text-xl sm:text-2xl font-medium mb-6 sm:mb-8">{year}</div>
+              <div className="text-xl sm:text-2xl font-medium mb-6 sm:mb-8">
+                {year}
+              </div>
               <div className="relative">
                 {eventsByYear[year]
                   .sort((a, b) => b.month - a.month)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { projectData } from "./data";
+import { projectData } from "../../config/projects";
 import Image from "next/image";
 import Link from "next/link";
 import { Github, Star } from "lucide-react";
@@ -223,7 +223,9 @@ export default function Projects() {
                 setSelectedCategory(category.name);
                 // Scroll to center the selected tab on mobile
                 if (scrollRef.current && window.innerWidth < 640) {
-                  const button = scrollRef.current.children[index] as HTMLElement;
+                  const button = scrollRef.current.children[
+                    index
+                  ] as HTMLElement;
                   const nav = scrollRef.current;
                   const buttonLeft = button.offsetLeft;
                   const buttonWidth = button.offsetWidth;
@@ -238,10 +240,10 @@ export default function Projects() {
               className={`flex-1 sm:w-full text-left py-2 px-4 rounded-lg sm:mb-2 relative transition-all duration-300 ease-in-out
                 flex items-center h-10 justify-center
                 sm:block sm:h-auto sm:justify-start ${
-                selectedCategory === category.name
-                  ? "bg-black text-white scale-[0.98] sm:scale-100"
-                  : "text-black hover:bg-gray-100"
-              }`}
+                  selectedCategory === category.name
+                    ? "bg-black text-white scale-[0.98] sm:scale-100"
+                    : "text-black hover:bg-gray-100"
+                }`}
               style={{
                 minWidth: `${100 / Math.min(projectData.length, 3)}%`,
               }}

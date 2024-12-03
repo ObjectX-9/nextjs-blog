@@ -61,28 +61,28 @@ const socialList = [
   },
 ];
 
-const openSourceList = [
-  {
-    title: "V2G",
-    href: "https://vtog.vesper.host",
-    prefix: <Video size={16} />,
-  },
-  {
-    title: "BeautyCode",
-    href: "https://marketplace.visualstudio.com/items?itemName=Vesper.beautycode",
-    prefix: <SquareDashedBottomCode size={16} />,
-  },
-  {
-    title: "Vtabs",
-    href: "https://chromewebstore.google.com/detail/vtabs/ldjlkpemhoddnoedhbebgdncegooejim?hl=zh-CN&utm_source=ext_sidebar",
-    prefix: <UnfoldVertical size={16} />,
-  },
-  {
-    title: "Bup",
-    href: "https://www.npmjs.com/package/buildp",
-    prefix: <Terminal size={16} />,
-  },
-];
+// const openSourceList = [
+//   {
+//     title: "V2G",
+//     href: "https://vtog.vesper.host",
+//     prefix: <Video size={16} />,
+//   },
+//   {
+//     title: "BeautyCode",
+//     href: "https://marketplace.visualstudio.com/items?itemName=Vesper.beautycode",
+//     prefix: <SquareDashedBottomCode size={16} />,
+//   },
+//   {
+//     title: "Vtabs",
+//     href: "https://chromewebstore.google.com/detail/vtabs/ldjlkpemhoddnoedhbebgdncegooejim?hl=zh-CN&utm_source=ext_sidebar",
+//     prefix: <UnfoldVertical size={16} />,
+//   },
+//   {
+//     title: "Bup",
+//     href: "https://www.npmjs.com/package/buildp",
+//     prefix: <Terminal size={16} />,
+//   },
+// ];
 
 const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const currentPathname = usePathname();

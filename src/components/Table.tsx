@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type ItemType = {
+export type ItemType = {
   [K in TableProps["fields"][number]["key"]]: string | number;
 } & { id: string | number; className?: string };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { bookmarkData } from "./data";
+import { bookmarkData } from "../../config/bookmarks";
 import Image from "next/image";
 import Link from "next/link";
 

@@ -1,4 +1,4 @@
-import { TimelineEvent as TimelineEventType } from "./types";
+import { TimelineEvent as TimelineEventType } from "../../config/timelines";
 import Image from "next/image";
 import { Tweet } from "react-tweet";
 import { MapPin } from "lucide-react";
@@ -32,7 +32,9 @@ export function TimelineEvent({ event }: { event: TimelineEventType }) {
       {/* Content */}
       <div className="flex-1 flex flex-col justify-center min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
-          <h2 className="text-xl sm:text-2xl font-medium truncate max-w-full">{event.title}</h2>
+          <h2 className="text-xl sm:text-2xl font-medium truncate max-w-full">
+            {event.title}
+          </h2>
           {event.location && (
             <span className="text-gray-500 flex items-center gap-1 text-sm sm:text-base truncate whitespace-nowrap">
               <MapPin size={14} className="flex-shrink-0 text-green-500" />
