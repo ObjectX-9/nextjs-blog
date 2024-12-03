@@ -140,7 +140,7 @@ export default async function Index() {
                 experience.endDate
               );
               return (
-                <div key={experience._id.toString()} className="mb-8">
+                <div key={experience._id} className="mb-8">
                   <div className="mb-4">
                     <p className="text-gray-800">
                       {experience.description}{" "}

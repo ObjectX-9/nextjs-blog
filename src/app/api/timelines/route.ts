@@ -10,13 +10,13 @@ export async function POST(request: Request) {
     const db = await getDb();
 
     // Insert new events with timestamps
-    const result = await db
-      .collection<ITimelineEvent>("timelines")
-      .insertMany(events.map((event: ITimelineEvent) => ({
+    const result = await db.collection<ITimelineEvent>("timelines").insertMany(
+      events.map((event: ITimelineEvent) => ({
         ...event,
         createdAt: new Date(),
         updatedAt: new Date(),
-      })));
+      }))
+    );
 
     if (result.acknowledged) {
       return NextResponse.json({
@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
   try {
     const data = await request.json();
     const { _id, ...updateData } = data;
-    
+
     if (!_id) {
       return NextResponse.json(
         { error: "Timeline event ID is required" },
@@ -72,17 +72,15 @@ export async function PUT(request: Request) {
     }
 
     const db = await getDb();
-    const result = await db
-      .collection<ITimelineEvent>("timelines")
-      .updateOne(
-        { _id: new ObjectId(_id) },
-        { 
-          $set: {
-            ...updateData,
-            updatedAt: new Date()
-          }
-        }
-      );
+    const result = await db.collection<ITimelineEvent>("timelines").updateOne(
+      { _id: new ObjectId(_id) as any },
+      {
+        $set: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
+      }
+    );
 
     if (result.matchedCount === 0) {
       return NextResponse.json(
@@ -120,7 +118,7 @@ export async function DELETE(request: Request) {
     const db = await getDb();
     const result = await db
       .collection<ITimelineEvent>("timelines")
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) as any });
 
     if (result.deletedCount === 0) {
       return NextResponse.json(

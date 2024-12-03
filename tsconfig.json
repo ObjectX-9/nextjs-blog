@@ -19,7 +19,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["node", "react", "react-dom", "eslint", "estree"]
   },
   "include": [
     "next-env.d.ts",

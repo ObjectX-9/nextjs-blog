@@ -72,7 +72,7 @@ export async function PUT(request: Request) {
 
     const db = await getDb();
     const result = await db.collection<IFriend>("friends").updateOne(
-      { _id: new ObjectId(_id) },
+      { _id: new ObjectId(_id) as any },
       {
         $set: {
           ...updateData,
@@ -87,7 +87,7 @@ export async function PUT(request: Request) {
 
     const updatedFriend = await db
       .collection<IFriend>("friends")
-      .findOne({ _id: new ObjectId(_id) });
+      .findOne({ _id: new ObjectId(_id) as any });
 
     return NextResponse.json({
       success: true,
@@ -118,7 +118,7 @@ export async function DELETE(request: Request) {
     const db = await getDb();
     const result = await db
       .collection<IFriend>("friends")
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) as any });
 
     if (!result.deletedCount) {
       return NextResponse.json({ error: "Friend not found" }, { status: 404 });

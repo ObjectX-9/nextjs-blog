@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     const result = await db
       .collection<IWorkExperience>("workExperiences")
-      .insertOne(workExperience as IWorkExperience);
+      .insertOne(workExperience as unknown as IWorkExperience);
 
     if (result.acknowledged) {
       return NextResponse.json({
@@ -79,16 +79,13 @@ export async function PUT(request: Request) {
       ...(data.position && { position: data.position }),
       ...(data.description && { description: data.description }),
       ...(data.startDate && { startDate: data.startDate }),
-      ...(typeof data.endDate !== 'undefined' && { endDate: data.endDate }),
+      ...(typeof data.endDate !== "undefined" && { endDate: data.endDate }),
       updatedAt: new Date(),
     };
 
     const result = await db
       .collection<IWorkExperience>("workExperiences")
-      .updateOne(
-        { _id: new ObjectId(data._id) },
-        { $set: updateData }
-      );
+      .updateOne({ _id: new ObjectId(data._id) as any }, { $set: updateData });
 
     if (result.matchedCount > 0) {
       return NextResponse.json({
@@ -126,7 +123,7 @@ export async function DELETE(request: Request) {
     const db = await getDb();
     const result = await db
       .collection<IWorkExperience>("workExperiences")
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) as any });
 
     if (result.deletedCount > 0) {
       return NextResponse.json({

@@ -1,11 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface ISocialLink extends Document {
+export interface ISocialLinkBase {
   name: string;
   icon: string;
   url: string;
   bgColor: string;
 }
+
+export interface ISocialLink extends Document, ISocialLinkBase {}
 
 const socialLinkSchema = new Schema<ISocialLink>({
   name: { type: String, required: true },

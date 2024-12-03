@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IWorkExperienceBase {
   company: string;
@@ -9,17 +9,24 @@ export interface IWorkExperienceBase {
   endDate: string | null; // null means current position
 }
 
-export interface IWorkExperience extends Document, IWorkExperienceBase {}
+export interface IWorkExperience extends Document, IWorkExperienceBase {
+  _id: string;
+}
 
-const workExperienceSchema = new Schema<IWorkExperience>({
-  company: { type: String, required: true },
-  companyUrl: { type: String, required: true },
-  position: { type: String, required: true },
-  description: { type: String, required: true },
-  startDate: { type: String, required: true },
-  endDate: { type: String, default: null }
-}, {
-  timestamps: true
-});
+const workExperienceSchema = new Schema<IWorkExperience>(
+  {
+    company: { type: String, required: true },
+    companyUrl: { type: String, required: true },
+    position: { type: String, required: true },
+    description: { type: String, required: true },
+    startDate: { type: String, required: true },
+    endDate: { type: String, default: null },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-export const WorkExperience = mongoose.models.WorkExperience || mongoose.model<IWorkExperience>('WorkExperience', workExperienceSchema);
+export const WorkExperience =
+  mongoose.models.WorkExperience ||
+  mongoose.model<IWorkExperience>("WorkExperience", workExperienceSchema);

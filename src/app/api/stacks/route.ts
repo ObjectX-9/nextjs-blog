@@ -7,10 +7,7 @@ import { IStack } from "@/app/model/stack";
 export async function GET() {
   try {
     const db = await getDb();
-    const stacks = await db
-      .collection<IStack>("stacks")
-      .find()
-      .toArray();
+    const stacks = await db.collection<IStack>("stacks").find().toArray();
 
     return NextResponse.json({ success: true, stacks });
   } catch (error) {
@@ -39,7 +36,7 @@ export async function POST(request: Request) {
 
     const result = await db
       .collection<IStack>("stacks")
-      .insertOne(stack as IStack);
+      .insertOne(stack as unknown as IStack);
 
     if (result.acknowledged) {
       return NextResponse.json({
@@ -81,10 +78,7 @@ export async function PUT(request: Request) {
 
     const result = await db
       .collection<IStack>("stacks")
-      .updateOne(
-        { _id: new ObjectId(data._id) },
-        { $set: updateData }
-      );
+      .updateOne({ _id: new ObjectId(data._id) as any }, { $set: updateData });
 
     if (result.matchedCount > 0) {
       return NextResponse.json({
@@ -93,10 +87,7 @@ export async function PUT(request: Request) {
       });
     }
 
-    return NextResponse.json(
-      { error: "Stack not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Stack not found" }, { status: 404 });
   } catch (error) {
     console.error("Error updating stack:", error);
     return NextResponse.json(
@@ -122,7 +113,7 @@ export async function DELETE(request: Request) {
     const db = await getDb();
     const result = await db
       .collection<IStack>("stacks")
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) as any });
 
     if (result.deletedCount > 0) {
       return NextResponse.json({
@@ -131,10 +122,7 @@ export async function DELETE(request: Request) {
       });
     }
 
-    return NextResponse.json(
-      { error: "Stack not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Stack not found" }, { status: 404 });
   } catch (error) {
     console.error("Error deleting stack:", error);
     return NextResponse.json(

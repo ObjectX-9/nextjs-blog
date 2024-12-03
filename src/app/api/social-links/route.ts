@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { ISocialLink } from "@/app/model/social-link";
+import { ISocialLink, ISocialLinkBase } from "@/app/model/social-link";
 
 // Get all social links
 export async function GET() {
@@ -28,23 +28,26 @@ export async function POST(request: Request) {
     const data = await request.json();
     const db = await getDb();
 
-    const socialLink = {
+    const socialLink: ISocialLinkBase = {
       name: data.name,
       icon: data.icon,
       url: data.url,
       bgColor: data.bgColor,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
     const result = await db
       .collection<ISocialLink>("socialLinks")
-      .insertOne(socialLink as ISocialLink);
+      .insertOne(socialLink as unknown as ISocialLink);
 
     if (result.acknowledged) {
       return NextResponse.json({
         success: true,
-        socialLink: { ...socialLink, _id: result.insertedId },
+        socialLink: {
+          ...socialLink,
+          _id: result.insertedId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
     }
 
@@ -81,10 +84,7 @@ export async function PUT(request: Request) {
 
     const result = await db
       .collection<ISocialLink>("socialLinks")
-      .updateOne(
-        { _id: new ObjectId(data._id) },
-        { $set: updateData }
-      );
+      .updateOne({ _id: new ObjectId(data._id) as any }, { $set: updateData });
 
     if (result.matchedCount > 0) {
       return NextResponse.json({
@@ -122,7 +122,7 @@ export async function DELETE(request: Request) {
     const db = await getDb();
     const result = await db
       .collection<ISocialLink>("socialLinks")
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) as any });
 
     if (result.deletedCount > 0) {
       return NextResponse.json({
