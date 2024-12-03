@@ -67,7 +67,7 @@ export default function Bookmarks() {
           >
             <div className="font-medium text-base">{category.name}</div>
             <div className="text-sm text-gray-500 mt-1">
-              {category.count} 个站点
+              {category.bookmarks.length} 个站点
             </div>
           </button>
         ))}
@@ -152,7 +152,7 @@ export default function Bookmarks() {
               }`}
             >
               <div className="font-medium">{category.name}</div>
-              <div className="text-sm opacity-70">{category.count} 个站点</div>
+              <div className="text-sm opacity-70">{category.bookmarks.length} 个站点</div>
             </button>
           ))}
         </nav>

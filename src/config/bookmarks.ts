@@ -7,64 +7,47 @@ export interface Bookmark {
 
 export interface BookmarkCategory {
   name: string;
-  count: number;
   bookmarks: Bookmark[];
 }
 
 export const bookmarkData: BookmarkCategory[] = [
   {
-    name: "软件 & 工具",
-    count: 141,
-    bookmarks: [
+    "name": "软件 & 工具",
+    "bookmarks": [
       {
-        title: "CompressX",
-        url: "https://compressx.app",
-        description:
-          "Offline video and image compressor - Minimal quality loss",
-        // imageUrl: "/images/compressx.png"
+        "title": "Pagy – Simple website builder",
+        "url": "https://pagy.co",
+        "description": "The easiest way to build a website. Like if Notion and Squarespace had a baby."
       },
       {
-        title: "Pagy – Simple website builder",
-        url: "https://pagy.co",
-        description:
-          "The easiest way to build a website. Like if Notion and Squarespace had a baby.",
-        // imageUrl: "/images/pagy.png"
-      },
-    ],
+        "title": "CompressX测试",
+        "url": "https://compressx.app",
+        "description": "Offline video and image compressor - Minimal quality loss"
+      }
+    ]
   },
   {
-    name: "Art & Prints",
-    count: 64,
-    bookmarks: [],
+    "name": "Art & Prints",
+    "bookmarks": []
   },
   {
-    name: "Books & Magazines",
-    count: 14,
-    bookmarks: [],
+    "name": "Books & Magazines",
+    "bookmarks": []
   },
   {
-    name: "Design",
-    count: 82,
-    bookmarks: [],
+    "name": "Design",
+    "bookmarks": []
   },
   {
-    name: "Fonts",
-    count: 68,
-    bookmarks: [],
+    "name": "Fonts",
+    "bookmarks": []
   },
   {
-    name: "Frontend",
-    count: 218,
-    bookmarks: [],
+    "name": "Frontend",
+    "bookmarks": []
   },
   {
-    name: "Icons",
-    count: 26,
-    bookmarks: [],
-  },
-  {
-    name: "Portfolio",
-    count: 180,
-    bookmarks: [],
-  },
+    "name": "Icons",
+    "bookmarks": []
+  }
 ];
