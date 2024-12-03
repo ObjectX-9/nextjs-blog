@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
+import { IBookmark, IBookmarkDB, IBookmarkCategoryDB } from "@/app/model/bookmark";
 
 interface BookmarkInput {
   title: string;
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const data = (await request.json()) as BookmarkInput;
     const db = await getDb();
 
-    const bookmark: Omit<IBookmark, "_id"> = {
+    const bookmark: Omit<IBookmarkDB, "_id"> = {
       title: data.title,
       url: data.url,
       description: data.description,
@@ -32,12 +32,12 @@ export async function POST(request: Request) {
     };
 
     const result = await db
-      .collection<IBookmark>("bookmarks")
-      .insertOne(bookmark as IBookmark);
+      .collection<IBookmarkDB>("bookmarks")
+      .insertOne(bookmark as IBookmarkDB);
 
     if (result.acknowledged) {
       await db
-        .collection<IBookmarkCategory>("bookmarkCategories")
+        .collection<IBookmarkCategoryDB>("bookmarkCategories")
         .updateOne(
           { _id: new ObjectId(data.categoryId) },
           { $push: { bookmarks: result.insertedId } }
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
     const query = categoryId ? { categoryId: new ObjectId(categoryId) } : {};
     const bookmarks = await db
-      .collection<IBookmark>("bookmarks")
+      .collection<IBookmarkDB>("bookmarks")
       .find(query)
       .toArray();
 
@@ -91,7 +91,7 @@ export async function PUT(request: Request) {
     const data = (await request.json()) as BookmarkUpdateInput;
     const db = await getDb();
 
-    const updateData: Partial<IBookmark> & { updatedAt: Date } = {
+    const updateData: Partial<IBookmarkDB> & { updatedAt: Date } = {
       ...(data.title && { title: data.title }),
       ...(data.url && { url: data.url }),
       ...(data.description && { description: data.description }),
@@ -101,24 +101,21 @@ export async function PUT(request: Request) {
 
     if (data.categoryId) {
       // If category is changing, we need to update both old and new categories
-      const oldBookmark = await db.collection<IBookmark>("bookmarks").findOne({
+      const oldBookmark = await db.collection<IBookmarkDB>("bookmarks").findOne({
         _id: new ObjectId(data._id),
       });
 
-      if (
-        oldBookmark &&
-        oldBookmark.categoryId.toString() !== data.categoryId
-      ) {
+      if (oldBookmark && oldBookmark.categoryId.toString() !== data.categoryId) {
         // Remove from old category
         await db
-          .collection<IBookmarkCategory>("bookmarkCategories")
+          .collection<IBookmarkCategoryDB>("bookmarkCategories")
           .updateOne(
             { _id: oldBookmark.categoryId },
             { $pull: { bookmarks: new ObjectId(data._id) } }
           );
         // Add to new category
         await db
-          .collection<IBookmarkCategory>("bookmarkCategories")
+          .collection<IBookmarkCategoryDB>("bookmarkCategories")
           .updateOne(
             { _id: new ObjectId(data.categoryId) },
             { $push: { bookmarks: new ObjectId(data._id) } }
@@ -128,7 +125,7 @@ export async function PUT(request: Request) {
     }
 
     const result = await db
-      .collection<IBookmark>("bookmarks")
+      .collection<IBookmarkDB>("bookmarks")
       .updateOne({ _id: new ObjectId(data._id) }, { $set: updateData });
 
     if (result.matchedCount > 0) {
@@ -164,7 +161,7 @@ export async function DELETE(request: Request) {
     const db = await getDb();
 
     // First get the bookmark to know its category
-    const bookmark = await db.collection<IBookmark>("bookmarks").findOne({
+    const bookmark = await db.collection<IBookmarkDB>("bookmarks").findOne({
       _id: new ObjectId(id),
     });
 
@@ -177,14 +174,14 @@ export async function DELETE(request: Request) {
 
     // Remove the bookmark from its category
     await db
-      .collection<IBookmarkCategory>("bookmarkCategories")
+      .collection<IBookmarkCategoryDB>("bookmarkCategories")
       .updateOne(
         { _id: bookmark.categoryId },
         { $pull: { bookmarks: new ObjectId(id) } }
       );
 
     // Delete the bookmark
-    const result = await db.collection<IBookmark>("bookmarks").deleteOne({
+    const result = await db.collection<IBookmarkDB>("bookmarks").deleteOne({
       _id: new ObjectId(id),
     });
 

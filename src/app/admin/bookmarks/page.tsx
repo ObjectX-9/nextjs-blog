@@ -267,7 +267,7 @@ export default function BookmarksManagementPage() {
                         <button
                           className="px-3 py-1 bg-red-500 text-white rounded text-sm"
                           onClick={() =>
-                            handleDeleteCategory(category._id.toString())
+                            handleDeleteCategory(category._id!.toString())
                           }
                         >
                           删除
@@ -305,7 +305,7 @@ export default function BookmarksManagementPage() {
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
                       >
                         {categories.map((category, index) => (
-                          <option key={index} value={category._id.toString()}>
+                          <option key={index} value={category._id!.toString()}>
                             {category.name}
                           </option>
                         ))}
@@ -398,7 +398,7 @@ export default function BookmarksManagementPage() {
                         }
                       >
                         {categories.map((category, index) => (
-                          <option key={index} value={category._id.toString()}>
+                          <option key={index} value={category._id!.toString()}>
                             {category.name}
                           </option>
                         ))}
@@ -490,7 +490,7 @@ export default function BookmarksManagementPage() {
                 <tbody>
                   {categories.map((category) =>
                     category.bookmarks.map((bookmark) => (
-                      <tr key={bookmark._id?.toString()} className="border-t">
+                      <tr key={bookmark._id?.toString() ?? ''} className="border-t">
                         <td className="p-4 truncate">{bookmark.title}</td>
                         <td className="p-4 truncate">
                           <a
@@ -509,8 +509,8 @@ export default function BookmarksManagementPage() {
                               className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
                               onClick={() =>
                                 startEditingBookmark(
-                                  category._id?.toString() || "",
-                                  bookmark._id?.toString() || "",
+                                  category._id?.toString() ?? '',
+                                  bookmark._id?.toString() ?? '',
                                   bookmark
                                 )
                               }
@@ -520,9 +520,7 @@ export default function BookmarksManagementPage() {
                             <button
                               className="px-3 py-1 bg-red-500 text-white rounded text-sm"
                               onClick={() =>
-                                handleDeleteBookmark(
-                                  bookmark._id?.toString() || ""
-                                )
+                                handleDeleteBookmark(bookmark._id?.toString() ?? '')
                               }
                             >
                               删除
