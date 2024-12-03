@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { name: "系统设置", href: "/admin/config" },
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
@@ -24,6 +23,9 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 border-r bg-gray-50">
+        <div className="p-4 border-b">
+          <h1 className="text-xl font-bold">后台管理</h1>
+        </div>
         <nav className="p-4">
           <ul className="space-y-2">
             {navItems.map((item) => {
