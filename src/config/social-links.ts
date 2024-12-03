@@ -1,3 +1,10 @@
+export interface SocialLink {
+  name: string;
+  icon: string;
+  url: string;
+  bgColor: string;
+}
+
 export const socialLinks = [
   {
     "name": "博客",
@@ -35,4 +42,4 @@ export const socialLinks = [
     "url": "#",
     "bgColor": "#e3f2fd"
   }
-] as const;
+] satisfies SocialLink[];

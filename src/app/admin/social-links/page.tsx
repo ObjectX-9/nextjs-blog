@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { socialLinks } from "@/config/social-links";
-
-interface SocialLink {
-  name: string;
-  icon: string;
-  url: string;
-  bgColor: string;
-}
+import { socialLinks, SocialLink } from "@/config/social-links";
 
 export default function SocialLinksManagementPage() {
   const [items, setItems] = useState<SocialLink[]>(socialLinks);
