@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { workspaceItems } from "@/config/workspace-items";
 
 interface WorkspaceItem {
-  id: number;
+  _id: string;
   product: string;
   specs: string;
   buyAddress: string;
@@ -12,42 +11,79 @@ interface WorkspaceItem {
 }
 
 export default function WorkspacesPage() {
-  const [items, setItems] = useState<WorkspaceItem[]>(workspaceItems);
+  const [items, setItems] = useState<WorkspaceItem[]>([]);
   const [editingItem, setEditingItem] = useState<WorkspaceItem | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const saveToAPI = async (newItems: WorkspaceItem[]) => {
+  useEffect(() => {
+    fetchWorkspaceItems();
+  }, []);
+
+  const fetchWorkspaceItems = async () => {
     try {
+      const response = await fetch("/api/workspaces");
+      const data = await response.json();
+      if (data.success) {
+        setItems(data.workspaceItems);
+      } else {
+        throw new Error("Failed to fetch workspace items");
+      }
+    } catch (error) {
+      console.error("Error fetching workspace items:", error);
+      alert("获取工作空间列表失败，请刷新重试");
+    }
+  };
+
+  const handleSaveItem = async () => {
+    if (!editingItem) return;
+
+    try {
+      const method = editingItem._id ? "PUT" : "POST";
       const response = await fetch("/api/workspaces", {
-        method: "POST",
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newItems),
+        body: JSON.stringify(editingItem),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save workspace items");
-      }
 
       const data = await response.json();
       if (data.success) {
-        setItems(newItems);
+        await fetchWorkspaceItems();
         setEditingItem(null);
         setEditingIndex(null);
       } else {
-        throw new Error("Failed to save workspace items");
+        throw new Error(data.error || "Failed to save workspace item");
       }
     } catch (error) {
-      console.error("Error saving workspace items:", error);
+      console.error("Error saving workspace item:", error);
       alert("保存失败，请重试");
     }
   };
 
+  const handleDeleteItem = async (id: string) => {
+    if (!confirm("确定要删除这个工作空间吗？")) return;
+
+    try {
+      const response = await fetch(`/api/workspaces?id=${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchWorkspaceItems();
+      } else {
+        throw new Error(data.error || "Failed to delete workspace item");
+      }
+    } catch (error) {
+      console.error("Error deleting workspace item:", error);
+      alert("删除失败，请重试");
+    }
+  };
+
   const handleAddItem = () => {
-    const newId = Math.max(...items.map((item) => item.id), 0) + 1;
     setEditingItem({
-      id: newId,
+      _id: "",
       product: "",
       specs: "",
       buyAddress: "",
@@ -59,26 +95,6 @@ export default function WorkspacesPage() {
   const handleEditItem = (item: WorkspaceItem, index: number) => {
     setEditingItem({ ...item });
     setEditingIndex(index);
-  };
-
-  const handleDeleteItem = (index: number) => {
-    if (confirm("确定要删除这个工作空间吗？")) {
-      const newItems = [...items];
-      newItems.splice(index, 1);
-      saveToAPI(newItems);
-    }
-  };
-
-  const handleSaveItem = () => {
-    if (!editingItem) return;
-
-    const newItems = [...items];
-    if (editingIndex !== null) {
-      newItems[editingIndex] = editingItem;
-    } else {
-      newItems.push(editingItem);
-    }
-    saveToAPI(newItems);
   };
 
   return (
@@ -97,7 +113,7 @@ export default function WorkspacesPage() {
         <div className="space-y-4 w-full">
           {items.map((item, index) => (
             <div
-              key={item.id}
+              key={item._id}
               className="border rounded-lg p-4 bg-white w-full"
             >
               <div className="flex justify-between items-start w-full">
@@ -131,7 +147,7 @@ export default function WorkspacesPage() {
                     编辑
                   </button>
                   <button
-                    onClick={() => handleDeleteItem(index)}
+                    onClick={() => handleDeleteItem(item._id)}
                     className="px-4 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
                   >
                     删除

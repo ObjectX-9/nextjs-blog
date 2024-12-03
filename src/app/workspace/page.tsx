@@ -1,10 +1,26 @@
 import { ItemType, Table } from "@/components/Table";
 import { Button } from "@/components/ui/button";
-import { workspaceItems } from "@/config/workspace-items";
 import Image from "next/image";
+import { getDb } from "@/lib/mongodb";
+
+async function getWorkspaceItems() {
+  try {
+    const db = await getDb();
+    const workspaceItems = await db
+      .collection("workspaceItems")
+      .find()
+      .sort({ createdAt: -1 })
+      .toArray();
+    return workspaceItems;
+  } catch (error) {
+    console.error("Error fetching workspace items:", error);
+    return [];
+  }
+}
 
 export default async function Workspace() {
   const imgList = ["/example1.jpg", "/example2.jpg"];
+  const workspaceItems = await getWorkspaceItems();
 
   const fields = [
     { key: "product", label: "产品" },
@@ -13,9 +29,11 @@ export default async function Workspace() {
       key: "buyAddress",
       label: "",
       align: "right" as const,
-      render: (field: string | number, idx: number) => (
-        <Button variant="link" size="sm">
-          去购买
+      render: (field: string | number, item: any) => (
+        <Button variant="link" size="sm" asChild>
+          <a href={item.buyLink} target="_blank" rel="noopener noreferrer">
+            去购买
+          </a>
         </Button>
       ),
     },
