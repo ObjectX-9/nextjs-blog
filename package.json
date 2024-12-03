@@ -81,6 +81,7 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18",
+    "react-hot-toast": "^2.4.1",
     "react-lite-youtube-embed": "^2.4.0",
     "react-photo-album": "^3.0.2",
     "react-tweet": "^3.2.1",

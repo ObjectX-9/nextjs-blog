@@ -8,6 +8,7 @@ const navItems = [
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
+  { name: "项目管理", href: "/admin/projects" },
 ];
 
 export default function AdminLayout({
