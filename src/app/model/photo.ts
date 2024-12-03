@@ -11,7 +11,7 @@ export interface IPhoto {
 }
 
 export interface IPhotoDB extends Omit<IPhoto, "_id"> {
-  _id?: ObjectId;
+  _id: ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

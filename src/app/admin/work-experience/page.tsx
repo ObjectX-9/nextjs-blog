@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IWorkExperience } from "@/app/model/work-experience";
+import { IWorkExperience, IWorkExperienceBase } from "@/app/model/work-experience";
 
 export default function WorkExperienceManagementPage() {
   const [items, setItems] = useState<IWorkExperience[]>([]);
-  const [editingItem, setEditingItem] = useState<IWorkExperience | null>(null);
+  const [editingItem, setEditingItem] = useState<IWorkExperienceBase>({
+    company: "",
+    companyUrl: "",
+    position: "",
+    description: "",
+    startDate: "",
+    endDate: null,
+  });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -31,7 +38,7 @@ export default function WorkExperienceManagementPage() {
     if (!editingItem) return;
 
     try {
-      const method = editingItem._id ? "PUT" : "POST";
+      const method = (editingItem as any)._id ? "PUT" : "POST";
       const response = await fetch("/api/work-experience", {
         method,
         headers: {
@@ -43,7 +50,14 @@ export default function WorkExperienceManagementPage() {
       const data = await response.json();
       if (data.success) {
         await fetchWorkExperiences();
-        setEditingItem(null);
+        setEditingItem({
+          company: "",
+          companyUrl: "",
+          position: "",
+          description: "",
+          startDate: "",
+          endDate: null,
+        });
         setEditingIndex(null);
       } else {
         throw new Error(data.error || "Failed to save work experience");
@@ -86,9 +100,16 @@ export default function WorkExperienceManagementPage() {
     setEditingIndex(null);
   };
 
-  const handleEditItem = (item: IWorkExperience, index: number) => {
-    setEditingItem({ ...item });
-    setEditingIndex(index);
+  const handleEditItem = (item: IWorkExperience) => {
+    setEditingItem({
+      company: item.company,
+      companyUrl: item.companyUrl,
+      position: item.position,
+      description: item.description,
+      startDate: item.startDate,
+      endDate: item.endDate,
+    });
+    setEditingIndex(items.findIndex((i) => i._id === item._id));
   };
 
   return (
@@ -106,7 +127,10 @@ export default function WorkExperienceManagementPage() {
       <div className="flex-1 p-6 overflow-auto">
         <div className="space-y-4 w-full">
           {items.map((item, index) => (
-            <div key={item._id} className="border rounded-lg p-4 bg-white w-full">
+            <div
+              key={(item as any)._id}
+              className="border rounded-lg p-4 bg-white w-full"
+            >
               <div className="flex justify-between items-start w-full">
                 <div className="flex flex-col flex-grow">
                   <div className="flex items-center gap-4">
@@ -131,13 +155,13 @@ export default function WorkExperienceManagementPage() {
                 </div>
                 <div className="flex gap-2 ml-4">
                   <button
-                    onClick={() => handleEditItem(item, index)}
+                    onClick={() => handleEditItem(item)}
                     className="px-4 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     编辑
                   </button>
                   <button
-                    onClick={() => handleDeleteItem(item._id)}
+                    onClick={() => handleDeleteItem((item as any)._id)}
                     className="px-4 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
                   >
                     删除
@@ -178,7 +202,10 @@ export default function WorkExperienceManagementPage() {
                   className="w-full px-3 py-2 border rounded"
                   value={editingItem.companyUrl}
                   onChange={(e) =>
-                    setEditingItem({ ...editingItem, companyUrl: e.target.value })
+                    setEditingItem({
+                      ...editingItem,
+                      companyUrl: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -204,7 +231,10 @@ export default function WorkExperienceManagementPage() {
                   rows={3}
                   value={editingItem.description}
                   onChange={(e) =>
-                    setEditingItem({ ...editingItem, description: e.target.value })
+                    setEditingItem({
+                      ...editingItem,
+                      description: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -217,7 +247,10 @@ export default function WorkExperienceManagementPage() {
                   className="w-full px-3 py-2 border rounded"
                   value={editingItem.startDate}
                   onChange={(e) =>
-                    setEditingItem({ ...editingItem, startDate: e.target.value })
+                    setEditingItem({
+                      ...editingItem,
+                      startDate: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -231,7 +264,10 @@ export default function WorkExperienceManagementPage() {
                     className="flex-1 px-3 py-2 border rounded"
                     value={editingItem.endDate || ""}
                     onChange={(e) =>
-                      setEditingItem({ ...editingItem, endDate: e.target.value })
+                      setEditingItem({
+                        ...editingItem,
+                        endDate: e.target.value,
+                      })
                     }
                     disabled={editingItem.endDate === null}
                   />
@@ -254,7 +290,14 @@ export default function WorkExperienceManagementPage() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => {
-                  setEditingItem(null);
+                  setEditingItem({
+                    company: "",
+                    companyUrl: "",
+                    position: "",
+                    description: "",
+                    startDate: "",
+                    endDate: null,
+                  });
                   setEditingIndex(null);
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"

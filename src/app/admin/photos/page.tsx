@@ -20,7 +20,7 @@ export default function PhotosManagementPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   // Fetch photos on mount
   useEffect(() => {
@@ -44,42 +44,44 @@ export default function PhotosManagementPage() {
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
 
       const data = await response.json();
       if (!data.url) {
-        throw new Error('No URL returned from upload');
+        throw new Error("No URL returned from upload");
       }
       return data.url;
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error("Error uploading file:", error);
       throw error;
     } finally {
       setIsUploading(false);
     }
   };
 
-  const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+  const getImageDimensions = (
+    file: File
+  ): Promise<{ width: number; height: number }> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         resolve({
           width: img.width,
-          height: img.height
+          height: img.height,
         });
         URL.revokeObjectURL(img.src); // Clean up
       };
       img.onerror = () => {
-        reject(new Error('Failed to load image'));
+        reject(new Error("Failed to load image"));
         URL.revokeObjectURL(img.src); // Clean up
       };
       img.src = URL.createObjectURL(file);
@@ -89,9 +91,9 @@ export default function PhotosManagementPage() {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith("image/")) {
       handleFileSelect(file);
     }
   };
@@ -102,7 +104,7 @@ export default function PhotosManagementPage() {
   };
 
   const handleFileSelect = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith("image/")) return;
 
     try {
       setSelectedFile(file);
@@ -111,14 +113,14 @@ export default function PhotosManagementPage() {
 
       // Get image dimensions
       const dimensions = await getImageDimensions(file);
-      setNewPhoto(prev => ({
+      setNewPhoto((prev) => ({
         ...prev,
         width: dimensions.width,
-        height: dimensions.height
+        height: dimensions.height,
       }));
     } catch (error) {
-      console.error('Error getting image dimensions:', error);
-      alert('获取图片尺寸失败');
+      console.error("Error getting image dimensions:", error);
+      alert("获取图片尺寸失败");
     }
   };
 
@@ -131,12 +133,12 @@ export default function PhotosManagementPage() {
 
   const handleAddPhoto = async () => {
     if (!selectedFile) {
-      alert('请选择要上传的图片');
+      alert("请选择要上传的图片");
       return;
     }
 
     if (!newPhoto.title) {
-      alert('请输入照片标题');
+      alert("请输入照片标题");
       return;
     }
 
@@ -145,7 +147,7 @@ export default function PhotosManagementPage() {
       const url = await uploadFile(selectedFile);
       const photoToAdd = {
         ...newPhoto,
-        src: url
+        src: url,
       };
 
       const response = await fetch("/api/photos", {
@@ -168,7 +170,7 @@ export default function PhotosManagementPage() {
       await fetchPhotos();
       setShowAddPhoto(false);
       setSelectedFile(null);
-      setPreviewUrl('');
+      setPreviewUrl("");
       setNewPhoto({
         src: "",
         width: 4,
@@ -187,7 +189,7 @@ export default function PhotosManagementPage() {
 
   const resetFileInput = () => {
     setSelectedFile(null);
-    setPreviewUrl('');
+    setPreviewUrl("");
   };
 
   const handleEditPhoto = async () => {
@@ -260,7 +262,7 @@ export default function PhotosManagementPage() {
           </thead>
           <tbody>
             {photos.map((photo, index) => (
-              <tr key={photo._id} className="border-t">
+              <tr key={photo._id.toString()} className="border-t">
                 <td className="p-4">
                   <img
                     src={photo.src}
@@ -269,17 +271,25 @@ export default function PhotosManagementPage() {
                   />
                 </td>
                 <td className="p-4">
-                  <span className="block max-w-[200px] truncate" title={photo.title}>
+                  <span
+                    className="block max-w-[200px] truncate"
+                    title={photo.title}
+                  >
                     {photo.title}
                   </span>
                 </td>
                 <td className="p-4">
-                  <span className="block max-w-[150px] truncate" title={photo.location}>
+                  <span
+                    className="block max-w-[150px] truncate"
+                    title={photo.location}
+                  >
                     {photo.location}
                   </span>
                 </td>
                 <td className="p-4">{photo.date}</td>
-                <td className="p-4">{photo.width}x{photo.height}</td>
+                <td className="p-4">
+                  {photo.width}x{photo.height}
+                </td>
                 <td className="p-4">
                   <div className="flex gap-2">
                     <button
@@ -290,7 +300,7 @@ export default function PhotosManagementPage() {
                     </button>
                     <button
                       className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                      onClick={() => handleDeletePhoto(photo._id)}
+                      onClick={() => handleDeletePhoto(photo._id.toString())}
                     >
                       删除
                     </button>
@@ -311,13 +321,16 @@ export default function PhotosManagementPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">图片</label>
                 <div
-                  onClick={() => !isUploading && document.getElementById('file-upload')?.click()}
+                  onClick={() =>
+                    !isUploading &&
+                    document.getElementById("file-upload")?.click()
+                  }
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-                    isUploading 
-                      ? 'border-gray-300 bg-gray-50 cursor-not-allowed' 
-                      : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                    isUploading
+                      ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                      : "border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
                   }`}
                 >
                   <input
@@ -328,7 +341,7 @@ export default function PhotosManagementPage() {
                     onChange={handleFileInputChange}
                     disabled={isUploading}
                   />
-                  
+
                   <div className="text-center">
                     {!previewUrl ? (
                       <>
@@ -347,8 +360,12 @@ export default function PhotosManagementPage() {
                           />
                         </svg>
                         <div className="mt-2 text-sm text-gray-600">
-                          <p className="font-medium text-blue-600">点击选择图片或拖拽到此处</p>
-                          <p className="mt-1 text-xs text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                          <p className="font-medium text-blue-600">
+                            点击选择图片或拖拽到此处
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            支持 PNG、JPG、GIF 格式，最大 10MB
+                          </p>
                         </div>
                       </>
                     ) : (
@@ -376,25 +393,47 @@ export default function PhotosManagementPage() {
                     {isUploading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
                         <div className="text-center">
-                          <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin h-8 w-8 text-blue-500 mx-auto"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
-                          <p className="mt-2 text-sm text-gray-600">正在上传...</p>
+                          <p className="mt-2 text-sm text-gray-600">
+                            正在上传...
+                          </p>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium mb-1">标题 <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1">
+                  标题 <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   className="w-full p-2 border rounded"
                   value={newPhoto.title}
-                  onChange={(e) => setNewPhoto({ ...newPhoto, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewPhoto({ ...newPhoto, title: e.target.value })
+                  }
                   placeholder="请输入标题"
                   disabled={isUploading}
                 />
@@ -405,7 +444,9 @@ export default function PhotosManagementPage() {
                   type="text"
                   className="w-full p-2 border rounded"
                   value={newPhoto.location}
-                  onChange={(e) => setNewPhoto({ ...newPhoto, location: e.target.value })}
+                  onChange={(e) =>
+                    setNewPhoto({ ...newPhoto, location: e.target.value })
+                  }
                   placeholder="请输入地点"
                 />
               </div>
@@ -457,7 +498,9 @@ export default function PhotosManagementPage() {
             <h2 className="text-xl font-bold mb-4">编辑照片</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">图片链接</label>
+                <label className="block text-sm font-medium mb-1">
+                  图片链接
+                </label>
                 <input
                   type="text"
                   className="w-full p-2 border rounded"
@@ -495,7 +538,10 @@ export default function PhotosManagementPage() {
                   onChange={(e) =>
                     setEditingPhoto({
                       ...editingPhoto,
-                      photo: { ...editingPhoto.photo, location: e.target.value },
+                      photo: {
+                        ...editingPhoto.photo,
+                        location: e.target.value,
+                      },
                     })
                   }
                   placeholder="请输入地点"
@@ -511,7 +557,10 @@ export default function PhotosManagementPage() {
                     onChange={(e) =>
                       setEditingPhoto({
                         ...editingPhoto,
-                        photo: { ...editingPhoto.photo, width: Number(e.target.value) },
+                        photo: {
+                          ...editingPhoto.photo,
+                          width: Number(e.target.value),
+                        },
                       })
                     }
                   />
@@ -525,7 +574,10 @@ export default function PhotosManagementPage() {
                     onChange={(e) =>
                       setEditingPhoto({
                         ...editingPhoto,
-                        photo: { ...editingPhoto.photo, height: Number(e.target.value) },
+                        photo: {
+                          ...editingPhoto.photo,
+                          height: Number(e.target.value),
+                        },
                       })
                     }
                   />

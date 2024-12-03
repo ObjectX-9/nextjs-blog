@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IWorkExperience extends Document {
+export interface IWorkExperienceBase {
   company: string;
   companyUrl: string;
   position: string;
@@ -8,6 +8,8 @@ export interface IWorkExperience extends Document {
   startDate: string;
   endDate: string | null; // null means current position
 }
+
+export interface IWorkExperience extends Document, IWorkExperienceBase {}
 
 const workExperienceSchema = new Schema<IWorkExperience>({
   company: { type: String, required: true },
