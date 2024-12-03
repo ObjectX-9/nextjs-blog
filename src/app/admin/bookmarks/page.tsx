@@ -1,173 +1,197 @@
 "use client";
 
-import { useState } from "react";
-import { BookmarkCategory, bookmarkData, Bookmark } from "@/config/bookmarks";
+import { useState, useEffect } from "react";
+import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
+import { ObjectId } from "mongodb";
+
+interface EditingBookmark {
+  categoryId: string;
+  newCategoryId: string;
+  bookmarkId: string;
+  bookmark: Partial<IBookmark>;
+}
 
 export default function BookmarksManagementPage() {
-  const [categories, setCategories] =
-    useState<BookmarkCategory[]>(bookmarkData);
+  const [categories, setCategories] = useState<IBookmarkCategory[]>([]);
   const [activeTab, setActiveTab] = useState("bookmarks");
-  const [newCategory, setNewCategory] = useState({
+  const [newCategory, setNewCategory] = useState<Partial<IBookmarkCategory>>({
     name: "",
-    bookmarks: [],
   });
-  const [newBookmark, setNewBookmark] = useState<Bookmark>({
+  const [newBookmark, setNewBookmark] = useState<Partial<IBookmark>>({
     title: "",
     url: "",
     description: "",
   });
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    categories[0].name
-  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [showAddBookmark, setShowAddBookmark] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [editingBookmark, setEditingBookmark] = useState<{
-    categoryName: string;
-    newCategoryName: string;
-    index: number;
-    bookmark: Bookmark;
-  } | null>(null);
+  const [editingBookmark, setEditingBookmark] =
+    useState<EditingBookmark | null>(null);
 
-  const updateBookmarks = async (updatedCategories: BookmarkCategory[]) => {
-    setIsUpdating(true);
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/bookmarks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ categories: updatedCategories }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update bookmarks");
+      const response = await fetch("/api/bookmarkCategories");
+      const data = await response.json();
+      if (data.success) {
+        setCategories(data.categories);
+        if (data.categories.length > 0) {
+          setSelectedCategoryId(data.categories[0]._id.toString());
+        }
       }
-
-      setCategories(updatedCategories);
     } catch (error) {
-      console.error("Error updating bookmarks:", error);
-      alert("Failed to update bookmarks. Please try again.");
-    } finally {
-      setIsUpdating(false);
+      console.error("Failed to fetch categories:", error);
     }
   };
 
   const handleAddCategory = async () => {
-    if (newCategory.name.trim()) {
-      const updatedCategories = [
-        ...categories,
-        { ...newCategory, bookmarks: [] },
-      ];
-      await updateBookmarks(updatedCategories);
-      setNewCategory({ name: "", bookmarks: [] });
+    if (newCategory.name?.trim()) {
+      setIsUpdating(true);
+      try {
+        const response = await fetch("/api/bookmarkCategories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newCategory.name }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to create category");
+        }
+
+        await fetchCategories();
+        setNewCategory({ name: "" });
+      } catch (error) {
+        console.error("Error creating category:", error);
+        alert("Failed to create category. Please try again.");
+      } finally {
+        setIsUpdating(false);
+      }
     }
   };
 
-  const handleDeleteCategory = async (categoryIndex: number) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     if (
       confirm(
         "Are you sure you want to delete this category and all its bookmarks?"
       )
     ) {
-      const updatedCategories = [...categories];
-      updatedCategories.splice(categoryIndex, 1);
-      await updateBookmarks(updatedCategories);
+      setIsUpdating(true);
+      try {
+        const response = await fetch(
+          `/api/bookmarkCategories?id=${categoryId}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete category");
+        }
+
+        await fetchCategories();
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        alert("Failed to delete category. Please try again.");
+      } finally {
+        setIsUpdating(false);
+      }
     }
   };
 
   const handleAddBookmark = async () => {
-    if (newBookmark.title && newBookmark.url) {
-      const updatedCategories = categories.map((category) => {
-        if (category.name === selectedCategory) {
-          return {
-            ...category,
-            bookmarks: [...category.bookmarks, newBookmark],
-          };
-        }
-        return category;
-      });
-      await updateBookmarks(updatedCategories);
-      setNewBookmark({ title: "", url: "", description: "" });
-      setShowAddBookmark(false);
-    }
-  };
+    if (newBookmark.title && newBookmark.url && selectedCategoryId) {
+      setIsUpdating(true);
+      try {
+        const response = await fetch("/api/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...newBookmark,
+            categoryId: selectedCategoryId,
+          }),
+        });
 
-  const handleDeleteBookmark = async (
-    categoryName: string,
-    bookmarkIndex: number
-  ) => {
-    if (confirm("Are you sure you want to delete this bookmark?")) {
-      const updatedCategories = categories.map((category) => {
-        if (category.name === categoryName) {
-          const newBookmarks = [...category.bookmarks];
-          newBookmarks.splice(bookmarkIndex, 1);
-          return {
-            ...category,
-            bookmarks: newBookmarks,
-          };
+        if (!response.ok) {
+          throw new Error("Failed to create bookmark");
         }
-        return category;
-      });
-      await updateBookmarks(updatedCategories);
-    }
-  };
 
-  const handleEditBookmark = async (
-    categoryName: string,
-    bookmarkIndex: number,
-    updatedBookmark: Bookmark
-  ) => {
-    const updatedCategories = categories.map((category) => {
-      if (category.name === categoryName) {
-        const newBookmarks = [...category.bookmarks];
-        newBookmarks[bookmarkIndex] = updatedBookmark;
-        return {
-          ...category,
-          bookmarks: newBookmarks,
-        };
+        await fetchCategories();
+        setNewBookmark({ title: "", url: "", description: "" });
+        setShowAddBookmark(false);
+      } catch (error) {
+        console.error("Error creating bookmark:", error);
+        alert("Failed to create bookmark. Please try again.");
+      } finally {
+        setIsUpdating(false);
       }
-      return category;
-    });
-    await updateBookmarks(updatedCategories);
+    }
+  };
+
+  const handleDeleteBookmark = async (bookmarkId: string) => {
+    if (confirm("Are you sure you want to delete this bookmark?")) {
+      setIsUpdating(true);
+      try {
+        const response = await fetch(`/api/bookmarks?id=${bookmarkId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete bookmark");
+        }
+
+        await fetchCategories();
+      } catch (error) {
+        console.error("Error deleting bookmark:", error);
+        alert("Failed to delete bookmark. Please try again.");
+      } finally {
+        setIsUpdating(false);
+      }
+    }
   };
 
   const startEditingBookmark = (
-    categoryName: string,
-    bookmarkIndex: number,
-    bookmark: Bookmark
+    categoryId: string,
+    bookmarkId: string,
+    bookmark: IBookmark
   ) => {
     setEditingBookmark({
-      categoryName,
-      newCategoryName: categoryName,
-      index: bookmarkIndex,
+      categoryId,
+      newCategoryId: categoryId,
+      bookmarkId,
       bookmark: { ...bookmark },
     });
   };
 
   const handleEditBookmarkSave = async () => {
     if (editingBookmark) {
-      const { categoryName: oldCategoryName, index, bookmark } = editingBookmark;
-      const updatedCategories = categories.map((category) => {
-        if (category.name === oldCategoryName) {
-          // Remove from old category
-          const newBookmarks = [...category.bookmarks];
-          newBookmarks.splice(index, 1);
-          return {
-            ...category,
-            bookmarks: newBookmarks,
-          };
+      setIsUpdating(true);
+      try {
+        const response = await fetch(`/api/bookmarks`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            _id: editingBookmark.bookmarkId,
+            ...editingBookmark.bookmark,
+            categoryId: editingBookmark.newCategoryId,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update bookmark");
         }
-        if (category.name === editingBookmark.newCategoryName) {
-          // Add to new category
-          return {
-            ...category,
-            bookmarks: [...category.bookmarks, bookmark],
-          };
-        }
-        return category;
-      });
-      await updateBookmarks(updatedCategories);
-      setEditingBookmark(null);
+
+        await fetchCategories();
+        setEditingBookmark(null);
+      } catch (error) {
+        console.error("Error updating bookmark:", error);
+        alert("Failed to update bookmark. Please try again.");
+      } finally {
+        setIsUpdating(false);
+      }
     }
   };
 
@@ -242,7 +266,9 @@ export default function BookmarksManagementPage() {
                       <td className="p-4">
                         <button
                           className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                          onClick={() => handleDeleteCategory(index)}
+                          onClick={() =>
+                            handleDeleteCategory(category._id.toString())
+                          }
                         >
                           删除
                         </button>
@@ -275,11 +301,11 @@ export default function BookmarksManagementPage() {
                       </label>
                       <select
                         className="w-full p-2 border rounded appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M10.293%204.293a1%201%200%20011.414%201.414l-5%205a1%201%200%2001-1.414%200l-5-5a1%201%200%20011.414-1.414L6%208.586l4.293-4.293z%22%20fill%3D%22currentColor%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_0.5rem_center] pr-8"
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        value={selectedCategoryId}
+                        onChange={(e) => setSelectedCategoryId(e.target.value)}
                       >
                         {categories.map((category, index) => (
-                          <option key={index} value={category.name}>
+                          <option key={index} value={category._id.toString()}>
                             {category.name}
                           </option>
                         ))}
@@ -363,16 +389,16 @@ export default function BookmarksManagementPage() {
                       </label>
                       <select
                         className="w-full p-2 border rounded appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M10.293%204.293a1%201%200%20011.414%201.414l-5%205a1%201%200%2001-1.414%200l-5-5a1%201%200%20011.414-1.414L6%208.586l4.293-4.293z%22%20fill%3D%22currentColor%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_0.5rem_center] pr-8"
-                        value={editingBookmark.newCategoryName}
+                        value={editingBookmark.newCategoryId}
                         onChange={(e) =>
                           setEditingBookmark({
                             ...editingBookmark,
-                            newCategoryName: e.target.value,
+                            newCategoryId: e.target.value,
                           })
                         }
                       >
                         {categories.map((category, index) => (
-                          <option key={index} value={category.name}>
+                          <option key={index} value={category._id.toString()}>
                             {category.name}
                           </option>
                         ))}
@@ -463,13 +489,19 @@ export default function BookmarksManagementPage() {
                 </thead>
                 <tbody>
                   {categories.map((category) =>
-                    category.bookmarks.map((bookmark, bookmarkIndex) => (
-                      <tr
-                        key={`${category.name}-${bookmarkIndex}`}
-                        className="border-t"
-                      >
-                        <td className="p-4">{bookmark.title}</td>
-                        <td className="p-4">{bookmark.url}</td>
+                    category.bookmarks.map((bookmark) => (
+                      <tr key={bookmark._id?.toString()} className="border-t">
+                        <td className="p-4 truncate">{bookmark.title}</td>
+                        <td className="p-4 truncate">
+                          <a
+                            href={bookmark.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            {bookmark.url}
+                          </a>
+                        </td>
                         <td className="p-4">{category.name}</td>
                         <td className="p-4">
                           <div className="flex gap-2">
@@ -477,8 +509,8 @@ export default function BookmarksManagementPage() {
                               className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
                               onClick={() =>
                                 startEditingBookmark(
-                                  category.name,
-                                  bookmarkIndex,
+                                  category._id?.toString() || "",
+                                  bookmark._id?.toString() || "",
                                   bookmark
                                 )
                               }
@@ -489,8 +521,7 @@ export default function BookmarksManagementPage() {
                               className="px-3 py-1 bg-red-500 text-white rounded text-sm"
                               onClick={() =>
                                 handleDeleteBookmark(
-                                  category.name,
-                                  bookmarkIndex
+                                  bookmark._id?.toString() || ""
                                 )
                               }
                             >
