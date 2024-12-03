@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { ObjectId } from "mongodb";
 
-export interface IProject extends Document {
+export interface Project {
   title: string;
   description: string;
   url?: string;
@@ -8,13 +9,48 @@ export interface IProject extends Document {
   imageUrl?: string;
   tags: string[];
   status: "completed" | "in-progress" | "planned";
-  categoryId: mongoose.Types.ObjectId;
+  categoryId: ObjectId;
+}
+
+export interface ProjectDB extends Omit<Project, "_id"> {
+  _id?: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ProjectCategory {
+  name: string;
+  description: string;
+  projects: ObjectId[];
+}
+
+export interface ProjectCategoryDB extends Omit<ProjectCategory, "_id"> {
+  _id?: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IProject extends Document {
+  _id: ObjectId;
+  title: string;
+  description: string;
+  url?: string;
+  github?: string;
+  imageUrl?: string;
+  tags: string[];
+  status: "completed" | "in-progress" | "planned";
+  categoryId: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IProjectCategory extends Document {
+  _id: ObjectId;
   name: string;
   description: string;
-  projects: mongoose.Types.ObjectId[];
+  projects: ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const projectSchema = new Schema<IProject>({
@@ -42,5 +78,6 @@ const projectCategorySchema = new Schema<IProjectCategory>({
   timestamps: true
 });
 
+// Check if models exist before creating new ones
 export const Project = mongoose.models.Project || mongoose.model<IProject>('Project', projectSchema);
 export const ProjectCategory = mongoose.models.ProjectCategory || mongoose.model<IProjectCategory>('ProjectCategory', projectCategorySchema);
