@@ -48,6 +48,12 @@ const navList = [
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];
 
+const socialList = socialLinks.map((link) => ({
+  title: link.name,
+  href: link.url,
+  prefix: link.name === "博客" ? <Globe size={16} /> : link.name === "掘金" ? <MapPin size={16} /> : link.name === "Github" ? <Github size={16} /> : link.name === "Codesandbox" ? <FileEdit size={16} /> : link.name === "灵感笔记" ? <FileEdit size={16} /> : link.name === "Follow" ? <Eye size={16} /> : <></>,
+}));
+
 const iconMap = {
   "博客": <Globe size={16} />,
   "掘金": <MapPin size={16} />,
@@ -56,35 +62,6 @@ const iconMap = {
   "灵感笔记": <FileEdit size={16} />,
   "Follow": <Eye size={16} />,
 } as const;
-
-const socialList = socialLinks.map((link) => ({
-  title: link.name,
-  href: link.url,
-  prefix: iconMap[link.name as keyof typeof iconMap],
-}));
-
-// const openSourceList = [
-//   {
-//     title: "V2G",
-//     href: "https://vtog.vesper.host",
-//     prefix: <Video size={16} />,
-//   },
-//   {
-//     title: "BeautyCode",
-//     href: "https://marketplace.visualstudio.com/items?itemName=Vesper.beautycode",
-//     prefix: <SquareDashedBottomCode size={16} />,
-//   },
-//   {
-//     title: "Vtabs",
-//     href: "https://chromewebstore.google.com/detail/vtabs/ldjlkpemhoddnoedhbebgdncegooejim?hl=zh-CN&utm_source=ext_sidebar",
-//     prefix: <UnfoldVertical size={16} />,
-//   },
-//   {
-//     title: "Bup",
-//     href: "https://www.npmjs.com/package/buildp",
-//     prefix: <Terminal size={16} />,
-//   },
-// ];
 
 const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const currentPathname = usePathname();
@@ -114,7 +91,7 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
             : "border-gray-200 bg-gray-100 text-gray-500 group-hover:border-gray-300";
           return (
             <Link
-              key={navItem.href}
+              key={`nav-${navItem.href}`}
               href={navItem.href}
               onClick={onNavClick}
               className={`${commonClasses} ${selectedClasses}`}
@@ -137,15 +114,15 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
         Online
       </span>
       <nav className="flex flex-col gap-1">
-        {socialList.map((socialItem) => (
+        {socialList.map((socialItem, index) => (
           <Link
-            key={socialItem.href}
+            key={`social-${index}`}
             href={socialItem.href}
             target="_blank"
             className="group flex items-center justify-between rounded-lg p-2 hover:bg-gray-200"
           >
             <span className="flex items-center">
-              {socialItem.prefix}
+              {iconMap[socialItem.title as keyof typeof iconMap]}
               <span className="ml-2 font-medium">{socialItem.title}</span>
             </span>
             <Forward size={16} />
