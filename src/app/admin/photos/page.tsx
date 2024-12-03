@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Photo, photos as initialPhotos } from "@/config/photos";
+import { useState, useEffect } from "react";
+import { IPhoto, IPhotoDB } from "@/app/model/photo";
 
 export default function PhotosManagementPage() {
-  const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
+  const [photos, setPhotos] = useState<IPhotoDB[]>([]);
   const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<{
-    index: number;
-    photo: Photo;
+    photo: IPhotoDB;
   } | null>(null);
-  const [newPhoto, setNewPhoto] = useState<Photo>({
+  const [newPhoto, setNewPhoto] = useState<IPhoto>({
     src: "",
     width: 4,
     height: 3,
@@ -23,27 +22,21 @@ export default function PhotosManagementPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
-  const updatePhotos = async (updatedPhotos: Photo[]) => {
-    setIsUpdating(true);
+  // Fetch photos on mount
+  useEffect(() => {
+    fetchPhotos();
+  }, []);
+
+  const fetchPhotos = async () => {
     try {
-      const response = await fetch("/api/photos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ photos: updatedPhotos }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update photos");
+      const response = await fetch("/api/photos");
+      const data = await response.json();
+      if (data.success) {
+        setPhotos(data.photos);
       }
-
-      setPhotos(updatedPhotos);
     } catch (error) {
-      console.error("Error updating photos:", error);
-      alert("更新相册失败，请重试。");
-    } finally {
-      setIsUpdating(false);
+      console.error("Error fetching photos:", error);
+      alert("获取相册失败，请重试。");
     }
   };
 
@@ -63,10 +56,12 @@ export default function PhotosManagementPage() {
       }
 
       const data = await response.json();
+      if (!data.url) {
+        throw new Error('No URL returned from upload');
+      }
       return data.url;
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('上传文件失败，请重试。');
       throw error;
     } finally {
       setIsUploading(false);
@@ -152,8 +147,25 @@ export default function PhotosManagementPage() {
         ...newPhoto,
         src: url
       };
-      const updatedPhotos = [...photos, photoToAdd];
-      await updatePhotos(updatedPhotos);
+
+      const response = await fetch("/api/photos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ photo: photoToAdd }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add photo");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to add photo");
+      }
+
+      await fetchPhotos();
       setShowAddPhoto(false);
       setSelectedFile(null);
       setPreviewUrl('');
@@ -166,7 +178,8 @@ export default function PhotosManagementPage() {
         date: new Date().toISOString().split("T")[0],
       });
     } catch (error) {
-      // Error already handled in uploadFile
+      console.error("Error adding photo:", error);
+      alert("添加照片失败，请重试。");
     } finally {
       setIsUploading(false);
     }
@@ -179,17 +192,44 @@ export default function PhotosManagementPage() {
 
   const handleEditPhoto = async () => {
     if (editingPhoto && editingPhoto.photo.src && editingPhoto.photo.title) {
-      const updatedPhotos = [...photos];
-      updatedPhotos[editingPhoto.index] = editingPhoto.photo;
-      await updatePhotos(updatedPhotos);
-      setEditingPhoto(null);
+      try {
+        const response = await fetch(`/api/photos/${editingPhoto.photo._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ photo: editingPhoto.photo }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update photo");
+        }
+
+        await fetchPhotos();
+        setEditingPhoto(null);
+      } catch (error) {
+        console.error("Error updating photo:", error);
+        alert("更新照片失败，请重试。");
+      }
     }
   };
 
-  const handleDeletePhoto = async (index: number) => {
+  const handleDeletePhoto = async (id: string) => {
     if (confirm("确定要删除这张照片吗？")) {
-      const updatedPhotos = photos.filter((_, i) => i !== index);
-      await updatePhotos(updatedPhotos);
+      try {
+        const response = await fetch(`/api/photos/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete photo");
+        }
+
+        await fetchPhotos();
+      } catch (error) {
+        console.error("Error deleting photo:", error);
+        alert("删除照片失败，请重试。");
+      }
     }
   };
 
@@ -220,7 +260,7 @@ export default function PhotosManagementPage() {
           </thead>
           <tbody>
             {photos.map((photo, index) => (
-              <tr key={index} className="border-t">
+              <tr key={photo._id} className="border-t">
                 <td className="p-4">
                   <img
                     src={photo.src}
@@ -244,13 +284,13 @@ export default function PhotosManagementPage() {
                   <div className="flex gap-2">
                     <button
                       className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
-                      onClick={() => setEditingPhoto({ index, photo: { ...photo } })}
+                      onClick={() => setEditingPhoto({ photo: { ...photo } })}
                     >
                       编辑
                     </button>
                     <button
                       className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                      onClick={() => handleDeletePhoto(index)}
+                      onClick={() => handleDeletePhoto(photo._id)}
                     >
                       删除
                     </button>
@@ -502,7 +542,6 @@ export default function PhotosManagementPage() {
               <button
                 className="px-4 py-2 bg-blue-500 text-white rounded"
                 onClick={handleEditPhoto}
-                disabled={isUpdating}
               >
                 确定
               </button>
