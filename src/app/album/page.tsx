@@ -3,6 +3,8 @@
 import PhotoAlbum from "react-photo-album";
 import "react-photo-album/styles.css";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { IPhotoDB } from "@/app/model/photo";
 
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -13,18 +15,33 @@ import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
-import { photos } from "../../config/photos";
-import { useState } from "react";
 
 export default function Album() {
   const [index, setIndex] = useState(-1);
+  const [photos, setPhotos] = useState<IPhotoDB[]>([]);
+
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const response = await fetch("/api/photos");
+        const data = await response.json();
+        if (data.success) {
+          setPhotos(data.photos);
+        }
+      } catch (error) {
+        console.error("Error fetching photos:", error);
+      }
+    };
+
+    fetchPhotos();
+  }, []);
 
   // 移动端展示组件
   const MobilePhotoCard = ({
     photo,
     onClick,
   }: {
-    photo: any;
+    photo: IPhotoDB;
     onClick: () => void;
   }) => (
     <div
@@ -34,11 +51,11 @@ export default function Album() {
       <div className="relative pb-[66.67%]">
         <Image
           src={photo.src}
-          alt={photo.alt || ""}
+          alt={photo.title || ""}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
-          priority={photo.priority}
+          priority={false}
         />
       </div>
     </div>
@@ -54,7 +71,11 @@ export default function Album() {
       {/* 移动端显示 */}
       <div className="block lg:hidden">
         {photos.map((photo, i) => (
-          <MobilePhotoCard key={i} photo={photo} onClick={() => setIndex(i)} />
+          <MobilePhotoCard
+            key={photo._id!.toString()}
+            photo={photo}
+            onClick={() => setIndex(i)}
+          />
         ))}
       </div>
 
@@ -66,6 +87,7 @@ export default function Album() {
             src: photo.src,
             width: photo.width,
             height: photo.height,
+            title: photo.title,
           }))}
           spacing={10}
           columns={4}
@@ -74,7 +96,11 @@ export default function Album() {
       </div>
 
       <Lightbox
-        slides={photos.map((photo) => ({ src: photo.src }))}
+        slides={photos.map((photo) => ({
+          src: photo.src,
+          title: photo.title,
+          description: photo.location,
+        }))}
         open={index >= 0}
         index={index}
         close={() => setIndex(-1)}
