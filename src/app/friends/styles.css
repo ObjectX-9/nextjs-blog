@@ -14,7 +14,7 @@
 
   .avatars [style*="--for:"]:is(:hover, :focus-visible)::after {
     background: rgb(139, 92, 246);
-    mix-blend-mode: difference;
+    /* mix-blend-mode: difference; */
     filter: hue-rotate(300deg);
     animation: lightSpeedInLeft 0.28s ease-out both;
   }
@@ -104,7 +104,7 @@
 .links a {
   text-decoration: none;
   border-bottom: 1px dotted;
-  color: rgb(139, 92, 246);
+  color: rgb(32, 32, 33);
   position: relative;
   display: inline-block;
   padding: 0 0.25em;
@@ -116,7 +116,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgb(139, 92, 246);
+  background: rgb(32, 32, 33);
   transform-origin: left;
   transform: scaleX(0);
   opacity: 1;
@@ -133,5 +133,6 @@
 .links a:hover,
 .links a.active {
   color: white;
+  background-color: black;
   mix-blend-mode: difference;
 }
