@@ -21,6 +21,12 @@ export default function AdminPage() {
         >
           书签管理
         </Link>
+        <Link
+          href="/admin/friends"
+          className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          友链管理
+        </Link>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { name: "系统设置", href: "/admin/config" },
   { name: "书签管理", href: "/admin/bookmarks" },
+  { name: "友链管理", href: "/admin/friends" },
 ];
 
 export default function AdminLayout({
