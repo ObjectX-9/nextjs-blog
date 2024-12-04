@@ -26,7 +26,7 @@ export default async function Stack() {
       </div>
       <ul className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
         {stackList.map((stackItem) => (
-          <li key={stackItem._id.toString()} className="mb-1 flex last:mb-0">
+          <li key={stackItem._id as any} className="mb-1 flex last:mb-0">
             <Card className="flex-1 max-w-96">
               <div className="flex items-center h-full space-x-4 rounded-md p-4">
                 <Image
