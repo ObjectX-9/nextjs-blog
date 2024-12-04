@@ -307,12 +307,12 @@ export default function TimelinesAdmin() {
   };
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 bg-white relative">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
         <h1 className="text-xl md:text-2xl font-bold">时间轴管理</h1>
         <button
-          onClick={handleAddEvent}
-          className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
+          onClick={() => handleAddEvent()}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
         >
           添加事件
         </button>
@@ -320,7 +320,7 @@ export default function TimelinesAdmin() {
 
       <div className="space-y-4">
         {events.map((event, index) => (
-          <div key={index} className="border rounded-lg p-4 shadow-sm">
+          <div key={index} className="border rounded-lg p-4 shadow-sm bg-white relative">
             <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:justify-between">
               <div className="space-y-2">
                 <div className="flex flex-col md:flex-row md:items-center md:gap-2">
@@ -389,225 +389,236 @@ export default function TimelinesAdmin() {
 
       {/* Edit Modal */}
       {editingEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4 overflow-y-auto">
-          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white p-4 md:p-6 border-b">
-              <h2 className="text-lg md:text-xl font-semibold">
-                {editingIndex !== null ? "编辑事件" : "添加事件"}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+            <div className="sticky top-0 bg-white p-4 border-b z-10">
+              <h2 className="text-lg font-semibold">
+                {editingEvent._id ? "编辑事件" : "添加事件"}
               </h2>
             </div>
             
-            <div className="p-4 md:p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  日期
-                </label>
-                <input
-                  type="month"
-                  className="w-full px-3 py-2 border rounded-lg text-base"
-                  value={formatDateValue(editingEvent.year, editingEvent.month)}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  标题
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-lg text-base"
-                  value={editingEvent.title}
-                  onChange={(e) =>
-                    setEditingEvent({ ...editingEvent, title: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  地点（可选）
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-lg text-base"
-                  value={editingEvent.location || ""}
-                  onChange={(e) =>
-                    setEditingEvent({
-                      ...editingEvent,
-                      location: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  描述
-                </label>
-                <textarea
-                  className="w-full px-3 py-2 border rounded-lg text-base min-h-[100px]"
-                  value={editingEvent.description}
-                  onChange={(e) =>
-                    setEditingEvent({
-                      ...editingEvent,
-                      description: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tweet URL（可选）
-                </label>
-                <input
-                  type="text"
-                  className={`w-full px-3 py-2 border rounded-lg text-base ${
-                    errors.tweetUrl ? "border-red-500" : ""
-                  }`}
-                  value={editingEvent.tweetUrl || ""}
-                  onChange={(e) => {
-                    setEditingEvent({
-                      ...editingEvent,
-                      tweetUrl: e.target.value,
-                    });
-                    setErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.tweetUrl;
-                      return newErrors;
-                    });
-                  }}
-                  placeholder="https://"
-                />
-                {errors.tweetUrl && (
-                  <p className="text-red-500 text-sm mt-1">{errors.tweetUrl}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  图片
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                  {(previewUrl || editingEvent.imageUrl) ? (
-                    <div className="relative">
-                      <img
-                        src={previewUrl || editingEvent.imageUrl}
-                        alt="Preview"
-                        className="w-full h-48 object-contain rounded-lg"
-                      />
-                      <button
-                        onClick={() => {
-                          if (previewUrl) {
-                            URL.revokeObjectURL(previewUrl);
-                          }
-                          setPreviewUrl("");
-                          setSelectedFile(null);
-                          if (editingEvent) {
-                            setEditingEvent({
-                              ...editingEvent,
-                              imageUrl: "",
-                            });
-                          }
-                        }}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/gif"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="image-upload"
-                      />
-                      <label
-                        htmlFor="image-upload"
-                        className="cursor-pointer"
-                      >
-                        <div className="mx-auto w-12 h-12 text-gray-400">
-                          <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <p className="mt-1 text-blue-500 text-sm">点击选择图片或拖拽到此处</p>
-                        <p className="mt-1 text-gray-500 text-xs">支持 PNG、JPG、GIF 格式，最大 10MB</p>
-                      </label>
-                    </div>
+            <div className="p-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    日期
+                  </label>
+                  <input
+                    type="month"
+                    className="w-full px-3 py-2 border rounded-lg text-base"
+                    value={formatDateValue(editingEvent.year, editingEvent.month)}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    标题
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border rounded-lg text-base"
+                    value={editingEvent.title}
+                    onChange={(e) =>
+                      setEditingEvent({ ...editingEvent, title: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    地点（可选）
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border rounded-lg text-base"
+                    value={editingEvent.location || ""}
+                    onChange={(e) =>
+                      setEditingEvent({
+                        ...editingEvent,
+                        location: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    描述
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border rounded-lg text-base min-h-[100px]"
+                    value={editingEvent.description}
+                    onChange={(e) =>
+                      setEditingEvent({
+                        ...editingEvent,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tweet URL（可选）
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full px-3 py-2 border rounded-lg text-base ${
+                      errors.tweetUrl ? "border-red-500" : ""
+                    }`}
+                    value={editingEvent.tweetUrl || ""}
+                    onChange={(e) => {
+                      setEditingEvent({
+                        ...editingEvent,
+                        tweetUrl: e.target.value,
+                      });
+                      setErrors((prev) => {
+                        const newErrors = { ...prev };
+                        delete newErrors.tweetUrl;
+                        return newErrors;
+                      });
+                    }}
+                    placeholder="https://"
+                  />
+                  {errors.tweetUrl && (
+                    <p className="text-red-500 text-sm mt-1">{errors.tweetUrl}</p>
                   )}
                 </div>
-              </div>
-
-              {/* Links Section */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    链接（可选）
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    图片
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleAddLink}
-                    className="text-sm text-blue-500 hover:text-blue-600"
-                  >
-                    + 添加链接
-                  </button>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[200px] flex items-center justify-center bg-white relative">
+                    {(previewUrl || editingEvent.imageUrl) ? (
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <img
+                          src={previewUrl || editingEvent.imageUrl}
+                          alt="Preview"
+                          className="max-w-full max-h-[180px] object-contain bg-white"
+                        />
+                        <button
+                          onClick={() => {
+                            if (previewUrl) {
+                              URL.revokeObjectURL(previewUrl);
+                            }
+                            setPreviewUrl("");
+                            setSelectedFile(null);
+                            if (editingEvent) {
+                              setEditingEvent({
+                                ...editingEvent,
+                                imageUrl: "",
+                              });
+                            }
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md z-20"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center w-full select-none">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/gif"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          id="image-upload"
+                        />
+                        <label
+                          htmlFor="image-upload"
+                          className="cursor-pointer inline-block hover:opacity-80 transition-opacity"
+                        >
+                          <div className="mx-auto w-12 h-12 text-gray-400 mb-3">
+                            <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <p className="text-blue-600 text-sm font-medium">点击选择图片或拖拽到此处</p>
+                          <p className="text-gray-500 text-xs mt-2">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {editingEvent.links?.map((link, index) => (
-                  <div key={index} className="flex flex-col md:flex-row gap-2 mb-3">
-                    <input
-                      type="text"
-                      placeholder="链接文本"
-                      className="flex-1 px-3 py-2 border rounded-lg text-base"
-                      value={link.text}
-                      onChange={(e) =>
-                        handleUpdateLink(index, "text", e.target.value)
-                      }
-                    />
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        placeholder="https://"
-                        className={`w-full px-3 py-2 border rounded-lg text-base ${
-                          errors[`link_${index}`] ? "border-red-500" : ""
-                        }`}
-                        value={link.url}
-                        onChange={(e) =>
-                          handleUpdateLink(index, "url", e.target.value)
-                        }
-                      />
-                      {errors[`link_${index}`] && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors[`link_${index}`]}
-                        </p>
-                      )}
-                    </div>
+
+                {/* Links Section */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      链接（可选）
+                    </label>
                     <button
-                      onClick={() => handleRemoveLink(index)}
-                      className="w-full md:w-auto px-3 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 text-sm"
+                      type="button"
+                      onClick={handleAddLink}
+                      className="text-sm text-blue-500 hover:text-blue-600"
                     >
-                      删除
+                      + 添加链接
                     </button>
                   </div>
-                ))}
-              </div>
+                  {editingEvent.links?.map((link, index) => (
+                    <div key={index} className="flex flex-col md:flex-row gap-2 mb-3">
+                      <input
+                        type="text"
+                        placeholder="链接文本"
+                        className="flex-1 px-3 py-2 border rounded-lg text-base"
+                        value={link.text}
+                        onChange={(e) =>
+                          handleUpdateLink(index, "text", e.target.value)
+                        }
+                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="https://"
+                          className={`w-full px-3 py-2 border rounded-lg text-base ${
+                            errors[`link_${index}`] ? "border-red-500" : ""
+                          }`}
+                          value={link.url}
+                          onChange={(e) =>
+                            handleUpdateLink(index, "url", e.target.value)
+                          }
+                        />
+                        {errors[`link_${index}`] && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors[`link_${index}`]}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveLink(index)}
+                        className="w-full md:w-auto px-3 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 text-sm"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  ))}
+                </div>
 
-              <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 md:justify-end">
-                <button
-                  onClick={() => {
-                    setEditingEvent(null);
-                    setEditingIndex(null);
-                  }}
-                  className="w-full md:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 text-base"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleSaveEvent}
-                  className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base"
-                >
-                  保存
-                </button>
+                <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end space-x-3 z-10">
+                  <button
+                    onClick={() => {
+                      setEditingEvent(null);
+                      setEditingIndex(null);
+                      setErrors({});
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                        setPreviewUrl("");
+                      }
+                      setSelectedFile(null);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleSaveEvent}
+                    disabled={isUploading}
+                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-colors ${
+                      isUploading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+                    }`}
+                  >
+                    {isUploading ? "保存中..." : "保存"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
