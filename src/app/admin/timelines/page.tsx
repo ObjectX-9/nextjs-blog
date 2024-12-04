@@ -27,6 +27,9 @@ export default function TimelinesAdmin() {
     [key: number]: boolean;
   }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   // Fetch events on component mount
   useEffect(() => {
@@ -100,11 +103,6 @@ export default function TimelinesAdmin() {
     }
   };
 
-  const validateImageUrl = (url: string): boolean => {
-    if (!url) return true; // Optional URLs are allowed to be empty
-    return url.startsWith("/") || validateUrl(url);
-  };
-
   const handleSaveEvent = async () => {
     if (!editingEvent) return;
 
@@ -115,11 +113,6 @@ export default function TimelinesAdmin() {
     // Validate URLs
     if (editingEvent.tweetUrl && !validateUrl(editingEvent.tweetUrl)) {
       newErrors.tweetUrl = "请输入有效的URL（以http://或https://开头）";
-    }
-
-    if (editingEvent.imageUrl && !validateImageUrl(editingEvent.imageUrl)) {
-      newErrors.imageUrl =
-        "请输入有效的图片URL（以/开头的相对路径或以http://、https://开头的完整URL）";
     }
 
     // Validate links
@@ -137,8 +130,41 @@ export default function TimelinesAdmin() {
       return;
     }
 
+    setIsUploading(true);
     try {
-      const method = editingEvent._id ? "PUT" : "POST";
+      // Upload image if there's a selected file
+      let finalImageUrl = editingEvent.imageUrl;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("directory", "timelines");
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        if (!data.url) {
+          throw new Error("No URL returned from upload");
+        }
+        
+        // Extract the path after the domain
+        const url = new URL(data.url);
+        finalImageUrl = url.pathname;
+      }
+
+      // Save event with the new image URL
+      const eventToSave = {
+        ...editingEvent,
+        imageUrl: finalImageUrl,
+      };
+
+      const method = eventToSave._id ? "PUT" : "POST";
       const url = "/api/timelines";
       const response = await fetch(url, {
         method,
@@ -146,7 +172,7 @@ export default function TimelinesAdmin() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(
-          editingEvent._id ? editingEvent : { events: [editingEvent] }
+          eventToSave._id ? eventToSave : { events: [eventToSave] }
         ),
       });
 
@@ -160,12 +186,19 @@ export default function TimelinesAdmin() {
         setEditingEvent(null);
         setEditingIndex(null);
         setErrors({});
+        setSelectedFile(null);
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl("");
+        }
       } else {
         throw new Error("Failed to save timeline event");
       }
     } catch (error) {
       console.error("Error saving timeline event:", error);
       alert("保存失败，请重试");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -234,6 +267,43 @@ export default function TimelinesAdmin() {
     if (!text) return "";
     if (expanded || text.length <= 100) return text;
     return text.slice(0, 100) + "...";
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('图片大小不能超过10MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    
+    // Create preview URL
+    const prevUrl = previewUrl;
+    const newPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(newPreviewUrl);
+
+    // Clean up old preview URL
+    if (prevUrl) {
+      URL.revokeObjectURL(prevUrl);
+    }
+
+    // Clear the imageUrl when a new file is selected
+    if (editingEvent) {
+      setEditingEvent({
+        ...editingEvent,
+        imageUrl: "",
+      });
+    }
   };
 
   return (
@@ -412,30 +482,61 @@ export default function TimelinesAdmin() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  图片URL（可选）
+                  图片
                 </label>
-                <input
-                  type="text"
-                  className={`w-full px-3 py-2 border rounded-lg text-base ${
-                    errors.imageUrl ? "border-red-500" : ""
-                  }`}
-                  value={editingEvent.imageUrl || ""}
-                  onChange={(e) => {
-                    setEditingEvent({
-                      ...editingEvent,
-                      imageUrl: e.target.value,
-                    });
-                    setErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.imageUrl;
-                      return newErrors;
-                    });
-                  }}
-                  placeholder="/images/example.jpg 或 https://"
-                />
-                {errors.imageUrl && (
-                  <p className="text-red-500 text-sm mt-1">{errors.imageUrl}</p>
-                )}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  {(previewUrl || editingEvent.imageUrl) ? (
+                    <div className="relative">
+                      <img
+                        src={previewUrl || editingEvent.imageUrl}
+                        alt="Preview"
+                        className="w-full h-48 object-contain rounded-lg"
+                      />
+                      <button
+                        onClick={() => {
+                          if (previewUrl) {
+                            URL.revokeObjectURL(previewUrl);
+                          }
+                          setPreviewUrl("");
+                          setSelectedFile(null);
+                          if (editingEvent) {
+                            setEditingEvent({
+                              ...editingEvent,
+                              imageUrl: "",
+                            });
+                          }
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/gif"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer"
+                      >
+                        <div className="mx-auto w-12 h-12 text-gray-400">
+                          <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <p className="mt-1 text-blue-500 text-sm">点击选择图片或拖拽到此处</p>
+                        <p className="mt-1 text-gray-500 text-xs">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Links Section */}

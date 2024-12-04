@@ -21,9 +21,12 @@ export async function POST(request: Request) {
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    // Get directory path from form data or default to 'album'
+    const directory = formData.get("directory") as string || "album";
+
     // Generate unique filename
     const ext = file.name.split(".").pop();
-    const filename = `/images/album/${uuidv4()}.${ext}`;
+    const filename = `/images/${directory}/${uuidv4()}.${ext}`;
 
     // Upload to OSS
     const result = await client.put(filename, buffer);
