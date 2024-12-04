@@ -254,18 +254,20 @@ export default function PhotosManagementPage() {
   const handleDeletePhoto = async (id: string) => {
     if (confirm("确定要删除这张照片吗？")) {
       try {
-        const response = await fetch(`/api/photos/${id}`, {
+        const response = await fetch(`/api/photos?id=${id}`, {
           method: "DELETE",
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error("Failed to delete photo");
+          throw new Error(data.error || "删除照片失败");
         }
 
         await fetchPhotos();
       } catch (error) {
         console.error("Error deleting photo:", error);
-        alert("删除照片失败，请重试。");
+        alert(error instanceof Error ? error.message : "删除照片失败，请重试");
       }
     }
   };
