@@ -1,0 +1,74 @@
+name: Deploy Next.js App
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    # To use Turborepo Remote Caching, set the following environment variables for the job.
+    # env:
+    #   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    #   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Create .env.local file
+        run: echo "${{ secrets.ENV_LOCAL }}" > ${{ vars.ROOT_PATH }}/.env.local
+
+      - name: Build
+        run: |
+          cd ${{ vars.ROOT_PATH }}
+          pnpm build
+
+      - name: Compress build output
+        run: |
+          cd ${{ vars.ROOT_PATH }}
+          tar -czf build-output.tar.gz .next
+
+      - name: Copy files via SCP
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PROJECT_PATH: ${{ vars.VPS_PROJECT_PATH }}/${{ vars.ROOT_PATH }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cd ${{ vars.ROOT_PATH }}
+          scp -o StrictHostKeyChecking=no build-output.tar.gz $VPS_USER@$VPS_HOST:$VPS_PROJECT_PATH
+          scp -o StrictHostKeyChecking=no .env.local $VPS_USER@$VPS_HOST:$VPS_PROJECT_PATH
+
+      - name: Deploy to VPS
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST << 'EOF'
+            cd ${{ vars.VPS_PROJECT_PATH }}/${{ vars.ROOT_PATH }}
+            git fetch origin
+            git reset --hard origin/main
+            tar -xzf build-output.tar.gz
+            rm build-output.tar.gz
+            pm2 restart shortcuts --update-env || pm2 start "pnpm start" --name shortcuts
+          EOF
