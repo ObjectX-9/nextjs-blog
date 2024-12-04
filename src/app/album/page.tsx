@@ -16,20 +16,72 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
+// Cache management
+const CACHE_KEYS = {
+  PHOTOS: 'album_photos',
+  LAST_FETCH: 'album_last_fetch',
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getFromCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  const cached = localStorage.getItem(key);
+  if (!cached) return null;
+
+  try {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(key: string, data: any): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    })
+  );
+}
+
 export default function Album() {
   const [index, setIndex] = useState(-1);
   const [photos, setPhotos] = useState<IPhotoDB[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPhotos = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<IPhotoDB[]>(CACHE_KEYS.PHOTOS);
+      if (cached) {
+        setPhotos(cached);
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch("/api/photos");
         const data = await response.json();
         if (data.success) {
           setPhotos(data.photos);
+          setCache(CACHE_KEYS.PHOTOS, data.photos);
+        } else {
+          throw new Error('Failed to fetch photos');
         }
       } catch (error) {
         console.error("Error fetching photos:", error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch photos');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -60,6 +112,33 @@ export default function Album() {
       </div>
     </div>
   );
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-32 mb-8"></div>
+          <div className="h-4 bg-gray-200 rounded w-64 mb-6"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-gray-200 rounded-xl pb-[66.67%] relative"></div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
+        <h1 className="text-3xl font-bold mb-8">生活相册</h1>
+        <div className="text-red-500">Error: {error}</div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">

@@ -58,6 +58,45 @@ interface ProjectCategory {
   description: string;
 }
 
+const CACHE_KEYS = {
+  PROJECTS: 'projects_data',
+  CATEGORIES: 'project_categories',
+  SCREENSHOTS: 'project_screenshots',
+  GITHUB_STATS: 'project_github_stats',
+  LAST_FETCH: 'projects_last_fetch',
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const GITHUB_STATS_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for GitHub stats
+
+function getFromCache<T>(key: string, duration: number = CACHE_DURATION): T | null {
+  if (typeof window === "undefined") return null;
+  const cached = localStorage.getItem(key);
+  if (!cached) return null;
+
+  try {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > duration) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(key: string, data: any): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    })
+  );
+}
+
 export default function Projects() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
@@ -68,11 +107,22 @@ export default function Projects() {
 
   useEffect(() => {
     const fetchProjects = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<Project[]>(CACHE_KEYS.PROJECTS);
+      if (cached) {
+        setProjects(cached);
+        if (!selectedCategory && cached.length > 0) {
+          setSelectedCategory(cached[0].categoryId);
+        }
+        return;
+      }
+
       try {
         const response = await fetch('/api/projects');
         const data = await response.json();
         if (data.success) {
           setProjects(data.projects);
+          setCache(CACHE_KEYS.PROJECTS, data.projects);
           if (!selectedCategory && data.projects.length > 0) {
             setSelectedCategory(data.projects[0].categoryId);
           }
@@ -87,12 +137,22 @@ export default function Projects() {
 
   useEffect(() => {
     const fetchCategories = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<ProjectCategory[]>(CACHE_KEYS.CATEGORIES);
+      if (cached) {
+        setCategories(cached);
+        if (!selectedCategory && cached.length > 0) {
+          setSelectedCategory(cached[0]._id);
+        }
+        return;
+      }
+
       try {
         const response = await fetch('/api/project-categories');
         const data = await response.json();
         if (data.success) {
           setCategories(data.categories);
-          // 如果还没有选择分类，设置第一个分类作为默认选择
+          setCache(CACHE_KEYS.CATEGORIES, data.categories);
           if (!selectedCategory && data.categories.length > 0) {
             setSelectedCategory(data.categories[0]._id);
           }
@@ -120,6 +180,16 @@ export default function Projects() {
     currentProjects.forEach(async (project) => {
       if (!project.url || screenshots[project.url] || project.imageUrl) return;
 
+      // Try to get screenshot from cache first
+      const cachedScreenshot = getFromCache<string>(`${CACHE_KEYS.SCREENSHOTS}_${project.url}`);
+      if (cachedScreenshot) {
+        setScreenshots((prev) => ({
+          ...prev,
+          [project.url!]: cachedScreenshot,
+        }));
+        return;
+      }
+
       try {
         const response = await fetch(
           `/api/screenshot?url=${encodeURIComponent(project.url)}`
@@ -131,6 +201,7 @@ export default function Projects() {
             ...prev,
             [project.url!]: data.screenshot,
           }));
+          setCache(`${CACHE_KEYS.SCREENSHOTS}_${project.url}`, data.screenshot);
         }
       } catch (error) {
         console.error("Failed to fetch screenshot:", error);
@@ -143,6 +214,19 @@ export default function Projects() {
 
     currentProjects.forEach(async (project) => {
       if (!project.github) return;
+
+      // Try to get GitHub stats from cache first
+      const cachedStats = getFromCache<GithubStats>(
+        `${CACHE_KEYS.GITHUB_STATS}_${project.github}`,
+        GITHUB_STATS_CACHE_DURATION
+      );
+      if (cachedStats) {
+        setGithubStats((prev) => ({
+          ...prev,
+          [project.github!]: cachedStats,
+        }));
+        return;
+      }
 
       const match = project.github.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (!match) return;
@@ -175,13 +259,16 @@ export default function Projects() {
           }
         }
 
+        const stats = {
+          stars: repoData.stargazers_count,
+          isStarred,
+        };
+
         setGithubStats((prev) => ({
           ...prev,
-          [project.github!]: {
-            stars: repoData.stargazers_count,
-            isStarred,
-          },
+          [project.github!]: stats,
         }));
+        setCache(`${CACHE_KEYS.GITHUB_STATS}_${project.github}`, stats);
       } catch (error) {
         console.error("Failed to fetch GitHub stats:", error);
       }

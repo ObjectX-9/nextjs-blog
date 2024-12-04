@@ -185,6 +185,8 @@ export default function Friends() {
   const [newFriend, setNewFriend] = useState<Friend>(initialNewFriend);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [friends, setFriends] = useState<FriendWithId[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -192,6 +194,7 @@ export default function Friends() {
       const cached = getFromCache<FriendWithId[]>(CACHE_KEYS.FRIENDS);
       if (cached) {
         setFriends(cached);
+        setLoading(false);
         return;
       }
 
@@ -201,9 +204,14 @@ export default function Friends() {
         if (data.success) {
           setFriends(data.friends);
           setCache(CACHE_KEYS.FRIENDS, data.friends);
+        } else {
+          throw new Error('Failed to fetch friends');
         }
       } catch (error) {
         console.error("Error fetching friends:", error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch friends');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -245,6 +253,61 @@ export default function Friends() {
       setIsSubmitting(false);
     }
   };
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <section className="speakers py-8 px-8">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 bg-gray-200 rounded w-32"></div>
+          <div className="h-10 bg-gray-200 rounded w-24"></div>
+        </div>
+        <div className="h-5 bg-gray-200 rounded w-64 mb-8"></div>
+        
+        {isMobile ? (
+          <div className="grid grid-cols-1 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-white rounded-lg shadow-sm p-3 flex items-center gap-4">
+                  <div className="h-16 w-16 bg-gray-200 rounded-full flex-shrink-0"></div>
+                  <div className="flex-grow">
+                    <div className="h-5 bg-gray-200 rounded w-24 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-20"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="container hidden md:block animate-pulse">
+            <div className="grid grid-cols-3 gap-3 mb-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="aspect-square bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-6 bg-gray-200 rounded w-full"></div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="speakers py-8 px-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">🔗 友情链接</h1>
+        </div>
+        <div className="text-red-500">Error: {error}</div>
+      </section>
+    );
+  }
 
   return (
     <section className="speakers py-8 px-8">

@@ -57,12 +57,58 @@ const iconMap = {
   "Follow": <Eye size={16} />,
 } as const;
 
+// Cache management
+const CACHE_KEYS = {
+  SOCIAL_LINKS: 'social_links_data',
+  LAST_FETCH: 'social_links_last_fetch',
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getFromCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  const cached = localStorage.getItem(key);
+  if (!cached) return null;
+
+  try {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(key: string, data: any): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    })
+  );
+}
+
 const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const currentPathname = usePathname();
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSocialLinks = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<ISocialLink[]>(CACHE_KEYS.SOCIAL_LINKS);
+      if (cached) {
+        setSocialLinks(cached);
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch("/api/social-links");
         if (!response.ok) {
@@ -71,9 +117,15 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
         const data = await response.json();
         if (data.success) {
           setSocialLinks(data.socialLinks);
+          setCache(CACHE_KEYS.SOCIAL_LINKS, data.socialLinks);
+        } else {
+          throw new Error("Failed to fetch social links");
         }
       } catch (error) {
         console.error("Error fetching social links:", error);
+        setError(error instanceof Error ? error.message : "Failed to fetch social links");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -135,20 +187,38 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
         Online
       </span>
       <nav className="flex flex-col gap-1">
-        {socialList.map((socialItem, index) => (
-          <Link
-            key={`social-${index}`}
-            href={socialItem.href}
-            target="_blank"
-            className="group flex items-center justify-between rounded-lg p-2 hover:bg-gray-200"
-          >
-            <span className="flex items-center">
-              {socialItem.prefix}
-              <span className="ml-2 font-medium">{socialItem.title}</span>
-            </span>
-            <Forward size={16} />
-          </Link>
-        ))}
+        {loading ? (
+          // Loading skeleton for social links
+          <div className="space-y-2 px-3 py-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse flex items-center gap-2">
+                <div className="h-4 w-4 bg-zinc-200 rounded"></div>
+                <div className="h-4 bg-zinc-200 rounded w-20"></div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          // Error state
+          <div className="px-3 py-2 text-sm text-red-500">
+            Failed to load social links
+          </div>
+        ) : (
+          // Social links
+          socialList.map((socialItem, index) => (
+            <Link
+              key={`social-${index}`}
+              href={socialItem.href}
+              target="_blank"
+              className="group flex items-center justify-between rounded-lg p-2 hover:bg-gray-200"
+            >
+              <span className="flex items-center">
+                {socialItem.prefix}
+                <span className="ml-2 font-medium">{socialItem.title}</span>
+              </span>
+              <Forward size={16} />
+            </Link>
+          ))
+        )}
       </nav>
     </div>
   );
