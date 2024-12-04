@@ -1,26 +1,105 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { ItemType, Table } from "@/components/Table";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { getDb } from "@/lib/mongodb";
 
-async function getWorkspaceItems() {
+// Cache management functions
+const CACHE_KEYS = {
+  WORKSPACE_ITEMS: "workspace_items",
+  UNSPLASH_IMAGES: "workspace_unsplash_images",
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getFromCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  const cached = localStorage.getItem(key);
+  if (!cached) return null;
+
   try {
-    const db = await getDb();
-    const workspaceItems = await db
-      .collection("workspaceItems")
-      .find()
-      .sort({ createdAt: -1 })
-      .toArray();
-    return workspaceItems;
-  } catch (error) {
-    console.error("Error fetching workspace items:", error);
-    return [];
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
   }
 }
 
-export default async function Workspace() {
-  const imgList = ["/example1.jpg", "/example2.jpg"];
-  const workspaceItems = await getWorkspaceItems();
+function setCache(key: string, data: any): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    })
+  );
+}
+
+export default function Workspace() {
+  const [workspaceItems, setWorkspaceItems] = useState<ItemType[]>([]);
+  const [imgList] = useState<string[]>(["/example1.jpg", "/example2.jpg"]);
+
+  // Fetch workspace items with cache
+  useEffect(() => {
+    const fetchWorkspaceItems = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<ItemType[]>(CACHE_KEYS.WORKSPACE_ITEMS);
+      if (cached) {
+        setWorkspaceItems(cached);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/workspaceItems", {
+          // Add cache control headers
+          headers: {
+            "Cache-Control": "no-store",
+            Pragma: "no-cache",
+          },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setWorkspaceItems(data.items);
+          setCache(CACHE_KEYS.WORKSPACE_ITEMS, data.items);
+        }
+      } catch (error) {
+        console.error("Error fetching workspace items:", error);
+      }
+    };
+
+    fetchWorkspaceItems();
+  }, []);
+
+  // Fetch Unsplash images with cache
+  // useEffect(() => {
+  //   const fetchUnsplashImages = async () => {
+  //     // Try to get from cache first
+  //     const cached = getFromCache<string[]>(CACHE_KEYS.UNSPLASH_IMAGES);
+  //     if (cached) {
+  //       setImgList(cached);
+  //       return;
+  //     }
+
+  //     try {
+  //       const data = await getExampleImgSrc();
+  //       if (data && data.urls) {
+  //         const newImages = [data.urls.regular, data.urls.regular];
+  //         setImgList(newImages);
+  //         setCache(CACHE_KEYS.UNSPLASH_IMAGES, newImages);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching Unsplash images:", error);
+  //     }
+  //   };
+
+  //   fetchUnsplashImages();
+  // }, []);
 
   const fields = [
     { key: "product", label: "产品" },
@@ -60,7 +139,7 @@ export default async function Workspace() {
       <div className="border border-gray-200 rounded-xl mt-4">
         <Table
           caption="For other cool stuff, don't forget to check some.wtf"
-          items={workspaceItems as unknown as ItemType[]}
+          items={workspaceItems}
           fields={fields}
         ></Table>
       </div>

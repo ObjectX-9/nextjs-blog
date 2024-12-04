@@ -12,6 +12,42 @@ interface FriendWithId extends Friend {
 
 // 过滤出审核通过的友链
 
+// Cache management
+const CACHE_KEYS = {
+  FRIENDS: 'friends_data',
+  LAST_FETCH: 'friends_last_fetch',
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getFromCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  const cached = localStorage.getItem(key);
+  if (!cached) return null;
+
+  try {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(key: string, data: any): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    })
+  );
+}
+
 // Mobile card view component
 const MobileCard = ({ friend }: { friend: FriendWithId }) => (
   <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex items-center p-3 gap-4">
@@ -152,11 +188,19 @@ export default function Friends() {
 
   useEffect(() => {
     const fetchFriends = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<FriendWithId[]>(CACHE_KEYS.FRIENDS);
+      if (cached) {
+        setFriends(cached);
+        return;
+      }
+
       try {
         const response = await fetch("/api/friends?approved=true");
         const data = await response.json();
         if (data.success) {
           setFriends(data.friends);
+          setCache(CACHE_KEYS.FRIENDS, data.friends);
         }
       } catch (error) {
         console.error("Error fetching friends:", error);
