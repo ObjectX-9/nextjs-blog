@@ -51,6 +51,8 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          debug: true
+          port: 22
           # 拷贝 .next、public文件夹和package.json文件到服务器指定目录
           source: ".next/,public/,package.json,pnpm-lock.yaml,.env.local"
           target: "/www/wwwroot/nextjs-blog"
