@@ -1,18 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IWorkExperience, IWorkExperienceBase } from "@/app/model/work-experience";
+import {
+  IWorkExperience,
+  IWorkExperienceBase,
+} from "@/app/model/work-experience";
 
 export default function WorkExperienceManagementPage() {
   const [items, setItems] = useState<IWorkExperience[]>([]);
-  const [editingItem, setEditingItem] = useState<IWorkExperienceBase>({
-    company: "",
-    companyUrl: "",
-    position: "",
-    description: "",
-    startDate: "",
-    endDate: null,
-  });
+  const [editingItem, setEditingItem] = useState<IWorkExperienceBase | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -38,7 +34,7 @@ export default function WorkExperienceManagementPage() {
     if (!editingItem) return;
 
     try {
-      const method = (editingItem as any)._id ? "PUT" : "POST";
+      const method = editingItem._id ? "PUT" : "POST";
       const response = await fetch("/api/work-experience", {
         method,
         headers: {
@@ -50,17 +46,10 @@ export default function WorkExperienceManagementPage() {
       const data = await response.json();
       if (data.success) {
         await fetchWorkExperiences();
-        setEditingItem({
-          company: "",
-          companyUrl: "",
-          position: "",
-          description: "",
-          startDate: "",
-          endDate: null,
-        });
+        setEditingItem(null);
         setEditingIndex(null);
       } else {
-        throw new Error(data.error || "Failed to save work experience");
+        throw new Error(data.error || `Failed to ${editingItem._id ? "update" : "create"} work experience`);
       }
     } catch (error) {
       console.error("Error saving work experience:", error);
@@ -90,6 +79,7 @@ export default function WorkExperienceManagementPage() {
 
   const handleAddItem = () => {
     setEditingItem({
+      _id: undefined,
       company: "",
       companyUrl: "",
       position: "",
@@ -102,6 +92,7 @@ export default function WorkExperienceManagementPage() {
 
   const handleEditItem = (item: IWorkExperience) => {
     setEditingItem({
+      _id: item._id,
       company: item.company,
       companyUrl: item.companyUrl,
       position: item.position,
@@ -114,27 +105,27 @@ export default function WorkExperienceManagementPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="flex items-center justify-between p-6 border-b">
-        <h1 className="text-2xl font-bold">工作经历管理</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-6 border-b space-y-4 md:space-y-0">
+        <h1 className="text-xl md:text-2xl font-bold">工作经历管理</h1>
         <button
           onClick={handleAddItem}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
         >
           添加经历
         </button>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="space-y-4 w-full">
           {items.map((item, index) => (
             <div
               key={(item as any)._id}
-              className="border rounded-lg p-4 bg-white w-full"
+              className="border rounded-lg p-4 bg-white w-full shadow-sm"
             >
-              <div className="flex justify-between items-start w-full">
-                <div className="flex flex-col flex-grow">
-                  <div className="flex items-center gap-4">
-                    <h3 className="font-bold text-lg">
+              <div className="flex flex-col md:flex-row justify-between items-start w-full space-y-4 md:space-y-0">
+                <div className="flex flex-col flex-grow space-y-2">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                    <h3 className="font-bold text-base md:text-lg">
                       <a
                         href={item.companyUrl}
                         target="_blank"
@@ -144,25 +135,25 @@ export default function WorkExperienceManagementPage() {
                         {item.company}
                       </a>
                     </h3>
-                    <span className="text-gray-600">{item.position}</span>
+                    <span className="text-gray-600 text-sm md:text-base">{item.position}</span>
                   </div>
-                  <div className="mt-2 text-gray-600">
-                    <p>{item.description}</p>
+                  <div className="text-gray-600 text-sm md:text-base">
+                    <p className="whitespace-pre-wrap">{item.description}</p>
                     <p className="mt-1">
                       {item.startDate} ~ {item.endDate || "至今"}
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2 ml-4">
+                <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0 md:ml-4">
                   <button
                     onClick={() => handleEditItem(item)}
-                    className="px-4 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    className="flex-1 md:flex-none px-4 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
                   >
                     编辑
                   </button>
                   <button
                     onClick={() => handleDeleteItem((item as any)._id)}
-                    className="px-4 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
+                    className="flex-1 md:flex-none px-4 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
                   >
                     删除
                   </button>
@@ -174,19 +165,21 @@ export default function WorkExperienceManagementPage() {
       </div>
 
       {editingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl mx-4">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingIndex !== null ? "编辑工作经历" : "添加工作经历"}
-            </h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white p-4 md:p-6 border-b">
+              <h2 className="text-lg md:text-xl font-semibold">
+                {editingIndex !== null ? "编辑工作经历" : "添加工作经历"}
+              </h2>
+            </div>
+            <div className="p-4 md:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   公司名称
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingItem.company}
                   onChange={(e) =>
                     setEditingItem({ ...editingItem, company: e.target.value })
@@ -199,7 +192,7 @@ export default function WorkExperienceManagementPage() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingItem.companyUrl}
                   onChange={(e) =>
                     setEditingItem({
@@ -215,7 +208,7 @@ export default function WorkExperienceManagementPage() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingItem.position}
                   onChange={(e) =>
                     setEditingItem({ ...editingItem, position: e.target.value })
@@ -227,7 +220,7 @@ export default function WorkExperienceManagementPage() {
                   工作描述
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   rows={3}
                   value={editingItem.description}
                   onChange={(e) =>
@@ -244,7 +237,7 @@ export default function WorkExperienceManagementPage() {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingItem.startDate}
                   onChange={(e) =>
                     setEditingItem({
@@ -258,10 +251,10 @@ export default function WorkExperienceManagementPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   结束时间
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
                   <input
                     type="date"
-                    className="flex-1 px-3 py-2 border rounded"
+                    className="w-full md:flex-1 px-3 py-2 border rounded-lg text-base"
                     value={editingItem.endDate || ""}
                     onChange={(e) =>
                       setEditingItem({
@@ -271,9 +264,10 @@ export default function WorkExperienceManagementPage() {
                     }
                     disabled={editingItem.endDate === null}
                   />
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 whitespace-nowrap">
                     <input
                       type="checkbox"
+                      className="w-4 h-4"
                       checked={editingItem.endDate === null}
                       onChange={(e) =>
                         setEditingItem({
@@ -287,26 +281,19 @@ export default function WorkExperienceManagementPage() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row md:justify-end space-y-2 md:space-y-0 md:space-x-2">
               <button
                 onClick={() => {
-                  setEditingItem({
-                    company: "",
-                    companyUrl: "",
-                    position: "",
-                    description: "",
-                    startDate: "",
-                    endDate: null,
-                  });
+                  setEditingItem(null);
                   setEditingIndex(null);
                 }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="w-full md:w-auto px-4 py-2 border rounded-lg hover:bg-gray-100 text-base"
               >
                 取消
               </button>
               <button
                 onClick={handleSaveItem}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base"
               >
                 保存
               </button>

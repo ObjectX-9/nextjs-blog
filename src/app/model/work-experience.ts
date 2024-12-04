@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IWorkExperienceBase {
+  _id?: string;
   company: string;
   companyUrl: string;
   position: string;
