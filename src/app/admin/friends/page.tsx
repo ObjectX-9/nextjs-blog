@@ -8,6 +8,11 @@ interface FriendWithId extends Friend {
   _id: string;
 }
 
+interface ActionModalFriend {
+  friend: FriendWithId;
+  index: number;
+}
+
 export default function FriendsManagementPage() {
   const [friends, setFriends] = useState<FriendWithId[]>([]);
   const [showAddFriend, setShowAddFriend] = useState(false);
@@ -26,6 +31,7 @@ export default function FriendsManagementPage() {
     isApproved: false,
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [actionModalFriend, setActionModalFriend] = useState<ActionModalFriend | null>(null);
 
   useEffect(() => {
     fetchFriends();
@@ -125,12 +131,12 @@ export default function FriendsManagementPage() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <h1 className="text-2xl font-bold p-6">友链管理</h1>
+    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden">
+      <h1 className="text-2xl font-bold p-4 md:p-6">友链管理</h1>
 
-      <div className="px-6 pb-6">
+      <div className="px-4 md:px-6 pb-6">
         <button
-          className="px-4 py-2 bg-blue-500 text-white rounded"
+          className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
           onClick={() => setShowAddFriend(true)}
         >
           添加友链
@@ -140,36 +146,44 @@ export default function FriendsManagementPage() {
           <table className="w-full table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="p-4 text-left">头像</th>
-                <th className="p-4 text-left">名称</th>
-                <th className="p-4 text-left">标题</th>
-                <th className="p-4 text-left">描述</th>
-                <th className="p-4 text-left">链接</th>
-                <th className="p-4 text-left">职位</th>
-                <th className="p-4 text-left">地址</th>
-                <th className="p-4 text-left">状态</th>
-                <th className="p-4 text-left">操作</th>
+                <th className="p-2 md:p-4 text-left text-sm md:text-base w-[60px] md:w-[80px]">头像</th>
+                <th className="p-2 md:p-4 text-left text-sm md:text-base">名称</th>
+                <th className="hidden md:table-cell p-4 text-left">标题</th>
+                <th className="hidden md:table-cell p-4 text-left">描述</th>
+                <th className="hidden md:table-cell p-4 text-left">链接</th>
+                <th className="hidden md:table-cell p-4 text-left">职位</th>
+                <th className="hidden md:table-cell p-4 text-left">地址</th>
+                <th className="p-2 md:p-4 text-left text-sm md:text-base">状态</th>
+                <th className="hidden md:table-cell p-4 text-left">操作</th>
               </tr>
             </thead>
             <tbody>
               {friends.map((friend, index) => (
-                <tr key={index} className="border-t">
-                  <td className="p-4">
+                <tr 
+                  key={index} 
+                  className="border-t cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    if (window.innerWidth < 768) {
+                      setActionModalFriend({ friend, index });
+                    }
+                  }}
+                >
+                  <td className="p-2 md:p-4">
                     <img
                       src={friend.avatar}
                       alt={friend.name}
                       className="w-8 h-8 rounded-full"
                     />
                   </td>
-                  <td className="p-4">
+                  <td className="p-2 md:p-4">
                     <span
-                      className="block max-w-[100px] truncate"
+                      className="block max-w-[100px] truncate text-sm md:text-base"
                       title={friend.name}
                     >
                       {friend.name}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="hidden md:table-cell p-4">
                     <span
                       className="block max-w-[150px] truncate"
                       title={friend.title}
@@ -177,7 +191,7 @@ export default function FriendsManagementPage() {
                       {friend.title}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="hidden md:table-cell p-4">
                     <span
                       className="block max-w-[200px] truncate"
                       title={friend.description}
@@ -185,18 +199,19 @@ export default function FriendsManagementPage() {
                       {friend.description}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="hidden md:table-cell p-4">
                     <a
                       href={friend.link}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:underline block max-w-[200px] truncate"
                       title={friend.link}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {friend.link}
                     </a>
                   </td>
-                  <td className="p-4">
+                  <td className="hidden md:table-cell p-4">
                     <span
                       className="block max-w-[150px] truncate"
                       title={friend.position || ""}
@@ -204,7 +219,7 @@ export default function FriendsManagementPage() {
                       {friend.position || "-"}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="hidden md:table-cell p-4">
                     <span
                       className="block max-w-[150px] truncate"
                       title={friend.location || ""}
@@ -212,30 +227,34 @@ export default function FriendsManagementPage() {
                       {friend.location || "-"}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="p-2 md:p-4">
                     <span
-                      className="block max-w-[100px] truncate"
+                      className="block max-w-[100px] truncate text-sm md:text-base"
                       title={friend.isApproved ? "已审核" : "待审核"}
                     >
                       {friend.isApproved ? "已审核" : "待审核"}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="hidden md:table-cell p-4">
                     <div className="flex gap-2">
                       <button
                         className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingFriend({
                             index,
                             friend: { ...friend },
-                          })
-                        }
+                          });
+                        }}
                       >
                         编辑
                       </button>
                       <button
                         className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                        onClick={() => handleDeleteFriend(friend._id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFriend(friend._id);
+                        }}
                       >
                         删除
                       </button>
@@ -249,8 +268,8 @@ export default function FriendsManagementPage() {
       </div>
 
       {showAddFriend && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-[600px]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[600px] max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">添加友链</h3>
             <div className="space-y-4">
               <div>
@@ -345,13 +364,13 @@ export default function FriendsManagementPage() {
               </div>
               <div className="flex gap-2 justify-end">
                 <button
-                  className="px-4 py-2 bg-gray-200 rounded"
+                  className="w-full md:w-auto px-4 py-2 bg-gray-200 rounded text-sm md:text-base"
                   onClick={() => setShowAddFriend(false)}
                 >
                   取消
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
                   onClick={handleAddFriend}
                 >
                   确认添加
@@ -363,8 +382,8 @@ export default function FriendsManagementPage() {
       )}
 
       {editingFriend && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-[600px]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[600px] max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">编辑友链</h3>
             <div className="space-y-4">
               <div>
@@ -500,18 +519,101 @@ export default function FriendsManagementPage() {
               </div>
               <div className="flex gap-2 justify-end">
                 <button
-                  className="px-4 py-2 bg-gray-200 rounded"
+                  className="w-full md:w-auto px-4 py-2 bg-gray-200 rounded text-sm md:text-base"
                   onClick={() => setEditingFriend(null)}
                 >
                   取消
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
                   onClick={handleEditFriendSave}
                 >
                   保存修改
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {actionModalFriend && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
+          onClick={() => setActionModalFriend(null)}
+        >
+          <div 
+            className="bg-white w-full md:w-auto md:min-w-[300px] rounded-t-xl md:rounded-xl p-4 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src={actionModalFriend.friend.avatar}
+                alt={actionModalFriend.friend.name}
+                className="w-12 h-12 rounded-full"
+              />
+              <div>
+                <h3 className="text-lg font-semibold">{actionModalFriend.friend.name}</h3>
+                <p className="text-sm text-gray-500">{actionModalFriend.friend.title}</p>
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <p className="text-sm">
+                <span className="text-gray-500">链接：</span>
+                <a 
+                  href={actionModalFriend.friend.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {actionModalFriend.friend.link}
+                </a>
+              </p>
+              <p className="text-sm">
+                <span className="text-gray-500">描述：</span>
+                {actionModalFriend.friend.description}
+              </p>
+              <p className="text-sm">
+                <span className="text-gray-500">职位：</span>
+                {actionModalFriend.friend.position || "-"}
+              </p>
+              <p className="text-sm">
+                <span className="text-gray-500">地址：</span>
+                {actionModalFriend.friend.location || "-"}
+              </p>
+              <p className="text-sm">
+                <span className="text-gray-500">状态：</span>
+                {actionModalFriend.friend.isApproved ? "已审核" : "待审核"}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                className="w-full px-4 py-2 bg-gray-500 text-white rounded text-base"
+                onClick={() => {
+                  setEditingFriend({
+                    index: actionModalFriend.index,
+                    friend: { ...actionModalFriend.friend },
+                  });
+                  setActionModalFriend(null);
+                }}
+              >
+                编辑友链
+              </button>
+              <button
+                className="w-full px-4 py-2 bg-red-500 text-white rounded text-base"
+                onClick={() => {
+                  handleDeleteFriend(actionModalFriend.friend._id);
+                  setActionModalFriend(null);
+                }}
+              >
+                删除友链
+              </button>
+              <button
+                className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded text-base"
+                onClick={() => setActionModalFriend(null)}
+              >
+                取消
+              </button>
             </div>
           </div>
         </div>
