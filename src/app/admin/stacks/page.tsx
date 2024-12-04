@@ -99,12 +99,12 @@ export default function StacksAdmin() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">技术栈管理</h1>
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
+        <h1 className="text-xl md:text-2xl font-bold">技术栈管理</h1>
         <button
           onClick={handleAddStack}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
         >
           添加技术栈
         </button>
@@ -112,37 +112,37 @@ export default function StacksAdmin() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {stacks.map((stack) => (
-          <div key={stack._id} className="border rounded-lg p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2">
+          <div key={stack._id} className="border rounded-lg p-4 shadow-sm">
+            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-center gap-3">
                 <img
                   src={stack.iconSrc}
                   alt={stack.title}
-                  className="w-8 h-8"
+                  className="w-8 h-8 object-contain"
                 />
-                <h3 className="font-semibold">{stack.title}</h3>
+                <h3 className="font-semibold text-sm md:text-base">{stack.title}</h3>
               </div>
-              <div className="space-x-2">
+              <div className="flex space-x-2 w-full md:w-auto">
                 <button
                   onClick={() => handleEditStack(stack)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="flex-1 md:flex-none px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
                 >
                   编辑
                 </button>
                 <button
                   onClick={() => handleDeleteStack(stack._id)}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  className="flex-1 md:flex-none px-3 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600"
                 >
                   删除
                 </button>
               </div>
             </div>
-            <p className="mt-2 text-gray-600 text-sm">{stack.description}</p>
+            <p className="mt-3 text-gray-600 text-sm line-clamp-2">{stack.description}</p>
             <a
               href={stack.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 text-blue-500 text-sm block hover:underline"
+              className="mt-2 text-blue-500 text-sm block hover:underline break-all"
             >
               {stack.link}
             </a>
@@ -152,19 +152,22 @@ export default function StacksAdmin() {
 
       {/* Edit Modal */}
       {editingStack && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingStack._id ? "编辑技术栈" : "添加技术栈"}
-            </h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white p-4 md:p-6 border-b">
+              <h2 className="text-lg md:text-xl font-semibold">
+                {editingStack._id ? "编辑技术栈" : "添加技术栈"}
+              </h2>
+            </div>
+            
+            <div className="p-4 md:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   标题
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingStack.title}
                   onChange={(e) =>
                     setEditingStack({ ...editingStack, title: e.target.value })
@@ -176,7 +179,7 @@ export default function StacksAdmin() {
                   描述
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base min-h-[100px]"
                   value={editingStack.description}
                   onChange={(e) =>
                     setEditingStack({
@@ -192,7 +195,7 @@ export default function StacksAdmin() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingStack.link}
                   onChange={(e) =>
                     setEditingStack({ ...editingStack, link: e.target.value })
@@ -205,29 +208,28 @@ export default function StacksAdmin() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingStack.iconSrc}
                   onChange={(e) =>
                     setEditingStack({ ...editingStack, iconSrc: e.target.value })
                   }
                 />
               </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <button
-                  onClick={() => {
-                    setEditingStack(null);
-                  }}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleSaveStack}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  保存
-                </button>
-              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 md:justify-end">
+              <button
+                onClick={() => setEditingStack(null)}
+                className="w-full md:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 text-base"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveStack}
+                className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base"
+              >
+                保存
+              </button>
             </div>
           </div>
         </div>
