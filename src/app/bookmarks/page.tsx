@@ -10,6 +10,44 @@ interface Screenshot {
   screenshot?: string;
 }
 
+// Cache management functions
+const CACHE_KEYS = {
+  CATEGORIES: "bookmark_categories",
+  BOOKMARKS: "bookmark_bookmarks_",
+  SCREENSHOTS: "bookmark_screenshots",
+  LAST_FETCH: "bookmark_last_fetch_",
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getFromCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  const cached = localStorage.getItem(key);
+  if (!cached) return null;
+
+  try {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(key: string, data: any): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    })
+  );
+}
+
 export default function Bookmarks() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<IBookmarkCategory[]>([]);
@@ -17,14 +55,25 @@ export default function Bookmarks() {
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
   const [showMobileList, setShowMobileList] = useState(false);
 
-  // Fetch categories
+  // Fetch categories with cache
   useEffect(() => {
     const fetchCategories = async () => {
+      // Try to get from cache first
+      const cached = getFromCache<IBookmarkCategory[]>(CACHE_KEYS.CATEGORIES);
+      if (cached) {
+        setCategories(cached);
+        if (cached.length > 0) {
+          setSelectedCategory(cached[0]._id!.toString());
+        }
+        return;
+      }
+
       try {
         const response = await fetch("/api/bookmarkCategories");
         const data = await response.json();
         if (data.success) {
           setCategories(data.categories);
+          setCache(CACHE_KEYS.CATEGORIES, data.categories);
           if (data.categories.length > 0) {
             setSelectedCategory(data.categories[0]._id.toString());
           }
@@ -36,10 +85,18 @@ export default function Bookmarks() {
     fetchCategories();
   }, []);
 
-  // Fetch bookmarks when category changes
+  // Fetch bookmarks when category changes with cache
   useEffect(() => {
     const fetchBookmarks = async () => {
       if (!selectedCategory) return;
+
+      // Try to get from cache first
+      const cacheKey = CACHE_KEYS.BOOKMARKS + selectedCategory;
+      const cached = getFromCache<IBookmark[]>(cacheKey);
+      if (cached) {
+        setBookmarks(cached);
+        return;
+      }
 
       try {
         const response = await fetch(
@@ -48,6 +105,7 @@ export default function Bookmarks() {
         const data = await response.json();
         if (data.success) {
           setBookmarks(data.bookmarks);
+          setCache(cacheKey, data.bookmarks);
         }
       } catch (error) {
         console.error("Failed to fetch bookmarks:", error);
@@ -56,10 +114,21 @@ export default function Bookmarks() {
     fetchBookmarks();
   }, [selectedCategory]);
 
-  // Fetch screenshots
+  // Fetch screenshots with cache
   useEffect(() => {
-    bookmarks.forEach(async (bookmark) => {
+    const fetchScreenshot = async (bookmark: IBookmark) => {
       if (screenshots[bookmark.url] || bookmark.imageUrl) return;
+
+      // Try to get from cache first
+      const cachedScreenshots =
+        getFromCache<Record<string, string>>(CACHE_KEYS.SCREENSHOTS) || {};
+      if (cachedScreenshots[bookmark.url]) {
+        setScreenshots((prev) => ({
+          ...prev,
+          [bookmark.url]: cachedScreenshots[bookmark.url],
+        }));
+        return;
+      }
 
       try {
         const response = await fetch(
@@ -68,15 +137,22 @@ export default function Bookmarks() {
         const data = await response.json();
 
         if (data.screenshot) {
-          setScreenshots((prev) => ({
-            ...prev,
-            [bookmark.url]: data.screenshot,
-          }));
+          setScreenshots((prev) => {
+            const newScreenshots = {
+              ...prev,
+              [bookmark.url]: data.screenshot,
+            };
+            // Update cache
+            setCache(CACHE_KEYS.SCREENSHOTS, newScreenshots);
+            return newScreenshots;
+          });
         }
       } catch (error) {
         console.error("Failed to fetch screenshot:", error);
       }
-    });
+    };
+
+    bookmarks.forEach(fetchScreenshot);
   }, [bookmarks, screenshots]);
 
   // Web layout
