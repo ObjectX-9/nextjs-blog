@@ -199,12 +199,15 @@ export default function PhotosManagementPage() {
   const handleEditPhoto = async () => {
     if (editingPhoto && editingPhoto.photo.src && editingPhoto.photo.title) {
       try {
-        const response = await fetch(`/api/photos/${editingPhoto.photo._id}`, {
+        // Create a copy of the photo object without the _id field
+        const { _id, ...photoWithoutId } = editingPhoto.photo;
+        
+        const response = await fetch(`/api/photos?id=${_id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ photo: editingPhoto.photo }),
+          body: JSON.stringify({ photo: photoWithoutId }),
         });
 
         if (!response.ok) {
