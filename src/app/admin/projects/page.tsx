@@ -156,30 +156,30 @@ export default function ProjectsAdmin() {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">项目管理</h1>
+    <div className="p-4 md:p-6 max-w-[100vw] overflow-x-hidden">
+      <h1 className="text-xl md:text-2xl font-bold mb-6">项目管理</h1>
       
       {/* Add New Category Section */}
       <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">添加新分类</h2>
-        <div className="flex gap-4">
+        <h2 className="text-lg md:text-xl font-semibold mb-4">添加新分类</h2>
+        <div className="flex flex-col md:flex-row gap-4">
           <input
             type="text"
             placeholder="分类名称"
-            className="px-3 py-2 border rounded"
+            className="px-3 py-2 border rounded w-full md:w-auto"
             value={newCategory.name}
             onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
           />
           <input
             type="text"
             placeholder="分类描述"
-            className="px-3 py-2 border rounded flex-1"
+            className="px-3 py-2 border rounded w-full md:flex-1"
             value={newCategory.description}
             onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
           />
           <button
             onClick={handleAddCategory}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 w-full md:w-auto"
           >
             添加分类
           </button>
@@ -191,12 +191,12 @@ export default function ProjectsAdmin() {
         const categoryProjects = getProjectsByCategory(category._id!);
         return (
           <div key={category._id} className="mb-8">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4 mb-4">
               <div>
-                <h2 className="text-xl font-semibold">{category.name}</h2>
-                <p className="text-gray-600">{category.description}</p>
+                <h2 className="text-lg md:text-xl font-semibold">{category.name}</h2>
+                <p className="text-gray-600 text-sm md:text-base">{category.description}</p>
               </div>
-              <div className="space-x-2">
+              <div className="flex gap-2">
                 <button
                   onClick={() => setEditingCategory({
                     _id: category._id!,
@@ -206,13 +206,13 @@ export default function ProjectsAdmin() {
                       projects: category.projects
                     }
                   })}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex-1 md:flex-none"
                 >
                   编辑分类
                 </button>
                 <button
                   onClick={() => handleDeleteCategory(category._id!)}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-1 md:flex-none"
                 >
                   删除分类
                 </button>
@@ -221,34 +221,52 @@ export default function ProjectsAdmin() {
             <div className="space-y-4">
               {categoryProjects.map((project) => (
                 <div key={project._id} className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold">{project.title}</h3>
-                      <p className="text-gray-600">{project.description}</p>
-                      <div className="mt-2 space-x-2">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-base md:text-lg">{project.title}</h3>
+                      <p className="text-gray-600 text-sm md:text-base">{project.description}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
                         {project.tags.map((tag, index) => (
                           <span
                             key={index}
-                            className="inline-block px-2 py-1 text-sm bg-gray-100 rounded"
+                            className="inline-block px-2 py-1 text-xs md:text-sm bg-gray-100 rounded"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
+                      <div className="mt-2 text-sm text-gray-500">
+                        <span className="mr-4">状态: {
+                          project.status === 'completed' ? '已完成' :
+                          project.status === 'in-progress' ? '进行中' : '计划中'
+                        }</span>
+                        {project.github && (
+                          <a href={project.github} target="_blank" rel="noopener noreferrer" 
+                             className="mr-4 text-blue-500 hover:underline">
+                            GitHub
+                          </a>
+                        )}
+                        {project.url && (
+                          <a href={project.url} target="_blank" rel="noopener noreferrer"
+                             className="text-blue-500 hover:underline">
+                            项目链接
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div className="space-x-2">
+                    <div className="flex gap-2 md:flex-none w-full md:w-auto">
                       <button
                         onClick={() => setEditingProject({
                           ...project,
                           categoryId: category._id
                         })}
-                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex-1 md:flex-none"
                       >
                         编辑
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                        className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-1 md:flex-none"
                       >
                         删除
                       </button>
@@ -264,7 +282,7 @@ export default function ProjectsAdmin() {
                   status: "planned",
                   categoryId: category._id
                 })}
-                className="px-4 py-2 border border-dashed rounded-lg w-full text-gray-500 hover:bg-gray-50"
+                className="px-4 py-2 border border-dashed rounded-lg w-full text-gray-500 hover:bg-gray-50 text-sm md:text-base"
               >
                 + 添加新项目
               </button>
@@ -275,74 +293,76 @@ export default function ProjectsAdmin() {
 
       {/* Edit Project Modal */}
       {editingProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingProject._id ? "编辑项目" : "添加新项目"}
-            </h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="项目标题"
-                className="w-full px-3 py-2 border rounded"
-                value={editingProject.title}
-                onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
-              />
-              <textarea
-                placeholder="项目描述"
-                className="w-full px-3 py-2 border rounded"
-                value={editingProject.description}
-                onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="GitHub URL"
-                className="w-full px-3 py-2 border rounded"
-                value={editingProject.github || ""}
-                onChange={(e) => setEditingProject({ ...editingProject, github: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="项目URL"
-                className="w-full px-3 py-2 border rounded"
-                value={editingProject.url || ""}
-                onChange={(e) => setEditingProject({ ...editingProject, url: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="标签 (用逗号分隔)"
-                className="w-full px-3 py-2 border rounded"
-                value={editingProject.tags.join(", ")}
-                onChange={(e) => setEditingProject({
-                  ...editingProject,
-                  tags: e.target.value.split(",").map(tag => tag.trim()).filter(Boolean)
-                })}
-              />
-              <select
-                className="w-full px-3 py-2 border rounded"
-                value={editingProject.status}
-                onChange={(e) => setEditingProject({
-                  ...editingProject,
-                  status: e.target.value as "completed" | "in-progress" | "planned"
-                })}
-              >
-                <option value="planned">计划中</option>
-                <option value="in-progress">进行中</option>
-                <option value="completed">已完成</option>
-              </select>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => setEditingProject(null)}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 md:p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {editingProject._id ? "编辑项目" : "添加新项目"}
+              </h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="项目标题"
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingProject.title}
+                  onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
+                />
+                <textarea
+                  placeholder="项目描述"
+                  className="w-full px-3 py-2 border rounded text-base min-h-[100px]"
+                  value={editingProject.description}
+                  onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="GitHub URL"
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingProject.github || ""}
+                  onChange={(e) => setEditingProject({ ...editingProject, github: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="项目URL"
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingProject.url || ""}
+                  onChange={(e) => setEditingProject({ ...editingProject, url: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="标签 (用逗号分隔)"
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingProject.tags.join(", ")}
+                  onChange={(e) => setEditingProject({
+                    ...editingProject,
+                    tags: e.target.value.split(",").map(tag => tag.trim()).filter(Boolean)
+                  })}
+                />
+                <select
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingProject.status}
+                  onChange={(e) => setEditingProject({
+                    ...editingProject,
+                    status: e.target.value as "completed" | "in-progress" | "planned"
+                  })}
                 >
-                  取消
-                </button>
-                <button
-                  onClick={() => handleSaveProject(editingProject)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  保存
-                </button>
+                  <option value="planned">计划中</option>
+                  <option value="in-progress">进行中</option>
+                  <option value="completed">已完成</option>
+                </select>
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => setEditingProject(null)}
+                    className="px-4 py-2 border rounded hover:bg-gray-50 flex-1 text-base"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={() => handleSaveProject(editingProject)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex-1 text-base"
+                  >
+                    保存
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -351,43 +371,45 @@ export default function ProjectsAdmin() {
 
       {/* Edit Category Modal */}
       {editingCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h2 className="text-xl font-semibold mb-4">编辑分类</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="分类名称"
-                className="w-full px-3 py-2 border rounded"
-                value={editingCategory.data.name}
-                onChange={(e) => setEditingCategory({
-                  ...editingCategory,
-                  data: { ...editingCategory.data, name: e.target.value }
-                })}
-              />
-              <input
-                type="text"
-                placeholder="分类描述"
-                className="w-full px-3 py-2 border rounded"
-                value={editingCategory.data.description}
-                onChange={(e) => setEditingCategory({
-                  ...editingCategory,
-                  data: { ...editingCategory.data, description: e.target.value }
-                })}
-              />
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => setEditingCategory(null)}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={() => handleSaveCategory(editingCategory._id, editingCategory.data)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  保存
-                </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl">
+            <div className="p-4 md:p-6">
+              <h2 className="text-xl font-semibold mb-4">编辑分类</h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="分类名称"
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingCategory.data.name}
+                  onChange={(e) => setEditingCategory({
+                    ...editingCategory,
+                    data: { ...editingCategory.data, name: e.target.value }
+                  })}
+                />
+                <input
+                  type="text"
+                  placeholder="分类描述"
+                  className="w-full px-3 py-2 border rounded text-base"
+                  value={editingCategory.data.description}
+                  onChange={(e) => setEditingCategory({
+                    ...editingCategory,
+                    data: { ...editingCategory.data, description: e.target.value }
+                  })}
+                />
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => setEditingCategory(null)}
+                    className="px-4 py-2 border rounded hover:bg-gray-50 flex-1 text-base"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={() => handleSaveCategory(editingCategory._id, editingCategory.data)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex-1 text-base"
+                  >
+                    保存
+                  </button>
+                </div>
               </div>
             </div>
           </div>
