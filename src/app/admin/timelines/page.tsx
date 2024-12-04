@@ -153,12 +153,11 @@ export default function TimelinesAdmin() {
           throw new Error("No URL returned from upload");
         }
         
-        // Extract the path after the domain
-        const url = new URL(data.url);
-        finalImageUrl = url.pathname;
+        // Use the complete URL directly from the upload response
+        finalImageUrl = data.url;
       }
 
-      // Save event with the new image URL
+      // Save event with the image URL
       const eventToSave = {
         ...editingEvent,
         imageUrl: finalImageUrl,
@@ -335,6 +334,15 @@ export default function TimelinesAdmin() {
                   <p className="text-sm text-gray-500">
                     📍 {event.location}
                   </p>
+                )}
+                {event.imageUrl && (
+                  <div className="mt-2">
+                    <img
+                      src={event.imageUrl}
+                      alt={event.title}
+                      className="max-h-[120px] object-contain bg-white"
+                    />
+                  </div>
                 )}
                 <div className="text-gray-600">
                   <p className="text-sm md:text-base">
