@@ -10,6 +10,9 @@ export default function PhotosManagementPage() {
   const [editingPhoto, setEditingPhoto] = useState<{
     photo: IPhotoDB;
   } | null>(null);
+  const [showActionModal, setShowActionModal] = useState<{
+    photo: IPhotoDB;
+  } | null>(null);
   const [newPhoto, setNewPhoto] = useState<IPhoto>({
     src: "",
     width: 4,
@@ -237,19 +240,19 @@ export default function PhotosManagementPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 md:p-6 max-w-[100vw] overflow-x-hidden">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">相册管理</h1>
+        <h1 className="text-xl md:text-2xl font-bold">相册管理</h1>
         <button
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-3 py-1.5 md:px-4 md:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm md:text-base"
           onClick={() => setShowAddPhoto(true)}
         >
           添加照片
         </button>
       </div>
 
-      {/* 照片列表 */}
-      <div className="bg-white rounded-lg shadow">
+      {/* Desktop View */}
+      <div className="hidden md:block bg-white rounded-lg shadow">
         <table className="w-full table-fixed">
           <thead className="bg-gray-50">
             <tr>
@@ -262,7 +265,7 @@ export default function PhotosManagementPage() {
             </tr>
           </thead>
           <tbody>
-            {photos.map((photo, index) => (
+            {photos.map((photo) => (
               <tr key={photo._id!.toString()} className="border-t">
                 <td className="p-4">
                   <img
@@ -272,18 +275,12 @@ export default function PhotosManagementPage() {
                   />
                 </td>
                 <td className="p-4">
-                  <span
-                    className="block max-w-[200px] truncate"
-                    title={photo.title}
-                  >
+                  <span className="block max-w-[200px] truncate" title={photo.title}>
                     {photo.title}
                   </span>
                 </td>
                 <td className="p-4">
-                  <span
-                    className="block max-w-[150px] truncate"
-                    title={photo.location}
-                  >
+                  <span className="block max-w-[150px] truncate" title={photo.location}>
                     {photo.location}
                   </span>
                 </td>
@@ -313,291 +310,366 @@ export default function PhotosManagementPage() {
         </table>
       </div>
 
-      {/* 添加照片模态框 */}
-      {showAddPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-[500px] max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">添加照片</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">图片</label>
-                <div
-                  onClick={() =>
-                    !isUploading &&
-                    document.getElementById("file-upload")?.click()
-                  }
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-                    isUploading
-                      ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-                      : "border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
-                  }`}
-                >
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileInputChange}
-                    disabled={isUploading}
-                  />
-
-                  <div className="text-center">
-                    {!previewUrl ? (
-                      <>
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="mt-2 text-sm text-gray-600">
-                          <p className="font-medium text-blue-600">
-                            点击选择图片或拖拽到此处
-                          </p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            支持 PNG、JPG、GIF 格式，最大 10MB
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="relative group">
-                        <img
-                          src={previewUrl}
-                          alt="Preview"
-                          className="mx-auto max-h-48 rounded-lg object-contain"
-                        />
-                        {!isUploading && (
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                resetFileInput();
-                              }}
-                              className="bg-white text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-100"
-                            >
-                              重新选择
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {isUploading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
-                        <div className="text-center">
-                          <svg
-                            className="animate-spin h-8 w-8 text-blue-500 mx-auto"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          <p className="mt-2 text-sm text-gray-600">
-                            正在上传...
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  标题 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={newPhoto.title}
-                  onChange={(e) =>
-                    setNewPhoto({ ...newPhoto, title: e.target.value })
-                  }
-                  placeholder="请输入标题"
-                  disabled={isUploading}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">地点</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={newPhoto.location}
-                  onChange={(e) =>
-                    setNewPhoto({ ...newPhoto, location: e.target.value })
-                  }
-                  placeholder="请输入地点"
-                />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">宽度</label>
-                  <input
-                    type="number"
-                    className="w-full p-2 border rounded bg-gray-50"
-                    value={newPhoto.width}
-                    readOnly
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">高度</label>
-                  <input
-                    type="number"
-                    className="w-full p-2 border rounded bg-gray-50"
-                    value={newPhoto.height}
-                    readOnly
-                  />
-                </div>
+      {/* Mobile View */}
+      <div className="md:hidden space-y-4">
+        {photos.map((photo) => (
+          <div
+            key={photo._id!.toString()}
+            className="bg-white rounded-lg shadow p-4"
+            onClick={() => setShowActionModal({ photo })}
+          >
+            <div className="flex items-center gap-4">
+              <img
+                src={photo.src}
+                alt={photo.title}
+                className="w-16 h-16 object-cover rounded"
+              />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-gray-900 truncate">
+                  {photo.title}
+                </h3>
+                <p className="text-sm text-gray-500 truncate">{photo.location}</p>
+                <p className="text-sm text-gray-500">{photo.date}</p>
+                <p className="text-sm text-gray-500">
+                  {photo.width}x{photo.height}
+                </p>
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Action Modal */}
+      {showActionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden">
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-xl p-4 animate-slide-up">
+            <div className="text-center mb-4">
+              <h3 className="font-medium text-lg mb-1 truncate">
+                {showActionModal.photo.title}
+              </h3>
+              <p className="text-gray-500 text-sm truncate">
+                {showActionModal.photo.location}
+              </p>
+            </div>
+            <div className="space-y-2">
               <button
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => setShowAddPhoto(false)}
-                disabled={isUploading}
+                className="w-full py-2.5 px-4 bg-gray-500 text-white rounded-lg text-sm font-medium"
+                onClick={() => {
+                  setEditingPhoto({ photo: { ...showActionModal.photo } });
+                  setShowActionModal(null);
+                }}
               >
-                取消
+                编辑
               </button>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleAddPhoto}
-                disabled={isUploading || !selectedFile || !newPhoto.title}
+                className="w-full py-2.5 px-4 bg-red-500 text-white rounded-lg text-sm font-medium"
+                onClick={() => {
+                  handleDeletePhoto(showActionModal.photo._id!.toString());
+                  setShowActionModal(null);
+                }}
               >
-                确定
+                删除
+              </button>
+              <button
+                className="w-full py-2.5 px-4 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium"
+                onClick={() => setShowActionModal(null)}
+              >
+                取消
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 编辑照片模态框 */}
-      {editingPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-[500px]">
-            <h2 className="text-xl font-bold mb-4">编辑照片</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  图片链接
-                </label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={editingPhoto.photo.src}
-                  onChange={(e) =>
-                    setEditingPhoto({
-                      ...editingPhoto,
-                      photo: { ...editingPhoto.photo, src: e.target.value },
-                    })
-                  }
-                  placeholder="请输入图片链接"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">标题</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={editingPhoto.photo.title}
-                  onChange={(e) =>
-                    setEditingPhoto({
-                      ...editingPhoto,
-                      photo: { ...editingPhoto.photo, title: e.target.value },
-                    })
-                  }
-                  placeholder="请输入标题"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">地点</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={editingPhoto.photo.location}
-                  onChange={(e) =>
-                    setEditingPhoto({
-                      ...editingPhoto,
-                      photo: {
-                        ...editingPhoto.photo,
-                        location: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="请输入地点"
-                />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">宽度</label>
-                  <input
-                    type="number"
-                    className="w-full p-2 border rounded"
-                    value={editingPhoto.photo.width}
-                    onChange={(e) =>
-                      setEditingPhoto({
-                        ...editingPhoto,
-                        photo: {
-                          ...editingPhoto.photo,
-                          width: Number(e.target.value),
-                        },
-                      })
+      {/* Add Photo Modal */}
+      {showAddPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 md:p-0">
+          <div className="bg-white rounded-lg w-full md:w-[500px] max-h-[90vh] overflow-y-auto">
+            <div className="p-4 md:p-6">
+              <h2 className="text-xl font-bold mb-4">添加照片</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">图片</label>
+                  <div
+                    onClick={() =>
+                      !isUploading &&
+                      document.getElementById("file-upload")?.click()
                     }
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      isUploading
+                        ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                        : "border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
+                    }`}
+                  >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      disabled={isUploading}
+                    />
+
+                    <div className="text-center">
+                      {!previewUrl ? (
+                        <>
+                          <svg
+                            className="mx-auto h-12 w-12 text-gray-400"
+                            stroke="currentColor"
+                            fill="none"
+                            viewBox="0 0 48 48"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <div className="mt-2 text-sm text-gray-600">
+                            <p className="font-medium text-blue-600">
+                              点击选择图片或拖拽到此处
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              支持 PNG、JPG、GIF 格式，最大 10MB
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="relative group">
+                          <img
+                            src={previewUrl}
+                            alt="Preview"
+                            className="mx-auto max-h-48 rounded-lg object-contain"
+                          />
+                          {!isUploading && (
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  resetFileInput();
+                                }}
+                                className="bg-white text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-100"
+                              >
+                                重新选择
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
+                          <div className="text-center">
+                            <svg
+                              className="animate-spin h-8 w-8 text-blue-500 mx-auto"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            <p className="mt-2 text-sm text-gray-600">
+                              正在上传...
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    标题 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={newPhoto.title}
+                    onChange={(e) =>
+                      setNewPhoto({ ...newPhoto, title: e.target.value })
+                    }
+                    placeholder="请输入标题"
+                    disabled={isUploading}
                   />
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">高度</label>
+                <div>
+                  <label className="block text-sm font-medium mb-1">地点</label>
                   <input
-                    type="number"
+                    type="text"
                     className="w-full p-2 border rounded"
-                    value={editingPhoto.photo.height}
+                    value={newPhoto.location}
                     onChange={(e) =>
-                      setEditingPhoto({
-                        ...editingPhoto,
-                        photo: {
-                          ...editingPhoto.photo,
-                          height: Number(e.target.value),
-                        },
-                      })
+                      setNewPhoto({ ...newPhoto, location: e.target.value })
                     }
+                    placeholder="请输入地点"
                   />
                 </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">宽度</label>
+                    <input
+                      type="number"
+                      className="w-full p-2 border rounded bg-gray-50"
+                      value={newPhoto.width}
+                      readOnly
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">高度</label>
+                    <input
+                      type="number"
+                      className="w-full p-2 border rounded bg-gray-50"
+                      value={newPhoto.height}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button
+                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowAddPhoto(false)}
+                  disabled={isUploading}
+                >
+                  取消
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleAddPhoto}
+                  disabled={isUploading || !selectedFile || !newPhoto.title}
+                >
+                  确定
+                </button>
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                className="px-4 py-2 bg-gray-500 text-white rounded"
-                onClick={() => setEditingPhoto(null)}
-              >
-                取消
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-                onClick={handleEditPhoto}
-              >
-                确定
-              </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Photo Modal */}
+      {editingPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 md:p-0">
+          <div className="bg-white rounded-lg w-full md:w-[500px]">
+            <div className="p-4 md:p-6">
+              <h2 className="text-xl font-bold mb-4">编辑照片</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    图片链接
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={editingPhoto.photo.src}
+                    onChange={(e) =>
+                      setEditingPhoto({
+                        ...editingPhoto,
+                        photo: { ...editingPhoto.photo, src: e.target.value },
+                      })
+                    }
+                    placeholder="请输入图片链接"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">标题</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={editingPhoto.photo.title}
+                    onChange={(e) =>
+                      setEditingPhoto({
+                        ...editingPhoto,
+                        photo: { ...editingPhoto.photo, title: e.target.value },
+                      })
+                    }
+                    placeholder="请输入标题"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">地点</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={editingPhoto.photo.location}
+                    onChange={(e) =>
+                      setEditingPhoto({
+                        ...editingPhoto,
+                        photo: {
+                          ...editingPhoto.photo,
+                          location: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="请输入地点"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">宽度</label>
+                    <input
+                      type="number"
+                      className="w-full p-2 border rounded"
+                      value={editingPhoto.photo.width}
+                      onChange={(e) =>
+                        setEditingPhoto({
+                          ...editingPhoto,
+                          photo: {
+                            ...editingPhoto.photo,
+                            width: Number(e.target.value),
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">高度</label>
+                    <input
+                      type="number"
+                      className="w-full p-2 border rounded"
+                      value={editingPhoto.photo.height}
+                      onChange={(e) =>
+                        setEditingPhoto({
+                          ...editingPhoto,
+                          photo: {
+                            ...editingPhoto.photo,
+                            height: Number(e.target.value),
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button
+                  className="px-4 py-2 bg-gray-500 text-white rounded"
+                  onClick={() => setEditingPhoto(null)}
+                >
+                  取消
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  onClick={handleEditPhoto}
+                >
+                  确定
+                </button>
+              </div>
             </div>
           </div>
         </div>
