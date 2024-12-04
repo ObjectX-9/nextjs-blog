@@ -237,12 +237,12 @@ export default function TimelinesAdmin() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">时间轴管理</h1>
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
+        <h1 className="text-xl md:text-2xl font-bold">时间轴管理</h1>
         <button
           onClick={handleAddEvent}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
         >
           添加事件
         </button>
@@ -250,24 +250,24 @@ export default function TimelinesAdmin() {
 
       <div className="space-y-4">
         {events.map((event, index) => (
-          <div key={index} className="border rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">
+          <div key={index} className="border rounded-lg p-4 shadow-sm">
+            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:justify-between">
+              <div className="space-y-2">
+                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                  <span className="text-gray-500 text-sm md:text-base">
                     {event.year}年{event.month}月
                   </span>
-                  <h3 className="font-semibold" title={event.title}>
+                  <h3 className="font-semibold text-base md:text-lg" title={event.title}>
                     {truncateText(event.title, 30)}
                   </h3>
                 </div>
                 {event.location && (
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500">
                     📍 {event.location}
                   </p>
                 )}
-                <div className="mt-2 text-gray-600">
-                  <p>
+                <div className="text-gray-600">
+                  <p className="text-sm md:text-base">
                     {truncateDescription(
                       event.description,
                       !!expandedDescriptions[index]
@@ -276,21 +276,21 @@ export default function TimelinesAdmin() {
                   {event.description.length > 100 && (
                     <button
                       onClick={() => toggleDescription(index)}
-                      className="text-blue-500 text-sm hover:underline mt-1"
+                      className="text-blue-500 text-sm hover:underline mt-2"
                     >
                       {expandedDescriptions[index] ? "收起" : "展开"}
                     </button>
                   )}
                 </div>
                 {event.links && event.links.length > 0 && (
-                  <div className="mt-2 space-x-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {event.links.map((link, linkIndex) => (
                       <a
                         key={linkIndex}
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
+                        className="text-blue-500 hover:underline text-sm"
                       >
                         {link.text}
                       </a>
@@ -298,16 +298,16 @@ export default function TimelinesAdmin() {
                   </div>
                 )}
               </div>
-              <div className="space-x-2">
+              <div className="flex space-x-2 w-full md:w-auto">
                 <button
                   onClick={() => handleEditEvent(event, index)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="flex-1 md:flex-none px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
                 >
                   编辑
                 </button>
                 <button
                   onClick={() => handleDeleteEvent(event)}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  className="flex-1 md:flex-none px-3 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600"
                 >
                   删除
                 </button>
@@ -319,19 +319,22 @@ export default function TimelinesAdmin() {
 
       {/* Edit Modal */}
       {editingEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl my-8">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingIndex !== null ? "编辑事件" : "添加事件"}
-            </h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4 overflow-y-auto">
+          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white p-4 md:p-6 border-b">
+              <h2 className="text-lg md:text-xl font-semibold">
+                {editingIndex !== null ? "编辑事件" : "添加事件"}
+              </h2>
+            </div>
+            
+            <div className="p-4 md:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   日期
                 </label>
                 <input
                   type="month"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={formatDateValue(editingEvent.year, editingEvent.month)}
                   onChange={(e) => handleDateChange(e.target.value)}
                 />
@@ -342,7 +345,7 @@ export default function TimelinesAdmin() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingEvent.title}
                   onChange={(e) =>
                     setEditingEvent({ ...editingEvent, title: e.target.value })
@@ -355,7 +358,7 @@ export default function TimelinesAdmin() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-lg text-base"
                   value={editingEvent.location || ""}
                   onChange={(e) =>
                     setEditingEvent({
@@ -370,8 +373,7 @@ export default function TimelinesAdmin() {
                   描述
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border rounded"
-                  rows={3}
+                  className="w-full px-3 py-2 border rounded-lg text-base min-h-[100px]"
                   value={editingEvent.description}
                   onChange={(e) =>
                     setEditingEvent({
@@ -387,7 +389,7 @@ export default function TimelinesAdmin() {
                 </label>
                 <input
                   type="text"
-                  className={`w-full px-3 py-2 border rounded ${
+                  className={`w-full px-3 py-2 border rounded-lg text-base ${
                     errors.tweetUrl ? "border-red-500" : ""
                   }`}
                   value={editingEvent.tweetUrl || ""}
@@ -396,7 +398,6 @@ export default function TimelinesAdmin() {
                       ...editingEvent,
                       tweetUrl: e.target.value,
                     });
-                    // Clear error when user starts typing
                     setErrors((prev) => {
                       const newErrors = { ...prev };
                       delete newErrors.tweetUrl;
@@ -415,7 +416,7 @@ export default function TimelinesAdmin() {
                 </label>
                 <input
                   type="text"
-                  className={`w-full px-3 py-2 border rounded ${
+                  className={`w-full px-3 py-2 border rounded-lg text-base ${
                     errors.imageUrl ? "border-red-500" : ""
                   }`}
                   value={editingEvent.imageUrl || ""}
@@ -424,7 +425,6 @@ export default function TimelinesAdmin() {
                       ...editingEvent,
                       imageUrl: e.target.value,
                     });
-                    // Clear error when user starts typing
                     setErrors((prev) => {
                       const newErrors = { ...prev };
                       delete newErrors.imageUrl;
@@ -453,11 +453,11 @@ export default function TimelinesAdmin() {
                   </button>
                 </div>
                 {editingEvent.links?.map((link, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
+                  <div key={index} className="flex flex-col md:flex-row gap-2 mb-3">
                     <input
                       type="text"
                       placeholder="链接文本"
-                      className="flex-1 px-3 py-2 border rounded"
+                      className="flex-1 px-3 py-2 border rounded-lg text-base"
                       value={link.text}
                       onChange={(e) =>
                         handleUpdateLink(index, "text", e.target.value)
@@ -467,7 +467,7 @@ export default function TimelinesAdmin() {
                       <input
                         type="text"
                         placeholder="https://"
-                        className={`w-full px-3 py-2 border rounded ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base ${
                           errors[`link_${index}`] ? "border-red-500" : ""
                         }`}
                         value={link.url}
@@ -483,7 +483,7 @@ export default function TimelinesAdmin() {
                     </div>
                     <button
                       onClick={() => handleRemoveLink(index)}
-                      className="px-3 py-2 text-red-500 hover:text-red-600"
+                      className="w-full md:w-auto px-3 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 text-sm"
                     >
                       删除
                     </button>
@@ -491,19 +491,19 @@ export default function TimelinesAdmin() {
                 ))}
               </div>
 
-              <div className="flex justify-end space-x-2 mt-6">
+              <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 md:justify-end">
                 <button
                   onClick={() => {
                     setEditingEvent(null);
                     setEditingIndex(null);
                   }}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                  className="w-full md:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 text-base"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleSaveEvent}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base"
                 >
                   保存
                 </button>
