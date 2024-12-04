@@ -56,25 +56,25 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PROJECT_PATH: ${{ vars.VPS_PROJECT_PATH }}/${{ vars.ROOT_PATH }}
+          VPS_PROJECT_PATH: ${{ vars.VPS_PROJECT_PATH }}
         run: |
+          # 设置 SSH
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          cd ${{ vars.ROOT_PATH }}
-          scp -o StrictHostKeyChecking=no build-output.tar.gz $VPS_USER@$VPS_HOST:$VPS_PROJECT_PATH
-          scp -o StrictHostKeyChecking=no .env.local $VPS_USER@$VPS_HOST:$VPS_PROJECT_PATH
+          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+
+          # 复制文件
+          scp build-output.tar.gz $VPS_USER@$VPS_HOST:$VPS_PROJECT_PATH/
+          scp .env.local $VPS_USER@$VPS_HOST:$VPS_PROJECT_PATH/
 
       - name: Deploy to VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PROJECT_PATH: ${{ vars.VPS_PROJECT_PATH }}
         run: |
-          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST << 'EOF'
-            cd ${{ vars.VPS_PROJECT_PATH }}/${{ vars.ROOT_PATH }}
-            git fetch origin
-            git reset --hard origin/main
-            tar -xzf build-output.tar.gz
-            rm build-output.tar.gz
-            pm2 restart shortcuts --update-env || pm2 start "pnpm start" --name shortcuts
-          EOF
+          ssh $VPS_USER@$VPS_HOST "cd $VPS_PROJECT_PATH && \
+            tar -xzf build-output.tar.gz && \
+            rm build-output.tar.gz && \
+            pm2 restart shortcuts --update-env || pm2 start 'pnpm start' --name shortcuts"
