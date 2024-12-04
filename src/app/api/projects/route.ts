@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { Project, ProjectDB, ProjectCategory, ProjectCategoryDB } from "@/app/model/project";
+import {
+  Project,
+  ProjectDB,
+  ProjectCategory,
+  ProjectCategoryDB,
+} from "@/app/model/project";
 
 // Omit categoryId from Project since we'll handle it separately
-interface ProjectInput extends Omit<Project, 'categoryId'> {
+interface ProjectInput extends Omit<Project, "categoryId"> {
   categoryId: string;
 }
 
-interface ProjectUpdateInput extends Partial<Omit<Project, 'categoryId'>> {
+interface ProjectUpdateInput extends Partial<Omit<Project, "categoryId">> {
   _id: string;
   categoryId?: string;
 }
@@ -16,12 +21,12 @@ interface ProjectUpdateInput extends Partial<Omit<Project, 'categoryId'>> {
 // Create a new project
 export async function POST(request: Request) {
   try {
-    console.log('Starting POST request for new project');
-    const data = await request.json() as ProjectInput;
-    console.log('Received project data:', data);
-    
+    console.log("Starting POST request for new project");
+    const data = (await request.json()) as ProjectInput;
+    console.log("Received project data:", data);
+
     const db = await getDb();
-    console.log('Database connection established');
+    console.log("Database connection established");
 
     const project: Omit<ProjectDB, "_id"> = {
       title: data.title,
@@ -35,16 +40,16 @@ export async function POST(request: Request) {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    
-    console.log('Attempting to insert project:', project);
+
+    console.log("Attempting to insert project:", project);
     const result = await db
       .collection<ProjectDB>("projects")
       .insertOne(project as ProjectDB);
-    
-    console.log('Insert result:', result);
+
+    console.log("Insert result:", result);
 
     if (result.acknowledged) {
-      console.log('Project inserted successfully, updating category');
+      console.log("Project inserted successfully, updating category");
       // Add project reference to category
       await db
         .collection<ProjectCategoryDB>("projectCategories")
@@ -63,8 +68,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error creating project:", error);
     if (error instanceof Error) {
-      console.error("Error details:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("Error details:", error);
     }
     return NextResponse.json(
       { error: "Failed to create project" },
@@ -122,7 +126,7 @@ export async function GET(request: Request) {
 // Update a project
 export async function PUT(request: Request) {
   try {
-    const data = await request.json() as ProjectUpdateInput;
+    const data = (await request.json()) as ProjectUpdateInput;
     const db = await getDb();
 
     if (!data._id) {
@@ -146,10 +150,7 @@ export async function PUT(request: Request) {
 
     const result = await db
       .collection<ProjectDB>("projects")
-      .updateOne(
-        { _id: new ObjectId(data._id) },
-        { $set: updateData }
-      );
+      .updateOne({ _id: new ObjectId(data._id) }, { $set: updateData });
 
     if (result.acknowledged) {
       // If category changed, update project references

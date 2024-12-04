@@ -9,23 +9,20 @@ interface WorkspaceItemInput {
   buyLink: string;
 }
 
-interface WorkspaceItemUpdateInput extends WorkspaceItemInput {
-  _id?: string;
+interface WorkspaceItemUpdateInput extends Partial<WorkspaceItemInput> {
+  _id: string;
 }
 
 // Get all workspace items
 export async function GET() {
   try {
     const db = await getDb();
-    console.log("Connected to database for GET request");
-    
     const workspaceItems = await db
       .collection("workspaceItems")
       .find()
       .sort({ createdAt: -1 })
       .toArray();
 
-    console.log("Successfully fetched workspace items:", workspaceItems.length);
     return NextResponse.json({ success: true, workspaceItems });
   } catch (error) {
     console.error("Error fetching workspace items:", error);
@@ -40,10 +37,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = (await request.json()) as WorkspaceItemInput;
-    console.log("Received POST request with data:", data);
-
     const db = await getDb();
-    console.log("Connected to database for POST request");
 
     const workspaceItem = {
       ...data,
@@ -51,24 +45,22 @@ export async function POST(request: Request) {
       updatedAt: new Date(),
     };
 
-    console.log("Attempting to insert workspace item:", workspaceItem);
-    const result = await db.collection("workspaceItems").insertOne(workspaceItem);
+    const result = await db
+      .collection("workspaceItems")
+      .insertOne(workspaceItem);
 
-    if (!result.acknowledged) {
-      console.error("Insert operation not acknowledged");
-      throw new Error("Failed to create workspace item");
+    if (result.acknowledged) {
+      return NextResponse.json({
+        success: true,
+        workspaceItem: { ...workspaceItem, _id: result.insertedId },
+      });
     }
 
-    console.log("Successfully created workspace item with ID:", result.insertedId);
-    return NextResponse.json({ 
-      success: true, 
-      workspaceItem: { ...workspaceItem, _id: result.insertedId } 
-    });
+    throw new Error("Failed to create workspace item");
   } catch (error) {
     console.error("Error creating workspace item:", error);
-    // 返回更详细的错误信息
     return NextResponse.json(
-      { error: `Failed to create workspace item: ${error.message}` },
+      { error: "Failed to create workspace item" },
       { status: 500 }
     );
   }
@@ -78,46 +70,42 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const data = (await request.json()) as WorkspaceItemUpdateInput;
-    console.log("Received PUT request with data:", data);
+    const db = await getDb();
 
-    const { _id, ...updateData } = data;
-    
-    if (!_id) {
-      console.error("Missing workspace item ID");
+    if (!data._id) {
       return NextResponse.json(
-        { error: "Missing workspace item ID" },
+        { error: "Workspace item ID is required" },
         { status: 400 }
       );
     }
 
-    const db = await getDb();
-    console.log("Connected to database for PUT request");
-    console.log("Attempting to update workspace item with ID:", _id);
+    const updateData = {
+      ...(data.product && { product: data.product }),
+      ...(data.specs && { specs: data.specs }),
+      ...(data.buyAddress && { buyAddress: data.buyAddress }),
+      ...(data.buyLink && { buyLink: data.buyLink }),
+      updatedAt: new Date(),
+    };
 
-    const result = await db.collection("workspaceItems").updateOne(
-      { _id: new ObjectId(_id) },
-      {
-        $set: {
-          ...updateData,
-          updatedAt: new Date(),
-        },
-      }
-    );
+    const result = await db
+      .collection("workspaceItems")
+      .updateOne({ _id: new ObjectId(data._id) }, { $set: updateData });
 
-    if (!result.matchedCount) {
-      console.error("No workspace item found with ID:", _id);
-      return NextResponse.json(
-        { error: "Workspace item not found" },
-        { status: 404 }
-      );
+    if (result.matchedCount > 0) {
+      return NextResponse.json({
+        success: true,
+        message: "Workspace item updated successfully",
+      });
     }
 
-    console.log("Successfully updated workspace item");
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { error: "Workspace item not found" },
+      { status: 404 }
+    );
   } catch (error) {
     console.error("Error updating workspace item:", error);
     return NextResponse.json(
-      { error: `Failed to update workspace item: ${error.message}` },
+      { error: "Failed to update workspace item" },
       { status: 500 }
     );
   }
@@ -130,33 +118,32 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
 
     if (!id) {
-      console.error("Missing workspace item ID in DELETE request");
       return NextResponse.json(
-        { error: "Missing workspace item ID" },
+        { error: "Workspace item ID is required" },
         { status: 400 }
       );
     }
 
-    console.log("Attempting to delete workspace item with ID:", id);
     const db = await getDb();
     const result = await db
       .collection("workspaceItems")
       .deleteOne({ _id: new ObjectId(id) });
 
-    if (!result.deletedCount) {
-      console.error("No workspace item found with ID:", id);
-      return NextResponse.json(
-        { error: "Workspace item not found" },
-        { status: 404 }
-      );
+    if (result.deletedCount > 0) {
+      return NextResponse.json({
+        success: true,
+        message: "Workspace item deleted successfully",
+      });
     }
 
-    console.log("Successfully deleted workspace item");
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { error: "Workspace item not found" },
+      { status: 404 }
+    );
   } catch (error) {
     console.error("Error deleting workspace item:", error);
     return NextResponse.json(
-      { error: `Failed to delete workspace item: ${error.message}` },
+      { error: "Failed to delete workspace item" },
       { status: 500 }
     );
   }
