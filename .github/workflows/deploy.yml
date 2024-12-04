@@ -33,17 +33,15 @@ jobs:
         run: pnpm install
 
       - name: Create .env.local file
-        run: echo "${{ secrets.ENV_LOCAL }}" > ${{ vars.ROOT_PATH }}/.env.local
+        run: |
+          cd ${{ github.workspace }}
+          echo "${{ secrets.ENV_LOCAL }}" > .env.local
 
       - name: Build
-        run: |
-          cd ${{ vars.ROOT_PATH }}
-          pnpm build
+        run: pnpm build
 
       - name: Compress build output
-        run: |
-          cd ${{ vars.ROOT_PATH }}
-          tar -czf build-output.tar.gz .next
+        run: tar -czf build-output.tar.gz .next
 
       - name: Copy files via SCP
         env:
