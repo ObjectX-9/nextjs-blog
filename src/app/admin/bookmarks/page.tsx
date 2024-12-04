@@ -11,6 +11,13 @@ interface EditingBookmark {
   bookmark: Partial<IBookmark>;
 }
 
+interface ActionModalBookmark {
+  categoryId: string;
+  bookmarkId: string;
+  bookmark: IBookmark;
+  categoryName: string;
+}
+
 export default function BookmarksManagementPage() {
   const [categories, setCategories] = useState<IBookmarkCategory[]>([]);
   const [activeTab, setActiveTab] = useState("bookmarks");
@@ -25,8 +32,8 @@ export default function BookmarksManagementPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [showAddBookmark, setShowAddBookmark] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [editingBookmark, setEditingBookmark] =
-    useState<EditingBookmark | null>(null);
+  const [editingBookmark, setEditingBookmark] = useState<EditingBookmark | null>(null);
+  const [actionModalBookmark, setActionModalBookmark] = useState<ActionModalBookmark | null>(null);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -196,13 +203,13 @@ export default function BookmarksManagementPage() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <h1 className="text-2xl font-bold p-6">书签管理</h1>
+    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden">
+      <h1 className="text-2xl font-bold p-4 md:p-6">书签管理</h1>
 
-      <div className="px-6 pb-4">
-        <div className="flex gap-4">
+      <div className="px-4 md:px-6 pb-4">
+        <div className="flex gap-2 md:gap-4">
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${
               activeTab === "bookmarks"
                 ? "bg-blue-500 text-white"
                 : "bg-gray-200"
@@ -212,7 +219,7 @@ export default function BookmarksManagementPage() {
             书签列表
           </button>
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${
               activeTab === "categories"
                 ? "bg-blue-500 text-white"
                 : "bg-gray-200"
@@ -224,16 +231,14 @@ export default function BookmarksManagementPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-6 pb-6 overflow-auto w-full">
+      <div className="flex-1 px-4 md:px-6 pb-6 overflow-auto w-full">
         {activeTab === "categories" && (
           <div className="space-y-4">
-            <div className="flex gap-4 items-end">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  分类名称
-                </label>
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+              <div className="w-full md:w-auto">
+                <label className="block text-sm font-medium mb-1">分类名称</label>
                 <input
-                  className="border rounded px-3 py-2"
+                  className="w-full md:w-auto border rounded px-3 py-2"
                   value={newCategory.name}
                   onChange={(e) =>
                     setNewCategory({ ...newCategory, name: e.target.value })
@@ -242,7 +247,7 @@ export default function BookmarksManagementPage() {
                 />
               </div>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded"
+                className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
                 onClick={handleAddCategory}
               >
                 添加分类
@@ -253,17 +258,27 @@ export default function BookmarksManagementPage() {
               <table className="w-full table-fixed">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left p-4 w-1/4">名称</th>
-                    <th className="text-left p-4 w-1/4">书签数量</th>
-                    <th className="text-left p-4 w-1/4">操作</th>
+                    <th className="text-left p-2 md:p-4 w-1/4 text-sm md:text-base">
+                      名称
+                    </th>
+                    <th className="text-left p-2 md:p-4 w-1/4 text-sm md:text-base">
+                      书签数量
+                    </th>
+                    <th className="text-left p-2 md:p-4 w-1/4 text-sm md:text-base">
+                      操作
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {categories.map((category, index) => (
                     <tr key={index} className="border-t">
-                      <td className="p-4">{category.name}</td>
-                      <td className="p-4">{category.bookmarks.length}</td>
-                      <td className="p-4">
+                      <td className="p-2 md:p-4 text-sm md:text-base">
+                        {category.name}
+                      </td>
+                      <td className="p-2 md:p-4 text-sm md:text-base">
+                        {category.bookmarks.length}
+                      </td>
+                      <td className="p-2 md:p-4">
                         <button
                           className="px-3 py-1 bg-red-500 text-white rounded text-sm"
                           onClick={() =>
@@ -284,7 +299,7 @@ export default function BookmarksManagementPage() {
         {activeTab === "bookmarks" && (
           <div className="space-y-4">
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded"
+              className="w-full md:w-auto mb-4 px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
               onClick={() => setShowAddBookmark(true)}
             >
               添加书签
@@ -292,15 +307,13 @@ export default function BookmarksManagementPage() {
 
             {showAddBookmark && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white p-6 rounded-lg w-[500px]">
+                <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[500px] max-h-[90vh] overflow-y-auto">
                   <h3 className="text-lg font-semibold mb-4">添加新书签</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        分类
-                      </label>
+                      <label className="block text-sm font-medium mb-1">分类</label>
                       <select
-                        className="w-full p-2 border rounded appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M10.293%204.293a1%201%200%20011.414%201.414l-5%205a1%201%200%2001-1.414%200l-5-5a1%201%200%20011.414-1.414L6%208.586l4.293-4.293z%22%20fill%3D%22currentColor%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_0.5rem_center] pr-8"
+                        className="w-full p-2 border rounded text-sm md:text-base appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M10.293%204.293a1%201%200%20011.414%201.414l-5%205a1%201%200%2001-1.414%200l-5-5a1%201%200%20011.414-1.414L6%208.586l4.293-4.293z%22%20fill%3D%22currentColor%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_0.5rem_center] pr-8"
                         value={selectedCategoryId}
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
                       >
@@ -312,11 +325,9 @@ export default function BookmarksManagementPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        标题
-                      </label>
+                      <label className="block text-sm font-medium mb-1">标题</label>
                       <input
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded text-sm md:text-base"
                         value={newBookmark.title}
                         onChange={(e) =>
                           setNewBookmark({
@@ -328,11 +339,9 @@ export default function BookmarksManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        链接
-                      </label>
+                      <label className="block text-sm font-medium mb-1">链接</label>
                       <input
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded text-sm md:text-base"
                         value={newBookmark.url}
                         onChange={(e) =>
                           setNewBookmark({
@@ -344,11 +353,9 @@ export default function BookmarksManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        描述
-                      </label>
+                      <label className="block text-sm font-medium mb-1">描述</label>
                       <textarea
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded text-sm md:text-base"
                         value={newBookmark.description}
                         onChange={(e) =>
                           setNewBookmark({
@@ -361,13 +368,13 @@ export default function BookmarksManagementPage() {
                     </div>
                     <div className="flex gap-2 justify-end">
                       <button
-                        className="px-4 py-2 bg-gray-200 rounded"
+                        className="w-full md:w-auto px-4 py-2 bg-gray-200 rounded text-sm md:text-base"
                         onClick={() => setShowAddBookmark(false)}
                       >
                         取消
                       </button>
                       <button
-                        className="px-4 py-2 bg-blue-500 text-white rounded"
+                        className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
                         onClick={handleAddBookmark}
                       >
                         确认添加
@@ -380,15 +387,13 @@ export default function BookmarksManagementPage() {
 
             {editingBookmark && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white p-6 rounded-lg w-[500px]">
+                <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[500px] max-h-[90vh] overflow-y-auto">
                   <h3 className="text-lg font-semibold mb-4">编辑书签</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        分类
-                      </label>
+                      <label className="block text-sm font-medium mb-1">分类</label>
                       <select
-                        className="w-full p-2 border rounded appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M10.293%204.293a1%201%200%20011.414%201.414l-5%205a1%201%200%2001-1.414%200l-5-5a1%201%200%20011.414-1.414L6%208.586l4.293-4.293z%22%20fill%3D%22currentColor%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_0.5rem_center] pr-8"
+                        className="w-full p-2 border rounded text-sm md:text-base appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M10.293%204.293a1%201%200%20011.414%201.414l-5%205a1%201%200%2001-1.414%200l-5-5a1%201%200%20011.414-1.414L6%208.586l4.293-4.293z%22%20fill%3D%22currentColor%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_0.5rem_center] pr-8"
                         value={editingBookmark.newCategoryId}
                         onChange={(e) =>
                           setEditingBookmark({
@@ -405,11 +410,9 @@ export default function BookmarksManagementPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        标题
-                      </label>
+                      <label className="block text-sm font-medium mb-1">标题</label>
                       <input
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded text-sm md:text-base"
                         value={editingBookmark.bookmark.title}
                         onChange={(e) =>
                           setEditingBookmark({
@@ -423,11 +426,9 @@ export default function BookmarksManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        链接
-                      </label>
+                      <label className="block text-sm font-medium mb-1">链接</label>
                       <input
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded text-sm md:text-base"
                         value={editingBookmark.bookmark.url}
                         onChange={(e) =>
                           setEditingBookmark({
@@ -441,11 +442,9 @@ export default function BookmarksManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        描述
-                      </label>
+                      <label className="block text-sm font-medium mb-1">描述</label>
                       <textarea
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded text-sm md:text-base"
                         value={editingBookmark.bookmark.description}
                         onChange={(e) =>
                           setEditingBookmark({
@@ -460,13 +459,13 @@ export default function BookmarksManagementPage() {
                     </div>
                     <div className="flex gap-2 justify-end">
                       <button
-                        className="px-4 py-2 bg-gray-200 rounded"
+                        className="w-full md:w-auto px-4 py-2 bg-gray-200 rounded text-sm md:text-base"
                         onClick={() => setEditingBookmark(null)}
                       >
                         取消
                       </button>
                       <button
-                        className="px-4 py-2 bg-blue-500 text-white rounded"
+                        className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
                         onClick={handleEditBookmarkSave}
                       >
                         保存修改
@@ -481,47 +480,77 @@ export default function BookmarksManagementPage() {
               <table className="w-full table-fixed">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left p-4 w-1/4">标题</th>
-                    <th className="text-left p-4 w-1/4">链接</th>
-                    <th className="text-left p-4 w-1/4">分类</th>
-                    <th className="text-left p-4 w-1/4">操作</th>
+                    <th className="text-left p-2 md:p-4 w-1/3 md:w-1/4 text-sm md:text-base">
+                      标题
+                    </th>
+                    <th className="text-left p-2 md:p-4 w-1/3 md:w-1/4 text-sm md:text-base">
+                      链接
+                    </th>
+                    <th className="text-left p-2 md:p-4 w-1/3 md:w-1/4 text-sm md:text-base">
+                      分类
+                    </th>
+                    <th className="hidden md:table-cell text-left p-2 md:p-4 w-1/4 text-sm md:text-base">
+                      操作
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {categories.map((category) =>
                     category.bookmarks.map((bookmark) => (
-                      <tr key={bookmark._id?.toString() ?? ''} className="border-t">
-                        <td className="p-4 truncate">{bookmark.title}</td>
-                        <td className="p-4 truncate">
+                      <tr
+                        key={bookmark._id?.toString() ?? ""}
+                        className="border-t cursor-pointer hover:bg-gray-50"
+                        onClick={() => {
+                          if (window.innerWidth < 768) {
+                            setActionModalBookmark({
+                              categoryId: category._id?.toString() ?? "",
+                              bookmarkId: bookmark._id?.toString() ?? "",
+                              bookmark,
+                              categoryName: category.name,
+                            });
+                          }
+                        }}
+                      >
+                        <td className="p-2 md:p-4 truncate text-sm md:text-base">
+                          {bookmark.title}
+                        </td>
+                        <td className="p-2 md:p-4 truncate">
                           <a
                             href={bookmark.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-blue-600 hover:text-blue-800 text-sm md:text-base inline-block max-w-[120px] md:max-w-full truncate"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {bookmark.url}
                           </a>
                         </td>
-                        <td className="p-4">{category.name}</td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
+                        <td className="p-2 md:p-4 truncate text-sm md:text-base">
+                          {category.name}
+                        </td>
+                        <td className="hidden md:table-cell p-2 md:p-4">
+                          <div className="flex flex-row gap-1 md:gap-2">
                             <button
-                              className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
-                              onClick={() =>
+                              className="flex-1 md:flex-none px-2 md:px-3 py-1 bg-gray-500 text-white rounded text-sm whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 startEditingBookmark(
-                                  category._id?.toString() ?? '',
-                                  bookmark._id?.toString() ?? '',
+                                  category._id?.toString() ?? "",
+                                  bookmark._id?.toString() ?? "",
                                   bookmark
-                                )
-                              }
+                                );
+                              }}
                             >
                               编辑
                             </button>
                             <button
-                              className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                              onClick={() =>
-                                handleDeleteBookmark(bookmark._id?.toString() ?? '')
-                              }
+                              className="flex-1 md:flex-none px-2 md:px-3 py-1 bg-red-500 text-white rounded text-sm whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBookmark(
+                                  bookmark._id?.toString() ?? ""
+                                );
+                              }}
                             >
                               删除
                             </button>
@@ -533,6 +562,60 @@ export default function BookmarksManagementPage() {
                 </tbody>
               </table>
             </div>
+
+            {actionModalBookmark && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
+                onClick={() => setActionModalBookmark(null)}
+              >
+                <div
+                  className="bg-white w-full md:w-auto md:min-w-[300px] rounded-t-xl md:rounded-xl p-4 animate-slide-up"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold mb-1">
+                      {actionModalBookmark.bookmark.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 truncate">
+                      {actionModalBookmark.bookmark.url}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      分类：{actionModalBookmark.categoryName}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      className="w-full px-4 py-2 bg-gray-500 text-white rounded text-base"
+                      onClick={() => {
+                        startEditingBookmark(
+                          actionModalBookmark.categoryId,
+                          actionModalBookmark.bookmarkId,
+                          actionModalBookmark.bookmark
+                        );
+                        setActionModalBookmark(null);
+                      }}
+                    >
+                      编辑书签
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 bg-red-500 text-white rounded text-base"
+                      onClick={() => {
+                        handleDeleteBookmark(actionModalBookmark.bookmarkId);
+                        setActionModalBookmark(null);
+                      }}
+                    >
+                      删除书签
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded text-base"
+                      onClick={() => setActionModalBookmark(null)}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

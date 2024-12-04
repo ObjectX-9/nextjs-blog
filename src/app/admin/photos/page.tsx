@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -262,7 +263,7 @@ export default function PhotosManagementPage() {
           </thead>
           <tbody>
             {photos.map((photo, index) => (
-              <tr key={photo._id.toString()} className="border-t">
+              <tr key={photo._id!.toString()} className="border-t">
                 <td className="p-4">
                   <img
                     src={photo.src}
@@ -300,7 +301,7 @@ export default function PhotosManagementPage() {
                     </button>
                     <button
                       className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                      onClick={() => handleDeletePhoto(photo._id.toString())}
+                      onClick={() => handleDeletePhoto(photo._id!.toString())}
                     >
                       删除
                     </button>
