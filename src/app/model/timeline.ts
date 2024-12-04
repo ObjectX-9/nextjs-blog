@@ -1,11 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { ObjectId } from 'mongodb';
 
-export interface ITimelineLink extends Document {
+export interface ITimelineLink {
   text: string;
   url: string;
 }
 
-export interface ITimelineEvent extends Document {
+export interface ITimelineEvent {
+  _id?: string | ObjectId;
   year: number;
   month: number;
   title: string;
@@ -14,6 +16,8 @@ export interface ITimelineEvent extends Document {
   tweetUrl?: string;
   imageUrl?: string;
   links?: ITimelineLink[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const timelineLinkSchema = new Schema<ITimelineLink>({

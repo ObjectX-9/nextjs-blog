@@ -1,5 +1,6 @@
 import { TimelineEvent as TimelineEventComponent } from "./TimelineEvent";
 import { headers } from 'next/headers';
+import { ObjectId } from 'mongodb';
 
 interface TimelineLink {
   text: string;
@@ -7,7 +8,7 @@ interface TimelineLink {
 }
 
 interface TimelineEvent {
-  _id: string;
+  _id: string | ObjectId;
   year: number;
   month: number;
   title: string;
@@ -71,7 +72,7 @@ export default async function Timeline() {
                 {eventsByYear[year]
                   .sort((a, b) => b.month - a.month)
                   .map((event) => (
-                    <TimelineEventComponent key={event._id} event={event} />
+                    <TimelineEventComponent key={event._id.toString()} event={event} />
                   ))}
               </div>
             </div>
