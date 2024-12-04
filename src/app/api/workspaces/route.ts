@@ -9,20 +9,23 @@ interface WorkspaceItemInput {
   buyLink: string;
 }
 
-interface WorkspaceItemUpdateInput extends Partial<WorkspaceItemInput> {
-  _id: string;
+interface WorkspaceItemUpdateInput extends WorkspaceItemInput {
+  _id?: string;
 }
 
 // Get all workspace items
 export async function GET() {
   try {
     const db = await getDb();
+    console.log("Connected to database for GET request");
+    
     const workspaceItems = await db
       .collection("workspaceItems")
       .find()
       .sort({ createdAt: -1 })
       .toArray();
 
+    console.log("Successfully fetched workspace items:", workspaceItems.length);
     return NextResponse.json({ success: true, workspaceItems });
   } catch (error) {
     console.error("Error fetching workspace items:", error);
@@ -37,7 +40,10 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = (await request.json()) as WorkspaceItemInput;
+    console.log("Received POST request with data:", data);
+
     const db = await getDb();
+    console.log("Connected to database for POST request");
 
     const workspaceItem = {
       ...data,
@@ -45,22 +51,24 @@ export async function POST(request: Request) {
       updatedAt: new Date(),
     };
 
-    const result = await db
-      .collection("workspaceItems")
-      .insertOne(workspaceItem);
+    console.log("Attempting to insert workspace item:", workspaceItem);
+    const result = await db.collection("workspaceItems").insertOne(workspaceItem);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        workspaceItem: { ...workspaceItem, _id: result.insertedId },
-      });
+    if (!result.acknowledged) {
+      console.error("Insert operation not acknowledged");
+      throw new Error("Failed to create workspace item");
     }
 
-    throw new Error("Failed to create workspace item");
+    console.log("Successfully created workspace item with ID:", result.insertedId);
+    return NextResponse.json({ 
+      success: true, 
+      workspaceItem: { ...workspaceItem, _id: result.insertedId } 
+    });
   } catch (error) {
     console.error("Error creating workspace item:", error);
+    // 返回更详细的错误信息
     return NextResponse.json(
-      { error: "Failed to create workspace item" },
+      { error: `Failed to create workspace item: ${error.message}` },
       { status: 500 }
     );
   }
@@ -70,45 +78,46 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const data = (await request.json()) as WorkspaceItemUpdateInput;
-    const db = await getDb();
+    console.log("Received PUT request with data:", data);
 
-    if (!data._id) {
+    const { _id, ...updateData } = data;
+    
+    if (!_id) {
+      console.error("Missing workspace item ID");
       return NextResponse.json(
-        { error: "Workspace item ID is required" },
+        { error: "Missing workspace item ID" },
         { status: 400 }
       );
     }
 
-    const updateData = {
-      ...(data.product && { product: data.product }),
-      ...(data.specs && { specs: data.specs }),
-      ...(data.buyAddress && { buyAddress: data.buyAddress }),
-      ...(data.buyLink && { buyLink: data.buyLink }),
-      updatedAt: new Date(),
-    };
+    const db = await getDb();
+    console.log("Connected to database for PUT request");
+    console.log("Attempting to update workspace item with ID:", _id);
 
-    const result = await db
-      .collection("workspaceItems")
-      .updateOne(
-        { _id: new ObjectId(data._id) },
-        { $set: updateData }
+    const result = await db.collection("workspaceItems").updateOne(
+      { _id: new ObjectId(_id) },
+      {
+        $set: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (!result.matchedCount) {
+      console.error("No workspace item found with ID:", _id);
+      return NextResponse.json(
+        { error: "Workspace item not found" },
+        { status: 404 }
       );
-
-    if (result.matchedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Workspace item updated successfully",
-      });
     }
 
-    return NextResponse.json(
-      { error: "Workspace item not found" },
-      { status: 404 }
-    );
+    console.log("Successfully updated workspace item");
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error updating workspace item:", error);
     return NextResponse.json(
-      { error: "Failed to update workspace item" },
+      { error: `Failed to update workspace item: ${error.message}` },
       { status: 500 }
     );
   }
@@ -121,32 +130,33 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
 
     if (!id) {
+      console.error("Missing workspace item ID in DELETE request");
       return NextResponse.json(
-        { error: "Workspace item ID is required" },
+        { error: "Missing workspace item ID" },
         { status: 400 }
       );
     }
 
+    console.log("Attempting to delete workspace item with ID:", id);
     const db = await getDb();
     const result = await db
       .collection("workspaceItems")
       .deleteOne({ _id: new ObjectId(id) });
 
-    if (result.deletedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Workspace item deleted successfully",
-      });
+    if (!result.deletedCount) {
+      console.error("No workspace item found with ID:", id);
+      return NextResponse.json(
+        { error: "Workspace item not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json(
-      { error: "Workspace item not found" },
-      { status: 404 }
-    );
+    console.log("Successfully deleted workspace item");
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting workspace item:", error);
     return NextResponse.json(
-      { error: "Failed to delete workspace item" },
+      { error: `Failed to delete workspace item: ${error.message}` },
       { status: 500 }
     );
   }

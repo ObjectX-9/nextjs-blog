@@ -83,12 +83,11 @@ export default function WorkspacesPage() {
 
   const handleAddItem = () => {
     setEditingItem({
-      _id: "",
       product: "",
       specs: "",
       buyAddress: "",
       buyLink: "",
-    });
+    } as WorkspaceItem);
     setEditingIndex(null);
   };
 
@@ -119,8 +118,12 @@ export default function WorkspacesPage() {
               <div className="flex flex-col md:flex-row justify-between items-start w-full space-y-4 md:space-y-0">
                 <div className="flex flex-col flex-grow space-y-2">
                   <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <h3 className="font-bold text-base md:text-lg">{item.product}</h3>
-                    <span className="text-gray-600 text-sm md:text-base">{item.specs}</span>
+                    <h3 className="font-bold text-base md:text-lg">
+                      {item.product}
+                    </h3>
+                    <span className="text-gray-600 text-sm md:text-base">
+                      {item.specs}
+                    </span>
                   </div>
                   <div className="text-gray-600 text-sm md:text-base">
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
