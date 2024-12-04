@@ -47,6 +47,14 @@ export default function PhotosManagementPage() {
   const uploadFile = async (file: File) => {
     setIsUploading(true);
     try {
+      // Log file details for debugging
+      console.log("Uploading file:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        lastModified: file.lastModified
+      });
+
       const formData = new FormData();
       formData.append("file", file);
 
@@ -56,7 +64,13 @@ export default function PhotosManagementPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Upload failed");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Upload response error:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(errorData.error || `Upload failed with status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -148,7 +162,20 @@ export default function PhotosManagementPage() {
 
     try {
       setIsUploading(true);
+
+      // Validate file size (max 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        throw new Error("图片大小不能超过10MB");
+      }
+
+      // Validate file type
+      if (!selectedFile.type.startsWith("image/")) {
+        throw new Error("请选择有效的图片文件");
+      }
+
       const url = await uploadFile(selectedFile);
+      console.log("File uploaded successfully:", url);
+
       const photoToAdd = {
         ...newPhoto,
         src: url,
@@ -163,12 +190,13 @@ export default function PhotosManagementPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add photo");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "添加照片失败");
       }
 
       const result = await response.json();
       if (!result.success) {
-        throw new Error(result.error || "Failed to add photo");
+        throw new Error(result.error || "添加照片失败");
       }
 
       await fetchPhotos();
@@ -185,7 +213,7 @@ export default function PhotosManagementPage() {
       });
     } catch (error) {
       console.error("Error adding photo:", error);
-      alert("添加照片失败，请重试。");
+      alert(error instanceof Error ? error.message : "添加照片失败，请重试。");
     } finally {
       setIsUploading(false);
     }
