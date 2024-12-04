@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IWorkspaceItem extends Document {
-  _id?: string;  // 使用可选的 _id
+  // _id?: string;  // 使用可选的 _id
   product: string;
   specs: string;
   buyAddress: string;
