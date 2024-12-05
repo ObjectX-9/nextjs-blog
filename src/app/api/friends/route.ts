@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     if (result.acknowledged) {
       return NextResponse.json({
         success: true,
-        friend: { ...friend, _id: result.insertedId.toString() },
+        friend: { ...friend, _id: String(result.insertedId) },
       });
     }
 
@@ -55,9 +55,9 @@ export async function GET(request: Request) {
       .toArray();
 
     // 确保每个文档的 _id 字段是字符串形式
-    const friendsWithStringId = friends.map(friend => ({
+    const friendsWithStringId = friends.map((friend) => ({
       ...friend,
-      _id: friend._id.toString()
+      _id: String(friend._id),
     }));
 
     return NextResponse.json({ success: true, friends: friendsWithStringId });
@@ -99,7 +99,7 @@ export async function PUT(request: Request) {
       success: true,
       friend: {
         ...updatedFriend,
-        _id: updatedFriend?._id.toString()
+        _id: String(updatedFriend?._id),
       },
     });
   } catch (error) {
