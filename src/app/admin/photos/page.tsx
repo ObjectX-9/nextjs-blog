@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { IPhoto, IPhotoDB } from "@/app/model/photo";
+import imageCompression from "browser-image-compression";
 
 export default function PhotosManagementPage() {
   const [photos, setPhotos] = useState<IPhotoDB[]>([]);
@@ -23,6 +24,7 @@ export default function PhotosManagementPage() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
@@ -121,6 +123,28 @@ export default function PhotosManagementPage() {
     e.stopPropagation();
   };
 
+  const compressImage = async (file: File) => {
+    const options = {
+      maxSizeMB: 3,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: file.type,
+      onProgress: (progress: number) => {
+        console.log('压缩进度：', progress);
+      }
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      console.log("原始文件大小:", (file.size / 1024 / 1024).toFixed(2), "MB");
+      console.log("压缩后文件大小:", (compressedFile.size / 1024 / 1024).toFixed(2), "MB");
+      return compressedFile;
+    } catch (error) {
+      console.error("压缩图片时出错:", error);
+      throw error;
+    }
+  };
+
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
 
@@ -136,9 +160,15 @@ export default function PhotosManagementPage() {
         width: dimensions.width,
         height: dimensions.height,
       }));
+
+      // Compress the image if it's larger than 3MB
+      if (file.size > 3 * 1024 * 1024) {
+        const compressedFile = await compressImage(file);
+        setSelectedFile(compressedFile);
+      }
     } catch (error) {
-      console.error("Error getting image dimensions:", error);
-      alert("获取图片尺寸失败");
+      console.error("Error processing image:", error);
+      alert("处理图片时出错");
     }
   };
 
@@ -161,20 +191,27 @@ export default function PhotosManagementPage() {
     }
 
     try {
+      setIsCompressing(true);
       setIsUploading(true);
 
+      // 压缩图片
+      let fileToUpload = selectedFile;
+      if (selectedFile.size > 3 * 1024 * 1024) {
+        fileToUpload = await compressImage(selectedFile);
+      }
+
       // Validate file size (max 10MB)
-      if (selectedFile.size > 10 * 1024 * 1024) {
+      if (fileToUpload.size > 10 * 1024 * 1024) {
         throw new Error("图片大小不能超过10MB");
       }
 
       // Validate file type
-      if (!selectedFile.type.startsWith("image/")) {
+      if (!fileToUpload.type.startsWith("image/")) {
         throw new Error("请选择有效的图片文件");
       }
 
-      const url = await uploadFile(selectedFile);
-      console.log("File uploaded successfully:", url);
+      const url = await uploadFile(fileToUpload);
+      console.log("文件上传成功:", url);
 
       const photoToAdd = {
         ...newPhoto,
@@ -215,6 +252,7 @@ export default function PhotosManagementPage() {
       console.error("Error adding photo:", error);
       alert(error instanceof Error ? error.message : "添加照片失败，请重试。");
     } finally {
+      setIsCompressing(false);
       setIsUploading(false);
     }
   };
@@ -431,7 +469,7 @@ export default function PhotosManagementPage() {
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-                      isUploading
+                      isUploading || isCompressing
                         ? "border-gray-300 bg-gray-50 cursor-not-allowed"
                         : "border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
                     }`}
@@ -442,7 +480,7 @@ export default function PhotosManagementPage() {
                       className="hidden"
                       accept="image/*"
                       onChange={handleFileInputChange}
-                      disabled={isUploading}
+                      disabled={isUploading || isCompressing}
                     />
 
                     <div className="text-center">
@@ -478,7 +516,7 @@ export default function PhotosManagementPage() {
                             alt="Preview"
                             className="mx-auto max-h-48 rounded-lg object-contain"
                           />
-                          {!isUploading && (
+                          {!isUploading && !isCompressing && (
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
                               <button
                                 onClick={(e) => {
@@ -491,35 +529,35 @@ export default function PhotosManagementPage() {
                               </button>
                             </div>
                           )}
-                        </div>
-                      )}
-                      {isUploading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
-                          <div className="text-center">
-                            <svg
-                              className="animate-spin h-8 w-8 text-blue-500 mx-auto"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            <p className="mt-2 text-sm text-gray-600">
-                              正在上传...
-                            </p>
-                          </div>
+                          {(isUploading || isCompressing) && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
+                              <div className="text-center">
+                                <svg
+                                  className="animate-spin h-8 w-8 text-blue-500 mx-auto"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                <p className="mt-2 text-sm text-gray-600">
+                                  {isCompressing ? "正在压缩..." : "正在上传..."}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -538,7 +576,7 @@ export default function PhotosManagementPage() {
                       setNewPhoto({ ...newPhoto, title: e.target.value })
                     }
                     placeholder="请输入标题"
-                    disabled={isUploading}
+                    disabled={isUploading || isCompressing}
                   />
                 </div>
                 <div>
@@ -578,14 +616,14 @@ export default function PhotosManagementPage() {
                 <button
                   className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => setShowAddPhoto(false)}
-                  disabled={isUploading}
+                  disabled={isUploading || isCompressing}
                 >
                   取消
                 </button>
                 <button
                   className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleAddPhoto}
-                  disabled={isUploading || !selectedFile || !newPhoto.title}
+                  disabled={isUploading || isCompressing || !selectedFile || !newPhoto.title}
                 >
                   确定
                 </button>
