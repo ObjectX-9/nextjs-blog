@@ -10,10 +10,122 @@ interface StackWithId extends IStack {
 export default function StacksAdmin() {
   const [stacks, setStacks] = useState<StackWithId[]>([]);
   const [editingStack, setEditingStack] = useState<Partial<StackWithId> | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchStacks();
   }, []);
+
+  useEffect(() => {
+    // Clean up preview URL when component unmounts
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const handleFileSelect = (file: File) => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleRemoveFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl("");
+  };
+
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('directory', 'stackIcon');
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image');
+    }
+
+    const data = await response.json();
+    if (!data.url) {
+      throw new Error('No URL returned from upload');
+    }
+
+    return data.url;
+  };
+
+  const handleSaveStack = async () => {
+    if (!editingStack) return;
+
+    setIsUploading(true);
+    try {
+      let iconUrl = editingStack.iconSrc;
+
+      // Upload new image if selected
+      if (selectedFile) {
+        iconUrl = await uploadImage(selectedFile);
+      }
+
+      const method = editingStack._id ? 'PUT' : 'POST';
+      const response = await fetch('/api/stacks', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...editingStack,
+          iconSrc: iconUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${editingStack._id ? 'update' : 'create'} stack`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchStacks();
+        setEditingStack(null);
+        setSelectedFile(null);
+        setPreviewUrl("");
+      } else {
+        throw new Error(data.error || `Failed to ${editingStack._id ? 'update' : 'create'} stack`);
+      }
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAddStack = () => {
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setEditingStack({
+      title: "",
+      description: "",
+      link: "",
+      iconSrc: "",
+    });
+  };
+
+  const handleEditStack = (stack: StackWithId) => {
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setEditingStack({ ...stack });
+  };
 
   const fetchStacks = async () => {
     try {
@@ -29,19 +141,6 @@ export default function StacksAdmin() {
       console.error('Error fetching stacks:', error);
       alert('获取数据失败，请刷新重试');
     }
-  };
-
-  const handleAddStack = () => {
-    setEditingStack({
-      title: "",
-      description: "",
-      link: "",
-      iconSrc: "",
-    });
-  };
-
-  const handleEditStack = (stack: StackWithId) => {
-    setEditingStack({ ...stack });
   };
 
   const handleDeleteStack = async (id: string) => {
@@ -65,36 +164,6 @@ export default function StacksAdmin() {
         console.error('Error deleting stack:', error);
         alert('删除失败，请重试');
       }
-    }
-  };
-
-  const handleSaveStack = async () => {
-    if (!editingStack) return;
-
-    try {
-      const method = editingStack._id ? 'PUT' : 'POST';
-      const response = await fetch('/api/stacks', {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editingStack),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${editingStack._id ? 'update' : 'create'} stack`);
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        await fetchStacks();
-        setEditingStack(null);
-      } else {
-        throw new Error(data.error || `Failed to ${editingStack._id ? 'update' : 'create'} stack`);
-      }
-    } catch (error) {
-      console.error('Error saving stack:', error);
-      alert('保存失败，请重试');
     }
   };
 
@@ -204,16 +273,56 @@ export default function StacksAdmin() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  图标链接
+                  图标
                 </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-lg text-base"
-                  value={editingStack.iconSrc}
-                  onChange={(e) =>
-                    setEditingStack({ ...editingStack, iconSrc: e.target.value })
-                  }
-                />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  {(previewUrl || editingStack.iconSrc) && (
+                    <div className="mb-4">
+                      <img
+                        src={previewUrl || editingStack.iconSrc}
+                        alt="Stack icon preview"
+                        className="w-16 h-16 object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center justify-center text-sm text-gray-600">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            alert('图片大小不能超过10MB');
+                            return;
+                          }
+                          handleFileSelect(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="icon-upload"
+                    />
+                    {!selectedFile && !editingStack.iconSrc ? (
+                      <>
+                        <label
+                          htmlFor="icon-upload"
+                          className="cursor-pointer text-blue-500 hover:text-blue-600"
+                        >
+                          点击选择图片或拖拽到此处
+                        </label>
+                        <p className="mt-1 text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        移除图片
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
