@@ -152,9 +152,9 @@ export default function StacksAdmin() {
 
       {/* Edit Modal */}
       {editingStack && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white p-4 md:p-6 border-b">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4 z-40">
+          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto relative z-50">
+            <div className="sticky top-0 bg-white p-4 md:p-6 border-b z-10">
               <h2 className="text-lg md:text-xl font-semibold">
                 {editingStack._id ? "编辑技术栈" : "添加技术栈"}
               </h2>
@@ -217,7 +217,7 @@ export default function StacksAdmin() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 md:justify-end">
+            <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 md:justify-end z-10">
               <button
                 onClick={() => setEditingStack(null)}
                 className="w-full md:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 text-base"
