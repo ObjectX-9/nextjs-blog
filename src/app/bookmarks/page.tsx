@@ -55,63 +55,74 @@ export default function Bookmarks() {
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
   const [showMobileList, setShowMobileList] = useState(false);
 
-  // Fetch categories with cache
-  useEffect(() => {
-    const fetchCategories = async () => {
-      // Try to get from cache first
+  // 提取获取分类的函数
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/bookmarkCategories");
+      const data = await response.json();
+      if (data.success) {
+        setCategories(data.categories);
+        setCache(CACHE_KEYS.CATEGORIES, data.categories);
+        if (data.categories.length > 0 && !selectedCategory) {
+          setSelectedCategory(data.categories[0]._id.toString());
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+      // 如果请求失败，尝试使用缓存
       const cached = getFromCache<IBookmarkCategory[]>(CACHE_KEYS.CATEGORIES);
       if (cached) {
         setCategories(cached);
-        if (cached.length > 0) {
+        if (cached.length > 0 && !selectedCategory) {
           setSelectedCategory(cached[0]._id!.toString());
         }
-        return;
       }
+    }
+  };
 
-      try {
-        const response = await fetch("/api/bookmarkCategories");
-        const data = await response.json();
-        if (data.success) {
-          setCategories(data.categories);
-          setCache(CACHE_KEYS.CATEGORIES, data.categories);
-          if (data.categories.length > 0) {
-            setSelectedCategory(data.categories[0]._id.toString());
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
+  // 提取获取书签的函数
+  const fetchBookmarks = async (categoryId: string) => {
+    if (!categoryId) return;
+
+    try {
+      const response = await fetch(`/api/bookmarks?categoryId=${categoryId}`);
+      const data = await response.json();
+      if (data.success) {
+        setBookmarks(data.bookmarks);
+        setCache(CACHE_KEYS.BOOKMARKS + categoryId, data.bookmarks);
       }
-    };
-    fetchCategories();
-  }, []);
-
-  // Fetch bookmarks when category changes with cache
-  useEffect(() => {
-    const fetchBookmarks = async () => {
-      if (!selectedCategory) return;
-
-      // Try to get from cache first
-      const cacheKey = CACHE_KEYS.BOOKMARKS + selectedCategory;
-      const cached = getFromCache<IBookmark[]>(cacheKey);
+    } catch (error) {
+      console.error("Failed to fetch bookmarks:", error);
+      // 如果请求失败，尝试使用缓存
+      const cached = getFromCache<IBookmark[]>(CACHE_KEYS.BOOKMARKS + categoryId);
       if (cached) {
         setBookmarks(cached);
-        return;
       }
+    }
+  };
 
-      try {
-        const response = await fetch(
-          `/api/bookmarks?categoryId=${selectedCategory}`
-        );
-        const data = await response.json();
-        if (data.success) {
-          setBookmarks(data.bookmarks);
-          setCache(cacheKey, data.bookmarks);
-        }
-      } catch (error) {
-        console.error("Failed to fetch bookmarks:", error);
-      }
-    };
-    fetchBookmarks();
+  // 初始加载和定时刷新分类
+  useEffect(() => {
+    fetchCategories();
+    
+    // 每30秒刷新一次分类
+    const categoryInterval = setInterval(fetchCategories, 30000);
+    
+    return () => clearInterval(categoryInterval);
+  }, []);
+
+  // 当选中的分类改变或定时刷新时获取书签
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchBookmarks(selectedCategory);
+      
+      // 每30秒刷新一次当前分类的书签
+      const bookmarkInterval = setInterval(() => {
+        fetchBookmarks(selectedCategory);
+      }, 30000);
+      
+      return () => clearInterval(bookmarkInterval);
+    }
   }, [selectedCategory]);
 
   // Fetch screenshots with cache
