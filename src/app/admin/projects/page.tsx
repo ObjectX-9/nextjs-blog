@@ -18,6 +18,7 @@ export default function ProjectsAdmin() {
   const [editingProject, setEditingProject] = useState<EditProjectForm | null>(null);
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
   const [editingCategory, setEditingCategory] = useState<{ _id: string; data: Category } | null>(null);
+  const [tagInput, setTagInput] = useState("");
 
   // Fetch categories and projects
   const fetchData = async () => {
@@ -327,16 +328,50 @@ export default function ProjectsAdmin() {
                   value={editingProject.url || ""}
                   onChange={(e) => setEditingProject({ ...editingProject, url: e.target.value })}
                 />
-                <input
-                  type="text"
-                  placeholder="标签 (用逗号分隔)"
-                  className="w-full px-3 py-2 border rounded text-base"
-                  value={editingProject.tags.join(", ")}
-                  onChange={(e) => setEditingProject({
-                    ...editingProject,
-                    tags: e.target.value.split(",").map(tag => tag.trim()).filter(Boolean)
-                  })}
-                />
+                <div>
+                  <input
+                    type="text"
+                    placeholder="标签 (用逗号分隔，按回车添加)"
+                    className="w-full px-3 py-2 border rounded text-base"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        const newTags = tagInput.split(/[,，]/).map(tag => tag.trim()).filter(Boolean);
+                        if (newTags.length > 0) {
+                          setEditingProject({
+                            ...editingProject,
+                            tags: [...new Set([...editingProject.tags, ...newTags])]
+                          });
+                          setTagInput('');
+                        }
+                      }
+                    }}
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editingProject.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          className="ml-1 text-blue-500 hover:text-blue-700"
+                          onClick={() => {
+                            setEditingProject({
+                              ...editingProject,
+                              tags: editingProject.tags.filter((_, i) => i !== index)
+                            });
+                          }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
                 <select
                   className="w-full px-3 py-2 border rounded text-base"
                   value={editingProject.status}
