@@ -187,37 +187,41 @@ export default function Friends() {
   const [friends, setFriends] = useState<FriendWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
 
-  useEffect(() => {
-    const fetchFriends = async () => {
-      // Try to get from cache first
+  const fetchFriends = async () => {
+    try {
+      const response = await fetch("/api/friends?approved=true");
+      const data = await response.json();
+      if (data.success) {
+        setFriends(data.friends);
+        setCache(CACHE_KEYS.FRIENDS, data.friends);
+      } else {
+        throw new Error("Failed to fetch friends");
+      }
+    } catch (error) {
+      console.error("Error fetching friends:", error);
       const cached = getFromCache<FriendWithId[]>(CACHE_KEYS.FRIENDS);
       if (cached) {
         setFriends(cached);
-        setLoading(false);
-        return;
+      } else {
+        setError(error instanceof Error ? error.message : "Failed to fetch friends");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      try {
-        const response = await fetch("/api/friends?approved=true");
-        const data = await response.json();
-        if (data.success) {
-          setFriends(data.friends);
-          setCache(CACHE_KEYS.FRIENDS, data.friends);
-        } else {
-          throw new Error("Failed to fetch friends");
-        }
-      } catch (error) {
-        console.error("Error fetching friends:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to fetch friends"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  // 初始加载和自动刷新
+  useEffect(() => {
     fetchFriends();
+    
+    // 每30秒自动刷新一次
+    const interval = setInterval(() => {
+      fetchFriends();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -248,6 +252,8 @@ export default function Friends() {
       setNewFriend(initialNewFriend);
       setShowAddForm(false);
       alert("提交成功！请等待审核。");
+      // 提交成功后立即刷新数据
+      fetchFriends();
     } catch (error) {
       console.error("Error submitting friend:", error);
       alert("提交失败，请重试。");
