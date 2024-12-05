@@ -28,6 +28,7 @@ import {
   Eye,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ISocialLink } from "@/app/model/social-link";
@@ -135,8 +136,30 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const socialList = socialLinks.map((link) => ({
     title: link.name,
     href: link.url,
-    prefix: iconMap[link.name as keyof typeof iconMap] || <></>,
+    icon: link.icon || '',
   }));
+
+  const renderIcon = (icon: string, title: string) => {
+    if (!icon) {
+      return iconMap[title as keyof typeof iconMap] || <Globe size={16} />;
+    }
+
+    return (
+      <div className="relative w-4 h-4 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+        <Image
+          src={icon}
+          alt={title}
+          width={16}
+          height={16}
+          className="object-contain"
+          onError={() => {
+            console.error(`Failed to load icon for ${title}`);
+            return iconMap[title as keyof typeof iconMap] || <Globe size={16} />;
+          }}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
@@ -212,7 +235,7 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
               className="group flex items-center justify-between rounded-lg p-2 hover:bg-gray-200"
             >
               <span className="flex items-center">
-                {socialItem.prefix}
+                {renderIcon(socialItem.icon, socialItem.title)}
                 <span className="ml-2 font-medium">{socialItem.title}</span>
               </span>
               <Forward size={16} />
