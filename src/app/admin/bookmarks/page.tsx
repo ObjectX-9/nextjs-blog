@@ -306,8 +306,8 @@ export default function BookmarksManagementPage() {
             </button>
 
             {showAddBookmark && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[500px] max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+                <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[500px] max-h-[90vh] overflow-y-auto relative z-50">
                   <h3 className="text-lg font-semibold mb-4">添加新书签</h3>
                   <div className="space-y-4">
                     <div>
@@ -386,8 +386,8 @@ export default function BookmarksManagementPage() {
             )}
 
             {editingBookmark && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[500px] max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+                <div className="bg-white p-4 md:p-6 rounded-lg w-[90vw] md:w-[500px] max-h-[90vh] overflow-y-auto relative z-50">
                   <h3 className="text-lg font-semibold mb-4">编辑书签</h3>
                   <div className="space-y-4">
                     <div>
@@ -569,7 +569,7 @@ export default function BookmarksManagementPage() {
                 onClick={() => setActionModalBookmark(null)}
               >
                 <div
-                  className="bg-white w-full md:w-auto md:min-w-[300px] rounded-t-xl md:rounded-xl p-4 animate-slide-up"
+                  className="bg-white w-full md:w-auto md:min-w-[300px] rounded-t-xl md:rounded-xl p-4 animate-slide-up relative z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="mb-4">
