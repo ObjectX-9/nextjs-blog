@@ -109,7 +109,15 @@ export default async function Index() {
                   className="flex items-center gap-1 px-2 py-1 rounded text-gray-600 hover:text-gray-900"
                   style={{ backgroundColor: link.bgColor }}
                 >
-                  <span>{link.icon}</span>
+                  <div className="relative w-4 h-4 rounded overflow-hidden flex items-center justify-center">
+                    <Image
+                      src={link.icon}
+                      alt={link.name}
+                      width={16}
+                      height={16}
+                      className="object-contain"
+                    />
+                  </div>
                   {link.name}
                 </a>
                 {index !== socialLinks.length - 1 && (
