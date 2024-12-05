@@ -53,6 +53,33 @@ export default function FriendsManagementPage() {
     };
   }, [previewUrl, editingPreviewUrl]);
 
+  const isOssUrl = (url: string) => {
+    // 检查URL是否来自阿里云OSS
+    return url.includes('.aliyuncs.com/');
+  };
+
+  const uploadImageFromUrl = async (imageUrl: string) => {
+    try {
+      // 下载图片
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // 从URL中获取文件名和扩展名
+      const urlParts = imageUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const fileExt = fileName.split('.').pop() || 'jpg';
+      
+      // 创建File对象
+      const file = new File([blob], `avatar.${fileExt}`, { type: blob.type });
+      
+      // 上传到OSS
+      return await uploadImage(file);
+    } catch (error) {
+      console.error('Error uploading image from URL:', error);
+      throw new Error('Failed to transfer image to OSS');
+    }
+  };
+
   const handleFileSelect = (file: File, isEditing: boolean = false) => {
     if (file.size > 10 * 1024 * 1024) {
       alert('图片大小不能超过10MB');
@@ -134,6 +161,9 @@ export default function FriendsManagementPage() {
         // Upload new image if selected
         if (selectedFile) {
           avatarUrl = await uploadImage(selectedFile);
+        } else if (avatarUrl && !isOssUrl(avatarUrl)) {
+          // 如果有头像URL但不是OSS的链接，则转存到OSS
+          avatarUrl = await uploadImageFromUrl(avatarUrl);
         }
 
         const response = await fetch("/api/friends", {
@@ -204,6 +234,9 @@ export default function FriendsManagementPage() {
         // Upload new image if selected
         if (editingFile) {
           avatarUrl = await uploadImage(editingFile);
+        } else if (avatarUrl && !isOssUrl(avatarUrl)) {
+          // 如果有头像URL但不是OSS的链接，则转存到OSS
+          avatarUrl = await uploadImageFromUrl(avatarUrl);
         }
 
         const response = await fetch(`/api/friends?id=${editingFriend.friend._id}`, {
