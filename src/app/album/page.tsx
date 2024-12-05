@@ -52,19 +52,40 @@ function setCache(key: string, data: any): void {
   );
 }
 
+function shouldFetchData(): boolean {
+  const lastFetch = localStorage.getItem(CACHE_KEYS.LAST_FETCH);
+  if (!lastFetch) return true;
+  
+  try {
+    const timestamp = JSON.parse(lastFetch).timestamp;
+    return Date.now() - timestamp > 30000; // 30 seconds
+  } catch {
+    return true;
+  }
+}
+
+function updateLastFetchTime(): void {
+  setCache(CACHE_KEYS.LAST_FETCH, null);
+}
+
 export default function Album() {
   const [index, setIndex] = useState(-1);
   const [photos, setPhotos] = useState<IPhotoDB[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = async (force: boolean = false) => {
+    if (!force && !shouldFetchData()) {
+      return;
+    }
+
     try {
       const response = await fetch("/api/photos");
       const data = await response.json();
       if (data.success) {
         setPhotos(data.photos);
         setCache(CACHE_KEYS.PHOTOS, data.photos);
+        updateLastFetchTime();
       } else {
         throw new Error('Failed to fetch photos');
       }
@@ -83,16 +104,18 @@ export default function Album() {
   };
 
   useEffect(() => {
+    // 首先尝试使用缓存数据
     const cached = getFromCache<IPhotoDB[]>(CACHE_KEYS.PHOTOS);
     if (cached) {
       setPhotos(cached);
       setLoading(false);
-    } else {
-      fetchPhotos();
     }
+    
+    // 检查是否需要获取新数据
+    fetchPhotos(true);
 
-    // 每30秒自动刷新一次
-    const interval = setInterval(fetchPhotos, 30000);
+    // 每30秒尝试刷新一次
+    const interval = setInterval(() => fetchPhotos(false), 30000);
     
     return () => clearInterval(interval);
   }, []);
