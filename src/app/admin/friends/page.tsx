@@ -32,10 +32,85 @@ export default function FriendsManagementPage() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [actionModalFriend, setActionModalFriend] = useState<ActionModalFriend | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [editingFile, setEditingFile] = useState<File | null>(null);
+  const [editingPreviewUrl, setEditingPreviewUrl] = useState<string>("");
 
   useEffect(() => {
     fetchFriends();
   }, []);
+
+  useEffect(() => {
+    // Clean up preview URLs when component unmounts
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      if (editingPreviewUrl) {
+        URL.revokeObjectURL(editingPreviewUrl);
+      }
+    };
+  }, [previewUrl, editingPreviewUrl]);
+
+  const handleFileSelect = (file: File, isEditing: boolean = false) => {
+    if (file.size > 10 * 1024 * 1024) {
+      alert('图片大小不能超过10MB');
+      return;
+    }
+
+    if (isEditing) {
+      if (editingPreviewUrl) {
+        URL.revokeObjectURL(editingPreviewUrl);
+      }
+      setEditingFile(file);
+      setEditingPreviewUrl(URL.createObjectURL(file));
+    } else {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveFile = (isEditing: boolean = false) => {
+    if (isEditing) {
+      if (editingPreviewUrl) {
+        URL.revokeObjectURL(editingPreviewUrl);
+      }
+      setEditingFile(null);
+      setEditingPreviewUrl("");
+    } else {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(null);
+      setPreviewUrl("");
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('directory', 'friendsAvatar');
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image');
+    }
+
+    const data = await response.json();
+    if (!data.url) {
+      throw new Error('No URL returned from upload');
+    }
+
+    return data.url;
+  };
 
   const fetchFriends = async () => {
     try {
@@ -52,13 +127,24 @@ export default function FriendsManagementPage() {
 
   const handleAddFriend = async () => {
     if (newFriend.name && newFriend.link) {
+      setIsUpdating(true);
       try {
+        let avatarUrl = newFriend.avatar;
+
+        // Upload new image if selected
+        if (selectedFile) {
+          avatarUrl = await uploadImage(selectedFile);
+        }
+
         const response = await fetch("/api/friends", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(newFriend),
+          body: JSON.stringify({
+            ...newFriend,
+            avatar: avatarUrl,
+          }),
         });
 
         const data = await response.json();
@@ -74,6 +160,8 @@ export default function FriendsManagementPage() {
             location: "",
             isApproved: false,
           });
+          setSelectedFile(null);
+          setPreviewUrl("");
           setShowAddFriend(false);
         } else {
           throw new Error(data.error || "Failed to add friend");
@@ -81,6 +169,8 @@ export default function FriendsManagementPage() {
       } catch (error) {
         console.error("Error adding friend:", error);
         alert("添加友链失败，请重试。");
+      } finally {
+        setIsUpdating(false);
       }
     }
   };
@@ -107,25 +197,40 @@ export default function FriendsManagementPage() {
 
   const handleEditFriendSave = async () => {
     if (editingFriend) {
+      setIsUpdating(true);
       try {
+        let avatarUrl = editingFriend.friend.avatar;
+
+        // Upload new image if selected
+        if (editingFile) {
+          avatarUrl = await uploadImage(editingFile);
+        }
+
         const response = await fetch(`/api/friends?id=${editingFriend.friend._id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(editingFriend.friend),
+          body: JSON.stringify({
+            ...editingFriend.friend,
+            avatar: avatarUrl,
+          }),
         });
 
         const data = await response.json();
         if (data.success) {
           await fetchFriends();
           setEditingFriend(null);
+          setEditingFile(null);
+          setEditingPreviewUrl("");
         } else {
           throw new Error(data.error || "Failed to update friend");
         }
       } catch (error) {
         console.error("Error updating friend:", error);
         alert("更新友链失败，请重试。");
+      } finally {
+        setIsUpdating(false);
       }
     }
   };
@@ -274,16 +379,52 @@ export default function FriendsManagementPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  头像链接
+                  头像
                 </label>
-                <input
-                  className="w-full p-2 border rounded"
-                  value={newFriend.avatar}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, avatar: e.target.value })
-                  }
-                  placeholder="请输入头像链接"
-                />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  {(previewUrl || newFriend.avatar) && (
+                    <div className="mb-4">
+                      <img
+                        src={previewUrl || newFriend.avatar}
+                        alt="Friend avatar preview"
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center justify-center text-sm text-gray-600">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileSelect(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="avatar-upload"
+                    />
+                    {!selectedFile && !newFriend.avatar ? (
+                      <>
+                        <label
+                          htmlFor="avatar-upload"
+                          className="cursor-pointer text-blue-500 hover:text-blue-600"
+                        >
+                          点击选择图片或拖拽到此处
+                        </label>
+                        <p className="mt-1 text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile()}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        移除图片
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">名称</label>
@@ -388,21 +529,52 @@ export default function FriendsManagementPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  头像链接
+                  头像
                 </label>
-                <input
-                  className="w-full p-2 border rounded"
-                  value={editingFriend.friend.avatar}
-                  onChange={(e) =>
-                    setEditingFriend({
-                      ...editingFriend,
-                      friend: {
-                        ...editingFriend.friend,
-                        avatar: e.target.value,
-                      },
-                    })
-                  }
-                />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  {(editingPreviewUrl || editingFriend.friend.avatar) && (
+                    <div className="mb-4">
+                      <img
+                        src={editingPreviewUrl || editingFriend.friend.avatar}
+                        alt="Friend avatar preview"
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center justify-center text-sm text-gray-600">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileSelect(file, true);
+                        }
+                      }}
+                      className="hidden"
+                      id="avatar-edit-upload"
+                    />
+                    {!editingFile && !editingFriend.friend.avatar ? (
+                      <>
+                        <label
+                          htmlFor="avatar-edit-upload"
+                          className="cursor-pointer text-blue-500 hover:text-blue-600"
+                        >
+                          点击选择图片或拖拽到此处
+                        </label>
+                        <p className="mt-1 text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(true)}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        移除图片
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">名称</label>
