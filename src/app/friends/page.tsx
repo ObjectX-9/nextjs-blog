@@ -14,8 +14,8 @@ interface FriendWithId extends Friend {
 
 // Cache management
 const CACHE_KEYS = {
-  FRIENDS: 'friends_data',
-  LAST_FETCH: 'friends_last_fetch',
+  FRIENDS: "friends_data",
+  LAST_FETCH: "friends_last_fetch",
 };
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -205,11 +205,13 @@ export default function Friends() {
           setFriends(data.friends);
           setCache(CACHE_KEYS.FRIENDS, data.friends);
         } else {
-          throw new Error('Failed to fetch friends');
+          throw new Error("Failed to fetch friends");
         }
       } catch (error) {
         console.error("Error fetching friends:", error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch friends');
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch friends"
+        );
       } finally {
         setLoading(false);
       }
@@ -263,7 +265,7 @@ export default function Friends() {
           <div className="h-10 bg-gray-200 rounded w-24"></div>
         </div>
         <div className="h-5 bg-gray-200 rounded w-64 mb-8"></div>
-        
+
         {isMobile ? (
           <div className="grid grid-cols-1 gap-6">
             {[1, 2, 3].map((i) => (
@@ -283,7 +285,10 @@ export default function Friends() {
           <div className="container hidden md:block animate-pulse">
             <div className="grid grid-cols-3 gap-3 mb-8">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="aspect-square bg-gray-200 rounded-lg"></div>
+                <div
+                  key={i}
+                  className="aspect-square bg-gray-200 rounded-lg"
+                ></div>
               ))}
             </div>
             <div className="space-y-4">

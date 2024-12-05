@@ -31,7 +31,8 @@ export default function FriendsManagementPage() {
     isApproved: false,
   });
   const [isUpdating, setIsUpdating] = useState(false);
-  const [actionModalFriend, setActionModalFriend] = useState<ActionModalFriend | null>(null);
+  const [actionModalFriend, setActionModalFriend] =
+    useState<ActionModalFriend | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [editingFile, setEditingFile] = useState<File | null>(null);
@@ -55,7 +56,7 @@ export default function FriendsManagementPage() {
 
   const isOssUrl = (url: string) => {
     // 检查URL是否来自阿里云OSS
-    return url.includes('.aliyuncs.com/');
+    return url.includes(".aliyuncs.com/");
   };
 
   const uploadImageFromUrl = async (imageUrl: string) => {
@@ -63,26 +64,26 @@ export default function FriendsManagementPage() {
       // 下载图片
       const response = await fetch(imageUrl);
       const blob = await response.blob();
-      
+
       // 从URL中获取文件名和扩展名
-      const urlParts = imageUrl.split('/');
+      const urlParts = imageUrl.split("/");
       const fileName = urlParts[urlParts.length - 1];
-      const fileExt = fileName.split('.').pop() || 'jpg';
-      
+      const fileExt = fileName.split(".").pop() || "jpg";
+
       // 创建File对象
       const file = new File([blob], `avatar.${fileExt}`, { type: blob.type });
-      
+
       // 上传到OSS
       return await uploadImage(file);
     } catch (error) {
-      console.error('Error uploading image from URL:', error);
-      throw new Error('Failed to transfer image to OSS');
+      console.error("Error uploading image from URL:", error);
+      throw new Error("Failed to transfer image to OSS");
     }
   };
 
   const handleFileSelect = (file: File, isEditing: boolean = false) => {
     if (file.size > 10 * 1024 * 1024) {
-      alert('图片大小不能超过10MB');
+      alert("图片大小不能超过10MB");
       return;
     }
 
@@ -119,21 +120,21 @@ export default function FriendsManagementPage() {
 
   const uploadImage = async (file: File) => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('directory', 'friendsAvatar');
+    formData.append("file", file);
+    formData.append("directory", "friendsAvatar");
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
+    const response = await fetch("/api/upload", {
+      method: "POST",
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error('Failed to upload image');
+      throw new Error("Failed to upload image");
     }
 
     const data = await response.json();
     if (!data.url) {
-      throw new Error('No URL returned from upload');
+      throw new Error("No URL returned from upload");
     }
 
     return data.url;
@@ -239,16 +240,19 @@ export default function FriendsManagementPage() {
           avatarUrl = await uploadImageFromUrl(avatarUrl);
         }
 
-        const response = await fetch(`/api/friends?id=${editingFriend.friend._id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...editingFriend.friend,
-            avatar: avatarUrl,
-          }),
-        });
+        const response = await fetch(
+          `/api/friends?id=${editingFriend.friend._id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ...editingFriend.friend,
+              avatar: avatarUrl,
+            }),
+          }
+        );
 
         const data = await response.json();
         if (data.success) {
@@ -284,21 +288,27 @@ export default function FriendsManagementPage() {
           <table className="w-full table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="p-2 md:p-4 text-left text-sm md:text-base w-[60px] md:w-[80px]">头像</th>
-                <th className="p-2 md:p-4 text-left text-sm md:text-base">名称</th>
+                <th className="p-2 md:p-4 text-left text-sm md:text-base w-[60px] md:w-[80px]">
+                  头像
+                </th>
+                <th className="p-2 md:p-4 text-left text-sm md:text-base">
+                  名称
+                </th>
                 <th className="hidden md:table-cell p-4 text-left">标题</th>
                 <th className="hidden md:table-cell p-4 text-left">描述</th>
                 <th className="hidden md:table-cell p-4 text-left">链接</th>
                 <th className="hidden md:table-cell p-4 text-left">职位</th>
                 <th className="hidden md:table-cell p-4 text-left">地址</th>
-                <th className="p-2 md:p-4 text-left text-sm md:text-base">状态</th>
+                <th className="p-2 md:p-4 text-left text-sm md:text-base">
+                  状态
+                </th>
                 <th className="hidden md:table-cell p-4 text-left">操作</th>
               </tr>
             </thead>
             <tbody>
               {friends.map((friend, index) => (
-                <tr 
-                  key={index} 
+                <tr
+                  key={index}
                   className="border-t cursor-pointer hover:bg-gray-50"
                   onClick={() => {
                     if (window.innerWidth < 768) {
@@ -411,9 +421,7 @@ export default function FriendsManagementPage() {
             <h3 className="text-lg font-semibold mb-4">添加友链</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  头像
-                </label>
+                <label className="block text-sm font-medium mb-1">头像</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                   {(previewUrl || newFriend.avatar) && (
                     <div className="mb-4">
@@ -445,7 +453,9 @@ export default function FriendsManagementPage() {
                         >
                           点击选择图片或拖拽到此处
                         </label>
-                        <p className="mt-1 text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                        <p className="mt-1 text-gray-500">
+                          支持 PNG、JPG、GIF 格式，最大 10MB
+                        </p>
                       </>
                     ) : (
                       <button
@@ -561,9 +571,7 @@ export default function FriendsManagementPage() {
             <h3 className="text-lg font-semibold mb-4">编辑友链</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  头像
-                </label>
+                <label className="block text-sm font-medium mb-1">头像</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                   {(editingPreviewUrl || editingFriend.friend.avatar) && (
                     <div className="mb-4">
@@ -595,7 +603,9 @@ export default function FriendsManagementPage() {
                         >
                           点击选择图片或拖拽到此处
                         </label>
-                        <p className="mt-1 text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
+                        <p className="mt-1 text-gray-500">
+                          支持 PNG、JPG、GIF 格式，最大 10MB
+                        </p>
                       </>
                     ) : (
                       <button
@@ -742,11 +752,11 @@ export default function FriendsManagementPage() {
       )}
 
       {actionModalFriend && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
           onClick={() => setActionModalFriend(null)}
         >
-          <div 
+          <div
             className="bg-white w-full md:w-auto md:min-w-[300px] rounded-t-xl md:rounded-xl p-4 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
@@ -757,14 +767,18 @@ export default function FriendsManagementPage() {
                 className="w-12 h-12 rounded-full"
               />
               <div>
-                <h3 className="text-lg font-semibold">{actionModalFriend.friend.name}</h3>
-                <p className="text-sm text-gray-500">{actionModalFriend.friend.title}</p>
+                <h3 className="text-lg font-semibold">
+                  {actionModalFriend.friend.name}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {actionModalFriend.friend.title}
+                </p>
               </div>
             </div>
             <div className="space-y-2 mb-4">
               <p className="text-sm">
                 <span className="text-gray-500">链接：</span>
-                <a 
+                <a
                   href={actionModalFriend.friend.link}
                   target="_blank"
                   rel="noopener noreferrer"
