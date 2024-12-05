@@ -4,6 +4,12 @@ import Image from "next/image";
 import { getDb } from "@/lib/mongodb";
 import { IStack } from "@/app/model/stack";
 
+// Utility function to truncate text
+function truncateText(text: string, maxLength: number = 50) {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
 async function getStacks() {
   try {
     const db = await getDb();
@@ -45,7 +51,7 @@ export default async function Stack() {
                     <Link className="ml-1" size={14} />
                   </a>
                   <p className="text-sm text-muted-foreground">
-                    {stackItem.description}
+                    {truncateText(stackItem.description)}
                   </p>
                 </div>
               </div>
