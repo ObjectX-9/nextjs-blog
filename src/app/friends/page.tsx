@@ -16,9 +16,13 @@ interface FriendWithId extends Friend {
 const CACHE_KEYS = {
   FRIENDS: "friends_data",
   LAST_FETCH: "friends_last_fetch",
+  LAST_SUBMIT: "friends_last_submit",
+  SUBMIT_COUNT: "friends_submit_count",
 };
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const SUBMIT_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_DAILY_SUBMISSIONS = 3; // 每天最多提交次数
 
 function getFromCache<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
@@ -178,6 +182,95 @@ const initialNewFriend: Friend = {
   isApproved: false,
 };
 
+const validateFriendData = (friend: Friend) => {
+  // 验证URL格式
+  const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+  
+  if (!urlRegex.test(friend.avatar)) {
+    throw new Error("头像URL格式不正确");
+  }
+  
+  if (!urlRegex.test(friend.link)) {
+    throw new Error("链接URL格式不正确");
+  }
+  
+  // 验证必填字段长度
+  if (friend.name.length < 2 || friend.name.length > 20) {
+    throw new Error("名字长度应在2-20个字符之间");
+  }
+  
+  if (friend.title.length < 2 || friend.title.length > 50) {
+    throw new Error("标题长度应在2-50个字符之间");
+  }
+  
+  if (friend.description.length < 2 || friend.description.length > 200) {
+    throw new Error("描述长度应在2-200个字符之间");
+  }
+  
+  // 检查XSS注入
+  const xssRegex = /<[^>]*>?/gm;
+  if (xssRegex.test(friend.name) || xssRegex.test(friend.title) || 
+      xssRegex.test(friend.description) || xssRegex.test(friend.position) || 
+      xssRegex.test(friend.location)) {
+    throw new Error("输入内容包含非法字符");
+  }
+};
+
+const checkSubmitLimit = () => {
+  const lastSubmit = localStorage.getItem(CACHE_KEYS.LAST_SUBMIT);
+  const submitCount = localStorage.getItem(CACHE_KEYS.SUBMIT_COUNT);
+  const now = Date.now();
+  
+  if (lastSubmit) {
+    const lastSubmitTime = parseInt(lastSubmit);
+    // 如果距离上次提交不到24小时
+    if (now - lastSubmitTime < SUBMIT_COOLDOWN) {
+      const nextSubmitTime = new Date(lastSubmitTime + SUBMIT_COOLDOWN);
+      throw new Error(`提交过于频繁，请在 ${nextSubmitTime.toLocaleString()} 后再试`);
+    }
+  }
+  
+  // 检查每日提交次数
+  if (submitCount) {
+    const { count, date } = JSON.parse(submitCount);
+    const today = new Date().toDateString();
+    
+    if (date === today && count >= MAX_DAILY_SUBMISSIONS) {
+      throw new Error(`每日最多提交${MAX_DAILY_SUBMISSIONS}次友链，请明天再试`);
+    }
+  }
+};
+
+const updateSubmitRecord = () => {
+  const now = Date.now();
+  const today = new Date().toDateString();
+  
+  // 更新最后提交时间
+  localStorage.setItem(CACHE_KEYS.LAST_SUBMIT, now.toString());
+  
+  // 更新每日提交次数
+  const submitCount = localStorage.getItem(CACHE_KEYS.SUBMIT_COUNT);
+  if (submitCount) {
+    const { count, date } = JSON.parse(submitCount);
+    if (date === today) {
+      localStorage.setItem(CACHE_KEYS.SUBMIT_COUNT, JSON.stringify({
+        count: count + 1,
+        date: today
+      }));
+    } else {
+      localStorage.setItem(CACHE_KEYS.SUBMIT_COUNT, JSON.stringify({
+        count: 1,
+        date: today
+      }));
+    }
+  } else {
+    localStorage.setItem(CACHE_KEYS.SUBMIT_COUNT, JSON.stringify({
+      count: 1,
+      date: today
+    }));
+  }
+};
+
 export default function Friends() {
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -236,7 +329,14 @@ export default function Friends() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     try {
+      // 检查提交限制
+      checkSubmitLimit();
+      
+      // 验证数据
+      validateFriendData(newFriend);
+      
       const response = await fetch("/api/friends/submit", {
         method: "POST",
         headers: {
@@ -246,9 +346,13 @@ export default function Friends() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit friend");
+        const error = await response.json();
+        throw new Error(error.message || "提交失败");
       }
 
+      // 更新提交记录
+      updateSubmitRecord();
+      
       setNewFriend(initialNewFriend);
       setShowAddForm(false);
       alert("提交成功！请等待审核。");
@@ -256,7 +360,7 @@ export default function Friends() {
       fetchFriends();
     } catch (error) {
       console.error("Error submitting friend:", error);
-      alert("提交失败，请重试。");
+      alert(error instanceof Error ? error.message : "提交失败，请重试。");
     } finally {
       setIsSubmitting(false);
     }
