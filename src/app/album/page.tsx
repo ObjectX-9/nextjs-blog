@@ -58,34 +58,43 @@ export default function Album() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      // Try to get from cache first
+  const fetchPhotos = async () => {
+    try {
+      const response = await fetch("/api/photos");
+      const data = await response.json();
+      if (data.success) {
+        setPhotos(data.photos);
+        setCache(CACHE_KEYS.PHOTOS, data.photos);
+      } else {
+        throw new Error('Failed to fetch photos');
+      }
+    } catch (error) {
+      console.error("Error fetching photos:", error);
+      // 如果请求失败，尝试使用缓存
       const cached = getFromCache<IPhotoDB[]>(CACHE_KEYS.PHOTOS);
       if (cached) {
         setPhotos(cached);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/photos");
-        const data = await response.json();
-        if (data.success) {
-          setPhotos(data.photos);
-          setCache(CACHE_KEYS.PHOTOS, data.photos);
-        } else {
-          throw new Error('Failed to fetch photos');
-        }
-      } catch (error) {
-        console.error("Error fetching photos:", error);
+      } else {
         setError(error instanceof Error ? error.message : 'Failed to fetch photos');
-      } finally {
-        setLoading(false);
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchPhotos();
+  useEffect(() => {
+    const cached = getFromCache<IPhotoDB[]>(CACHE_KEYS.PHOTOS);
+    if (cached) {
+      setPhotos(cached);
+      setLoading(false);
+    } else {
+      fetchPhotos();
+    }
+
+    // 每30秒自动刷新一次
+    const interval = setInterval(fetchPhotos, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // 移动端展示组件
