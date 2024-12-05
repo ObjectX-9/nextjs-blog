@@ -157,7 +157,7 @@ export default function ProjectsAdmin() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[100vw] overflow-x-hidden">
+    <div className="p-4 md:p-6 max-w-[100vw] h-screen flex flex-col">
       <h1 className="text-xl md:text-2xl font-bold mb-6">项目管理</h1>
       
       {/* Add New Category Section */}
@@ -188,114 +188,116 @@ export default function ProjectsAdmin() {
       </div>
 
       {/* Project Categories */}
-      {categories.map((category) => {
-        const categoryProjects = getProjectsByCategory(category._id!);
-        return (
-          <div key={category._id} className="mb-8">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4 mb-4">
-              <div>
-                <h2 className="text-lg md:text-xl font-semibold">{category.name}</h2>
-                <p className="text-gray-600 text-sm md:text-base">{category.description}</p>
+      <div className="flex-1 overflow-y-auto">
+        {categories.map((category) => {
+          const categoryProjects = getProjectsByCategory(category._id!);
+          return (
+            <div key={category._id} className="mb-8">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4 mb-4">
+                <div>
+                  <h2 className="text-lg md:text-xl font-semibold">{category.name}</h2>
+                  <p className="text-gray-600 text-sm md:text-base">{category.description}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingCategory({
+                      _id: category._id!,
+                      data: {
+                        name: category.name,
+                        description: category.description,
+                        projects: category.projects
+                      }
+                    })}
+                    className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex-1 md:flex-none"
+                  >
+                    编辑分类
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCategory(category._id!)}
+                    className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-1 md:flex-none"
+                  >
+                    删除分类
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditingCategory({
-                    _id: category._id!,
-                    data: {
-                      name: category.name,
-                      description: category.description,
-                      projects: category.projects
-                    }
-                  })}
-                  className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex-1 md:flex-none"
-                >
-                  编辑分类
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(category._id!)}
-                  className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-1 md:flex-none"
-                >
-                  删除分类
-                </button>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {categoryProjects.map((project) => (
-                <div key={project._id} className="p-4 border rounded-lg">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-base md:text-lg">{project.title}</h3>
-                      <p className="text-gray-600 text-sm md:text-base">{project.description}</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {project.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-block px-2 py-1 text-xs md:text-sm bg-gray-100 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+              <div className="space-y-4">
+                {categoryProjects.map((project) => (
+                  <div key={project._id} className="p-4 border rounded-lg">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-base md:text-lg">{project.title}</h3>
+                        <p className="text-gray-600 text-sm md:text-base">{project.description}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {project.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-block px-2 py-1 text-xs md:text-sm bg-gray-100 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="mt-2 text-sm text-gray-500">
+                          <span className="mr-4">状态: {
+                            project.status === 'completed' ? '已完成' :
+                            project.status === 'in-progress' ? '进行中' : '计划中'
+                          }</span>
+                          {project.github && (
+                            <a href={project.github} target="_blank" rel="noopener noreferrer" 
+                               className="mr-4 text-blue-500 hover:underline">
+                              GitHub
+                            </a>
+                          )}
+                          {project.url && (
+                            <a href={project.url} target="_blank" rel="noopener noreferrer"
+                               className="text-blue-500 hover:underline">
+                              项目链接
+                            </a>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-2 text-sm text-gray-500">
-                        <span className="mr-4">状态: {
-                          project.status === 'completed' ? '已完成' :
-                          project.status === 'in-progress' ? '进行中' : '计划中'
-                        }</span>
-                        {project.github && (
-                          <a href={project.github} target="_blank" rel="noopener noreferrer" 
-                             className="mr-4 text-blue-500 hover:underline">
-                            GitHub
-                          </a>
-                        )}
-                        {project.url && (
-                          <a href={project.url} target="_blank" rel="noopener noreferrer"
-                             className="text-blue-500 hover:underline">
-                            项目链接
-                          </a>
-                        )}
+                      <div className="flex gap-2 md:flex-none w-full md:w-auto">
+                        <button
+                          onClick={() => setEditingProject({
+                            ...project,
+                            categoryId: category._id
+                          })}
+                          className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex-1 md:flex-none"
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(project._id)}
+                          className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-1 md:flex-none"
+                        >
+                          删除
+                        </button>
                       </div>
-                    </div>
-                    <div className="flex gap-2 md:flex-none w-full md:w-auto">
-                      <button
-                        onClick={() => setEditingProject({
-                          ...project,
-                          categoryId: category._id
-                        })}
-                        className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex-1 md:flex-none"
-                      >
-                        编辑
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProject(project._id)}
-                        className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-1 md:flex-none"
-                      >
-                        删除
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
-              <button
-                onClick={() => setEditingProject({
-                  title: "",
-                  description: "",
-                  tags: [],
-                  status: "planned",
-                  categoryId: category._id
-                })}
-                className="px-4 py-2 border border-dashed rounded-lg w-full text-gray-500 hover:bg-gray-50 text-sm md:text-base"
-              >
-                + 添加新项目
-              </button>
+                ))}
+                <button
+                  onClick={() => setEditingProject({
+                    title: "",
+                    description: "",
+                    tags: [],
+                    status: "planned",
+                    categoryId: category._id
+                  })}
+                  className="px-4 py-2 border border-dashed rounded-lg w-full text-gray-500 hover:bg-gray-50 text-sm md:text-base"
+                >
+                  + 添加新项目
+                </button>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       {/* Edit Project Modal */}
       {editingProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl my-8 max-h-[90vh] overflow-y-auto">
             <div className="p-4 md:p-6">
               <h2 className="text-xl font-semibold mb-4">
                 {editingProject._id ? "编辑项目" : "添加新项目"}
@@ -342,7 +344,7 @@ export default function ProjectsAdmin() {
                         if (newTags.length > 0) {
                           setEditingProject({
                             ...editingProject,
-                            tags: [...new Set([...editingProject.tags, ...newTags])]
+                            tags: Array.from(new Set([...editingProject.tags, ...newTags]))
                           });
                           setTagInput('');
                         }
@@ -406,8 +408,8 @@ export default function ProjectsAdmin() {
 
       {/* Edit Category Modal */}
       {editingCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl my-8 max-h-[90vh] overflow-y-auto">
             <div className="p-4 md:p-6">
               <h2 className="text-xl font-semibold mb-4">编辑分类</h2>
               <div className="space-y-4">
