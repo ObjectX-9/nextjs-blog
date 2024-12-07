@@ -45,7 +45,7 @@ export async function GET() {
     const events = await db
       .collection<ITimelineEvent>("timelines")
       .find({})
-      .sort({ year: -1, month: -1 })
+      .sort({ year: -1, month: -1, day: -1 })  
       .toArray();
 
     return NextResponse.json({ events });
@@ -67,6 +67,13 @@ export async function PUT(request: Request) {
     if (!_id) {
       return NextResponse.json(
         { error: "Timeline event ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!updateData.year || !updateData.month || !updateData.day || !updateData.title || !updateData.description) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }

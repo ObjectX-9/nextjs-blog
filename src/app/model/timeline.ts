@@ -10,6 +10,7 @@ export interface ITimelineEvent {
   _id?: string | ObjectId;
   year: number;
   month: number;
+  day: number;
   title: string;
   location?: string;
   description: string;
@@ -28,6 +29,7 @@ const timelineLinkSchema = new Schema<ITimelineLink>({
 const timelineEventSchema = new Schema<ITimelineEvent>({
   year: { type: Number, required: true },
   month: { type: Number, required: true },
+  day: { type: Number, required: true },
   title: { type: String, required: true },
   location: { type: String },
   description: { type: String, required: true },

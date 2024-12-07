@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import imageCompression from "browser-image-compression";
 
 interface TimelineLink {
   text: string;
@@ -11,6 +12,7 @@ interface TimelineEvent {
   _id?: string;
   year: number;
   month: number;
+  day: number;
   title: string;
   location?: string;
   description: string;
@@ -30,6 +32,7 @@ export default function TimelinesAdmin() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // Fetch events on component mount
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function TimelinesAdmin() {
         throw new Error("Failed to fetch timeline events");
       }
       const data = await response.json();
-      setEvents(data.events);
+      setEvents(sortEvents(data.events));
     } catch (error) {
       console.error("Error fetching timeline events:", error);
       alert("加载失败，请刷新页面重试");
@@ -55,6 +58,7 @@ export default function TimelinesAdmin() {
     setEditingEvent({
       year: now.getFullYear(),
       month: now.getMonth() + 1,
+      day: now.getDate(),
       title: "",
       description: "",
       links: [],
@@ -103,6 +107,35 @@ export default function TimelinesAdmin() {
     }
   };
 
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 1.9,
+      maxWidthOrHeight: 2048,
+      useWebWorker: true,
+      fileType: file.type,
+    };
+
+    try {
+      console.log("开始压缩图片...");
+      console.log("原始文件大小:", (file.size / 1024 / 1024).toFixed(2), "MB");
+
+      const compressedFile = await imageCompression(file, options);
+      console.log(
+        "压缩后文件大小:",
+        (compressedFile.size / 1024 / 1024).toFixed(2),
+        "MB"
+      );
+
+      // Create a new File object to preserve the original filename
+      return new File([compressedFile], file.name, {
+        type: compressedFile.type,
+      });
+    } catch (error) {
+      console.error("压缩图片时出错:", error);
+      throw error;
+    }
+  };
+
   const handleSaveEvent = async () => {
     if (!editingEvent) return;
 
@@ -119,8 +152,7 @@ export default function TimelinesAdmin() {
     if (editingEvent.links) {
       editingEvent.links.forEach((link, index) => {
         if (!validateUrl(link.url)) {
-          newErrors[`link_${index}`] =
-            "请输入有效的URL（以http://或https://开头）";
+          newErrors[`link_${index}`] = "请输入有效的URL（以http://或https://开头）";
         }
       });
     }
@@ -135,8 +167,20 @@ export default function TimelinesAdmin() {
       // Upload image if there's a selected file
       let finalImageUrl = editingEvent.imageUrl;
       if (selectedFile) {
+        setIsCompressing(true);
+        let fileToUpload = selectedFile;
+        
+        // Compress image if size is over 1.9MB
+        if (selectedFile.size > 1.9 * 1024 * 1024) {
+          try {
+            fileToUpload = await compressImage(selectedFile);
+          } catch (error: any) {
+            throw new Error(`图片压缩失败: ${error.message}`);
+          }
+        }
+
         const formData = new FormData();
-        formData.append("file", selectedFile);
+        formData.append("file", fileToUpload);
         formData.append("directory", "timelines");
 
         const response = await fetch("/api/upload", {
@@ -153,7 +197,6 @@ export default function TimelinesAdmin() {
           throw new Error("No URL returned from upload");
         }
         
-        // Use the complete URL directly from the upload response
         finalImageUrl = data.url;
       }
 
@@ -198,6 +241,7 @@ export default function TimelinesAdmin() {
       alert("保存失败，请重试");
     } finally {
       setIsUploading(false);
+      setIsCompressing(false);
     }
   };
 
@@ -242,11 +286,20 @@ export default function TimelinesAdmin() {
       ...editingEvent,
       year: date.getFullYear(),
       month: date.getMonth() + 1,
+      day: date.getDate(),
     });
   };
 
-  const formatDateValue = (year: number, month: number) => {
-    return `${year}-${month.toString().padStart(2, "0")}`;
+  const formatDateValue = (year: number, month: number, day: number) => {
+    return `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+  };
+
+  const sortEvents = (events: TimelineEvent[]) => {
+    return [...events].sort((a, b) => {
+      const dateA = new Date(a.year, a.month - 1, a.day || 1);
+      const dateB = new Date(b.year, b.month - 1, b.day || 1);
+      return dateB.getTime() - dateA.getTime(); // 降序排列，最新的在前
+    });
   };
 
   const toggleDescription = (index: number) => {
@@ -268,7 +321,7 @@ export default function TimelinesAdmin() {
     return text.slice(0, 100) + "...";
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -278,30 +331,29 @@ export default function TimelinesAdmin() {
       return;
     }
 
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('图片大小不能超过10MB');
-      return;
-    }
+    try {
+      setSelectedFile(file);
+      
+      // Create preview URL
+      const prevUrl = previewUrl;
+      const newPreviewUrl = URL.createObjectURL(file);
+      setPreviewUrl(newPreviewUrl);
 
-    setSelectedFile(file);
-    
-    // Create preview URL
-    const prevUrl = previewUrl;
-    const newPreviewUrl = URL.createObjectURL(file);
-    setPreviewUrl(newPreviewUrl);
+      // Clean up old preview URL
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
 
-    // Clean up old preview URL
-    if (prevUrl) {
-      URL.revokeObjectURL(prevUrl);
-    }
-
-    // Clear the imageUrl when a new file is selected
-    if (editingEvent) {
-      setEditingEvent({
-        ...editingEvent,
-        imageUrl: "",
-      });
+      // Clear the imageUrl when a new file is selected
+      if (editingEvent) {
+        setEditingEvent({
+          ...editingEvent,
+          imageUrl: "",
+        });
+      }
+    } catch (error: any) {
+      console.error("处理图片时出错:", error);
+      alert(error.message || "处理图片时出错");
     }
   };
 
@@ -324,7 +376,7 @@ export default function TimelinesAdmin() {
               <div className="space-y-2">
                 <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                   <span className="text-gray-500 text-sm md:text-base">
-                    {event.year}年{event.month}月
+                    {event.year}年{event.month}月{event.day}日
                   </span>
                   <h3 className="font-semibold text-base md:text-lg" title={event.title}>
                     {truncateText(event.title, 30)}
@@ -412,9 +464,9 @@ export default function TimelinesAdmin() {
                     日期
                   </label>
                   <input
-                    type="month"
+                    type="date"
                     className="w-full px-3 py-2 border rounded-lg text-base"
-                    value={formatDateValue(editingEvent.year, editingEvent.month)}
+                    value={formatDateValue(editingEvent.year, editingEvent.month, editingEvent.day || 1)}
                     onChange={(e) => handleDateChange(e.target.value)}
                   />
                 </div>
@@ -619,12 +671,12 @@ export default function TimelinesAdmin() {
                   </button>
                   <button
                     onClick={handleSaveEvent}
-                    disabled={isUploading}
+                    disabled={isUploading || isCompressing}
                     className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-colors ${
-                      isUploading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+                      isUploading || isCompressing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
                     }`}
                   >
-                    {isUploading ? "保存中..." : "保存"}
+                    {isUploading ? "保存中..." : isCompressing ? "压缩中..." : "保存"}
                   </button>
                 </div>
               </div>
