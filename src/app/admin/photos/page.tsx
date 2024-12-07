@@ -80,11 +80,57 @@ export default function PhotosManagementPage() {
         throw new Error("No URL returned from upload");
       }
       return data.url;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
       throw error;
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 1.9, // 设置为1.9MB以确保在2MB以下
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: file.type as string,
+      initialQuality: 0.8,
+      onProgress: (progress: number) => {
+        console.log('压缩进度：', progress);
+      }
+    };
+
+    try {
+      let compressedFile = await imageCompression(file, options);
+      
+      // 如果第一次压缩后仍然大于1.9MB，继续压缩
+      let quality = 0.8;
+      while (compressedFile.size > 1.9 * 1024 * 1024 && quality > 0.1) {
+        quality -= 0.1;
+        options.initialQuality = quality;
+        console.log(`尝试使用质量 ${quality.toFixed(2)} 重新压缩`);
+        compressedFile = await imageCompression(file, options);
+      }
+      
+      // 创建新的File对象，保持原始文件名和类型
+      const resultFile = new File(
+        [compressedFile], 
+        file.name,
+        { type: file.type }
+      );
+
+      console.log("原始文件大小:", (file.size / 1024 / 1024).toFixed(2), "MB");
+      console.log("压缩后文件大小:", (resultFile.size / 1024 / 1024).toFixed(2), "MB");
+      console.log("最终压缩质量:", quality.toFixed(2));
+      
+      if (resultFile.size > 2 * 1024 * 1024) {
+        throw new Error("无法将图片压缩到2MB以下，请选择较小的图片");
+      }
+      
+      return resultFile;
+    } catch (error: any) {
+      console.error("压缩图片时出错:", error);
+      throw new Error(error.message || "图片压缩失败");
     }
   };
 
@@ -123,28 +169,6 @@ export default function PhotosManagementPage() {
     e.stopPropagation();
   };
 
-  const compressImage = async (file: File) => {
-    const options = {
-      maxSizeMB: 3,
-      maxWidthOrHeight: 1920,
-      useWebWorker: true,
-      fileType: file.type,
-      onProgress: (progress: number) => {
-        console.log('压缩进度：', progress);
-      }
-    };
-
-    try {
-      const compressedFile = await imageCompression(file, options);
-      console.log("原始文件大小:", (file.size / 1024 / 1024).toFixed(2), "MB");
-      console.log("压缩后文件大小:", (compressedFile.size / 1024 / 1024).toFixed(2), "MB");
-      return compressedFile;
-    } catch (error) {
-      console.error("压缩图片时出错:", error);
-      throw error;
-    }
-  };
-
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
 
@@ -160,15 +184,9 @@ export default function PhotosManagementPage() {
         width: dimensions.width,
         height: dimensions.height,
       }));
-
-      // Compress the image if it's larger than 3MB
-      if (file.size > 3 * 1024 * 1024) {
-        const compressedFile = await compressImage(file);
-        setSelectedFile(compressedFile);
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error processing image:", error);
-      alert("处理图片时出错");
+      alert(error.message || "处理图片时出错");
     }
   };
 
@@ -194,20 +212,14 @@ export default function PhotosManagementPage() {
       setIsCompressing(true);
       setIsUploading(true);
 
-      // 压缩图片
+      // 检查文件大小并在需要时压缩
       let fileToUpload = selectedFile;
-      if (selectedFile.size > 3 * 1024 * 1024) {
-        fileToUpload = await compressImage(selectedFile);
-      }
-
-      // Validate file size (max 10MB)
-      if (fileToUpload.size > 10 * 1024 * 1024) {
-        throw new Error("图片大小不能超过10MB");
-      }
-
-      // Validate file type
-      if (!fileToUpload.type.startsWith("image/")) {
-        throw new Error("请选择有效的图片文件");
+      if (selectedFile.size > 1.9 * 1024 * 1024) {
+        try {
+          fileToUpload = await compressImage(selectedFile);
+        } catch (error: any) {
+          throw new Error(`图片压缩失败: ${error.message}`);
+        }
       }
 
       const url = await uploadFile(fileToUpload);
@@ -248,9 +260,9 @@ export default function PhotosManagementPage() {
         location: "",
         date: new Date().toISOString().split("T")[0],
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding photo:", error);
-      alert(error instanceof Error ? error.message : "添加照片失败，请重试。");
+      alert(error.message || "添加照片失败，请重试。");
     } finally {
       setIsCompressing(false);
       setIsUploading(false);
@@ -282,7 +294,7 @@ export default function PhotosManagementPage() {
 
         await fetchPhotos();
         setEditingPhoto(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error updating photo:", error);
         alert("更新照片失败，请重试。");
       }
@@ -303,9 +315,9 @@ export default function PhotosManagementPage() {
         }
 
         await fetchPhotos();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting photo:", error);
-        alert(error instanceof Error ? error.message : "删除照片失败，请重试");
+        alert(error.message || "删除照片失败，请重试");
       }
     }
   };
