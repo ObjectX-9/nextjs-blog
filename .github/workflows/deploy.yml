@@ -1,70 +1,70 @@
-# # workflow名称
-# name: build-and-deploy-nextjs
-# # 对应第1步，master代码变动执行该workflow
-# on:
-#   push:
-#     branches:
-#       - master
-# jobs:
-#   build-and-deploy:
-#     # 定义job运行环境，使用linux环境
-#     runs-on: ubuntu-latest
-#     steps:
-#       # 对应第2步，借助已有脚本拉取代码
-#       - name: Checkout
-#         uses: actions/checkout@master
+# workflow名称
+name: build-and-deploy-nextjs
+# 对应第1步，master代码变动执行该workflow
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-and-deploy:
+    # 定义job运行环境，使用linux环境
+    runs-on: ubuntu-latest
+    steps:
+      # 对应第2步，借助已有脚本拉取代码
+      - name: Checkout
+        uses: actions/checkout@master
 
-#       # 设置 pnpm
-#       - uses: pnpm/action-setup@v2
-#         with:
-#           version: latest
+      # 设置 pnpm
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
-#       # 第3步的准备工作，先配置好node环境
-#       - uses: actions/setup-node@v2
-#         with:
-#           node-version: "20"
-#           cache: "pnpm"
+      # 第3步的准备工作，先配置好node环境
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+          cache: "pnpm"
 
-#       # 创建环境变量文件
-#       - name: Create .env.local
-#         run: |
-#           cat << EOF > .env.local
-#           OSS_REGION="${{ secrets.OSS_REGION }}"
-#           OSS_ACCESS_KEY_ID="${{ secrets.OSS_ACCESS_KEY_ID }}"
-#           OSS_ACCESS_KEY_SECRET="${{ secrets.OSS_ACCESS_KEY_SECRET }}"
-#           OSS_BUCKET="${{ secrets.OSS_BUCKET }}"
-#           MONGODB_URI="${{ secrets.MONGODB_URI }}"
-#           ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}"
-#           ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
-#           EOF
+      # 创建环境变量文件
+      - name: Create .env.local
+        run: |
+          cat << EOF > .env.local
+          OSS_REGION="${{ secrets.OSS_REGION }}"
+          OSS_ACCESS_KEY_ID="${{ secrets.OSS_ACCESS_KEY_ID }}"
+          OSS_ACCESS_KEY_SECRET="${{ secrets.OSS_ACCESS_KEY_SECRET }}"
+          OSS_BUCKET="${{ secrets.OSS_BUCKET }}"
+          MONGODB_URI="${{ secrets.MONGODB_URI }}"
+          ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}"
+          ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
+          EOF
 
-#       # 对应第3步，执行打包命令
-#       - name: "Build"
-#         run: |
-#           pnpm install
-#           pnpm run build
+      # 对应第3步，执行打包命令
+      - name: "Build"
+        run: |
+          pnpm install
+          pnpm run build
 
-#       # 对应第4、5步，配置参数登陆服务器+拷贝到指定目录
-#       - name: Upload
-#         uses: appleboy/scp-action@master
-#         with:
-#           host: ${{ secrets.VPS_HOST }}
-#           username: ${{ secrets.VPS_USER }}
-#           key: ${{ secrets.SSH_PRIVATE_KEY }}
-#           debug: true
-#           port: 22
-#           # 拷贝 .next、public文件夹和package.json文件到服务器指定目录
-#           source: ".next/,public/,package.json,pnpm-lock.yaml,.env.local"
-#           target: "/www/wwwroot/nextjs-blog"
+      # 对应第4、5步，配置参数登陆服务器+拷贝到指定目录
+      - name: Upload
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          debug: true
+          port: 22
+          # 拷贝 .next、public文件夹和package.json文件到服务器指定目录
+          source: ".next/,public/,package.json,pnpm-lock.yaml,.env.local"
+          target: "/www/wwwroot/nextjs-blog"
 
-#       # 对应第6步，重启安装依赖、后端服务2
-#       - name: Server Reload
-#         uses: appleboy/ssh-action@master
-#         with:
-#           host: ${{ secrets.VPS_HOST }}
-#           username: ${{ secrets.VPS_USER }}
-#           key: ${{ secrets.SSH_PRIVATE_KEY }}
-#           script: |
-#             cd /www/wwwroot/nextjs-blog
-#             pnpm install
-#             pm2 reload nextjs-blog
+      # 对应第6步，重启安装依赖、后端服务2
+      - name: Server Reload
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /www/wwwroot/nextjs-blog
+            pnpm install
+            pm2 reload nextjs-blog
