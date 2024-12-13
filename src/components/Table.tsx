@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { memo } from "react";
 
 export type ItemType = {
   [K in TableProps["fields"][number]["key"]]: string | number;
@@ -24,21 +25,23 @@ interface TableProps {
     label?: string;
     align?: "left" | "center" | "right";
     className?: string;
-    render?: (item: ItemType["key"], idx: number) => React.ReactNode;
+    render?: (value: any, item: ItemType, idx: number) => React.ReactNode;
   }[];
 }
-export const Table: React.FC<TableProps> = (props) => {
+
+export const Table = memo<TableProps>((props) => {
   const { items = [], fields = [], caption, footer } = props;
+
   return (
     <TableComponent>
-      <TableCaption className="mt-8 mb-3">{caption}</TableCaption>
+      {caption && <TableCaption className="mt-8 mb-3">{caption}</TableCaption>}
       <TableHeader>
         <TableRow>
           {fields.map((field) => (
             <TableHead
               className={`${field.className ?? ""} ${
                 field.align ? `text-${field.align}` : ""
-              }`}
+              }`.trim()}
               key={field.key}
             >
               {field.label}
@@ -53,18 +56,20 @@ export const Table: React.FC<TableProps> = (props) => {
               <TableCell
                 className={`${item.className ?? ""} ${
                   field.align ? `text-${field.align}` : ""
-                }`}
-                key={field.key + item.id}
+                }`.trim()}
+                key={`${field.key}-${item.id}`}
               >
                 {field.render
-                  ? field.render(item.key, idx)
-                  : (item[field.key] as string | number | React.ReactNode)}
+                  ? field.render(item[field.key], item, idx)
+                  : item[field.key]}
               </TableCell>
             ))}
           </TableRow>
         ))}
       </TableBody>
-      <TableFooter>{footer}</TableFooter>
+      {footer && <TableFooter>{footer}</TableFooter>}
     </TableComponent>
   );
-};
+});
+
+Table.displayName = "Table";
