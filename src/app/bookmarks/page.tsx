@@ -73,18 +73,21 @@ export default function Bookmarks() {
       const cachedCategories = getFromCache<IBookmarkCategory[]>(CACHE_KEYS.CATEGORIES);
       if (cachedCategories && Array.isArray(cachedCategories)) {
         setCategories(cachedCategories);
+        if (!selectedCategory && cachedCategories.length > 0 && cachedCategories[0]._id) {
+          setSelectedCategory(cachedCategories[0]._id.toString());
+        }
       }
 
       const response = await fetch("/api/bookmarks/categories");
       if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data)) {
-          setCategories(data);
-          setCache(CACHE_KEYS.CATEGORIES, data);
+        if (data.success && Array.isArray(data.categories)) {
+          setCategories(data.categories);
+          setCache(CACHE_KEYS.CATEGORIES, data.categories);
           
           // Set initial selected category if none is selected
-          if (!selectedCategory && data.length > 0 && data[0]._id) {
-            setSelectedCategory(data[0]._id.toString());
+          if (!selectedCategory && data.categories.length > 0 && data.categories[0]._id) {
+            setSelectedCategory(data.categories[0]._id.toString());
           }
         } else {
           console.error("Invalid categories data format:", data);
@@ -105,19 +108,29 @@ export default function Bookmarks() {
     if (!categoryId) return;
 
     try {
+      const cacheKey = `${CACHE_KEYS.BOOKMARKS}${categoryId}`;
+      const cachedBookmarks = getFromCache<IBookmark[]>(cacheKey);
+      if (cachedBookmarks && Array.isArray(cachedBookmarks)) {
+        setBookmarks(cachedBookmarks);
+      }
+
       const response = await fetch(`/api/bookmarks?categoryId=${categoryId}`);
-      const data = await response.json();
-      if (data.success) {
-        setBookmarks(data.bookmarks);
-        setCache(CACHE_KEYS.BOOKMARKS + categoryId, data.bookmarks);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.bookmarks)) {
+          setBookmarks(data.bookmarks);
+          setCache(cacheKey, data.bookmarks);
+        } else {
+          console.error("Invalid bookmarks data format:", data);
+          setBookmarks([]);
+        }
+      } else {
+        console.error("Failed to fetch bookmarks:", response.statusText);
+        setBookmarks([]);
       }
     } catch (error) {
-      console.error("Failed to fetch bookmarks:", error);
-      // 如果请求失败，尝试使用缓存
-      const cached = getFromCache<IBookmark[]>(CACHE_KEYS.BOOKMARKS + categoryId);
-      if (cached) {
-        setBookmarks(cached);
-      }
+      console.error("Error fetching bookmarks:", error);
+      setBookmarks([]);
     }
   };
 
