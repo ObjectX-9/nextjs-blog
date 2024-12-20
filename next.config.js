@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  assetPrefix: "https://object-x.com.cn",
   images: {
     domains: [
       "images.unsplash.com",
