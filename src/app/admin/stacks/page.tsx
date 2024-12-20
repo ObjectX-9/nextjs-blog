@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { IStack } from "@/app/model/stack";
+import Image from 'next/image';
 
 interface StackWithId extends IStack {
   _id: string;
@@ -184,9 +185,11 @@ export default function StacksAdmin() {
           <div key={stack._id} className="border rounded-lg p-4 shadow-sm">
             <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-start md:justify-between">
               <div className="flex items-center gap-3">
-                <img
+                <Image
                   src={stack.iconSrc}
                   alt={stack.title}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 object-contain"
                 />
                 <h3 className="font-semibold text-sm md:text-base">{stack.title}</h3>
@@ -228,7 +231,7 @@ export default function StacksAdmin() {
                 {editingStack._id ? "编辑技术栈" : "添加技术栈"}
               </h2>
             </div>
-            
+
             <div className="p-4 md:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -278,9 +281,11 @@ export default function StacksAdmin() {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                   {(previewUrl || editingStack.iconSrc) && (
                     <div className="mb-4">
-                      <img
-                        src={previewUrl || editingStack.iconSrc}
+                      <Image
+                        src={previewUrl || editingStack.iconSrc || ""}
                         alt="Stack icon preview"
+                        width={64}
+                        height={64}
                         className="w-16 h-16 object-contain"
                       />
                     </div>

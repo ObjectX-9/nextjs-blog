@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import imageCompression from "browser-image-compression";
+import Image from "next/image";
 
 interface TimelineLink {
   text: string;
@@ -35,11 +36,7 @@ export default function TimelinesAdmin() {
   const [isCompressing, setIsCompressing] = useState(false);
 
   // Fetch events on component mount
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const response = await fetch("/api/timelines");
       if (!response.ok) {
@@ -51,7 +48,11 @@ export default function TimelinesAdmin() {
       console.error("Error fetching timeline events:", error);
       alert("加载失败，请刷新页面重试");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   const handleAddEvent = () => {
     const now = new Date();
@@ -169,7 +170,7 @@ export default function TimelinesAdmin() {
       if (selectedFile) {
         setIsCompressing(true);
         let fileToUpload = selectedFile;
-        
+
         // Compress image if size is over 1.9MB
         if (selectedFile.size > 1.9 * 1024 * 1024) {
           try {
@@ -196,7 +197,7 @@ export default function TimelinesAdmin() {
         if (!data.url) {
           throw new Error("No URL returned from upload");
         }
-        
+
         finalImageUrl = data.url;
       }
 
@@ -333,7 +334,7 @@ export default function TimelinesAdmin() {
 
     try {
       setSelectedFile(file);
-      
+
       // Create preview URL
       const prevUrl = previewUrl;
       const newPreviewUrl = URL.createObjectURL(file);
@@ -389,9 +390,11 @@ export default function TimelinesAdmin() {
                 )}
                 {event.imageUrl && (
                   <div className="mt-2">
-                    <img
+                    <Image
                       src={event.imageUrl}
                       alt={event.title}
+                      width={200}
+                      height={120}
                       className="max-h-[120px] object-contain bg-white"
                     />
                   </div>
@@ -456,7 +459,7 @@ export default function TimelinesAdmin() {
                 {editingEvent._id ? "编辑事件" : "添加事件"}
               </h2>
             </div>
-            
+
             <div className="p-4">
               <div className="space-y-4">
                 <div>
@@ -520,9 +523,8 @@ export default function TimelinesAdmin() {
                   </label>
                   <input
                     type="text"
-                    className={`w-full px-3 py-2 border rounded-lg text-base ${
-                      errors.tweetUrl ? "border-red-500" : ""
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg text-base ${errors.tweetUrl ? "border-red-500" : ""
+                      }`}
                     value={editingEvent.tweetUrl || ""}
                     onChange={(e) => {
                       setEditingEvent({
@@ -548,9 +550,11 @@ export default function TimelinesAdmin() {
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[200px] flex items-center justify-center bg-white relative">
                     {(previewUrl || editingEvent.imageUrl) ? (
                       <div className="relative w-full h-full flex items-center justify-center">
-                        <img
-                          src={previewUrl || editingEvent.imageUrl}
+                        <Image
+                          src={previewUrl || editingEvent.imageUrl || ''}
                           alt="Preview"
+                          width={200}
+                          height={120}
                           className="max-w-full max-h-[180px] object-contain bg-white"
                         />
                         <button
@@ -629,9 +633,8 @@ export default function TimelinesAdmin() {
                         <input
                           type="text"
                           placeholder="https://"
-                          className={`w-full px-3 py-2 border rounded-lg text-base ${
-                            errors[`link_${index}`] ? "border-red-500" : ""
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-lg text-base ${errors[`link_${index}`] ? "border-red-500" : ""
+                            }`}
                           value={link.url}
                           onChange={(e) =>
                             handleUpdateLink(index, "url", e.target.value)
@@ -672,9 +675,8 @@ export default function TimelinesAdmin() {
                   <button
                     onClick={handleSaveEvent}
                     disabled={isUploading || isCompressing}
-                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-colors ${
-                      isUploading || isCompressing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-                    }`}
+                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-colors ${isUploading || isCompressing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+                      }`}
                   >
                     {isUploading ? "保存中..." : isCompressing ? "压缩中..." : "保存"}
                   </button>

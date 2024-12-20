@@ -42,7 +42,7 @@ export default function BookmarksManagementPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/bookmarkCategories");
+      const response = await fetch("/api/bookmarks/categories");
       const data = await response.json();
       if (data.success) {
         setCategories(data.categories);
@@ -59,7 +59,7 @@ export default function BookmarksManagementPage() {
     if (newCategory.name?.trim()) {
       setIsUpdating(true);
       try {
-        const response = await fetch("/api/bookmarkCategories", {
+        const response = await fetch("/api/bookmarks/categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: newCategory.name }),
@@ -89,7 +89,7 @@ export default function BookmarksManagementPage() {
       setIsUpdating(true);
       try {
         const response = await fetch(
-          `/api/bookmarkCategories?id=${categoryId}`,
+          `/api/bookmarks/categories?id=${categoryId}`,
           {
             method: "DELETE",
           }
@@ -209,21 +209,19 @@ export default function BookmarksManagementPage() {
       <div className="px-4 md:px-6 pb-4">
         <div className="flex gap-2 md:gap-4">
           <button
-            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${
-              activeTab === "bookmarks"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200"
-            }`}
+            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${activeTab === "bookmarks"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200"
+              }`}
             onClick={() => setActiveTab("bookmarks")}
           >
             书签列表
           </button>
           <button
-            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${
-              activeTab === "categories"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200"
-            }`}
+            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${activeTab === "categories"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200"
+              }`}
             onClick={() => setActiveTab("categories")}
           >
             分类管理

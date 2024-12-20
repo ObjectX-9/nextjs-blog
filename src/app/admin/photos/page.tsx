@@ -1,9 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
 import { IPhoto, IPhotoDB } from "@/app/model/photo";
 import imageCompression from "browser-image-compression";
+import Image from 'next/image';
 
 export default function PhotosManagementPage() {
   const [photos, setPhotos] = useState<IPhotoDB[]>([]);
@@ -102,7 +102,7 @@ export default function PhotosManagementPage() {
 
     try {
       let compressedFile = await imageCompression(file, options);
-      
+
       // 如果第一次压缩后仍然大于1.9MB，继续压缩
       let quality = 0.8;
       while (compressedFile.size > 1.9 * 1024 * 1024 && quality > 0.1) {
@@ -111,10 +111,10 @@ export default function PhotosManagementPage() {
         console.log(`尝试使用质量 ${quality.toFixed(2)} 重新压缩`);
         compressedFile = await imageCompression(file, options);
       }
-      
+
       // 创建新的File对象，保持原始文件名和类型
       const resultFile = new File(
-        [compressedFile], 
+        [compressedFile],
         file.name,
         { type: file.type }
       );
@@ -122,11 +122,11 @@ export default function PhotosManagementPage() {
       console.log("原始文件大小:", (file.size / 1024 / 1024).toFixed(2), "MB");
       console.log("压缩后文件大小:", (resultFile.size / 1024 / 1024).toFixed(2), "MB");
       console.log("最终压缩质量:", quality.toFixed(2));
-      
+
       if (resultFile.size > 2 * 1024 * 1024) {
         throw new Error("无法将图片压缩到2MB以下，请选择较小的图片");
       }
-      
+
       return resultFile;
     } catch (error: any) {
       console.error("压缩图片时出错:", error);
@@ -138,7 +138,7 @@ export default function PhotosManagementPage() {
     file: File
   ): Promise<{ width: number; height: number }> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         resolve({
           width: img.width,
@@ -279,7 +279,7 @@ export default function PhotosManagementPage() {
       try {
         // Create a copy of the photo object without the _id field
         const { _id, ...photoWithoutId } = editingPhoto.photo;
-        
+
         const response = await fetch(`/api/photos?id=${_id}`, {
           method: "PUT",
           headers: {
@@ -351,9 +351,11 @@ export default function PhotosManagementPage() {
             {photos.map((photo) => (
               <tr key={photo._id!.toString()} className="border-t">
                 <td className="p-4">
-                  <img
+                  <Image
                     src={photo.src}
                     alt={photo.title}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 object-cover rounded"
                   />
                 </td>
@@ -402,9 +404,11 @@ export default function PhotosManagementPage() {
             onClick={() => setShowActionModal({ photo })}
           >
             <div className="flex items-center gap-4">
-              <img
+              <Image
                 src={photo.src}
                 alt={photo.title}
+                width={64}
+                height={64}
                 className="w-16 h-16 object-cover rounded"
               />
               <div className="flex-1 min-w-0">
@@ -480,11 +484,10 @@ export default function PhotosManagementPage() {
                     }
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
-                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-                      isUploading || isCompressing
-                        ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-                        : "border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
-                    }`}
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${isUploading || isCompressing
+                      ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                      : "border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
+                      }`}
                   >
                     <input
                       id="file-upload"
@@ -523,9 +526,11 @@ export default function PhotosManagementPage() {
                         </>
                       ) : (
                         <div className="relative group">
-                          <img
+                          <Image
                             src={previewUrl}
                             alt="Preview"
+                            width={192}
+                            height={192}
                             className="mx-auto max-h-48 rounded-lg object-contain"
                           />
                           {!isUploading && !isCompressing && (

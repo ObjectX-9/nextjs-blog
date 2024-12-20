@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Friend } from "@/config/friends";
 import { ObjectId } from "mongodb";
+import Image from 'next/image';
 
 interface FriendWithId extends Friend {
   _id: string;
@@ -317,9 +318,11 @@ export default function FriendsManagementPage() {
                   }}
                 >
                   <td className="p-2 md:p-4">
-                    <img
+                    <Image
                       src={friend.avatar}
                       alt={friend.name}
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-full"
                     />
                   </td>
@@ -425,9 +428,11 @@ export default function FriendsManagementPage() {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                   {(previewUrl || newFriend.avatar) && (
                     <div className="mb-4">
-                      <img
+                      <Image
                         src={previewUrl || newFriend.avatar}
                         alt="Friend avatar preview"
+                        width={64}
+                        height={64}
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     </div>
@@ -575,9 +580,11 @@ export default function FriendsManagementPage() {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                   {(editingPreviewUrl || editingFriend.friend.avatar) && (
                     <div className="mb-4">
-                      <img
+                      <Image
                         src={editingPreviewUrl || editingFriend.friend.avatar}
                         alt="Friend avatar preview"
+                        width={64}
+                        height={64}
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     </div>
@@ -761,9 +768,11 @@ export default function FriendsManagementPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <img
+              <Image
                 src={actionModalFriend.friend.avatar}
                 alt={actionModalFriend.friend.name}
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full"
               />
               <div>

@@ -32,12 +32,11 @@ export default function WorkspacesPage() {
   const fetchWorkspaceItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { page, limit } = pagination;
       const response = await fetch(
-        `/api/workspaces?page=${page}&limit=${limit}`
+        `/api/workspaces?page=${pagination.page}&limit=${pagination.limit}`
       );
-      const data = await response.json();
-      if (data.success) {
+      if (response.ok) {
+        const data = await response.json();
         setItems(data.workspaceItems);
         setPagination((prev) => ({ ...prev, total: data.pagination.total }));
       } else {

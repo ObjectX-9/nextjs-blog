@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { IBookmark, IBookmarkCategory } from "../model/bookmark";
@@ -21,18 +21,30 @@ const CACHE_KEYS = {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 function getFromCache<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
-  const cached = localStorage.getItem(key);
-  if (!cached) return null;
-
   try {
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
-      return null;
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+
+    const parsed = JSON.parse(item);
+    // 添加基本的类型验证
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    // 如果是日期字符串，转换为 Date 对象
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => ({
+        ...item,
+        createdAt: item.createdAt ? new Date(item.createdAt) : undefined,
+        updatedAt: item.updatedAt ? new Date(item.updatedAt) : undefined,
+      })) as T;
     }
-    return data;
-  } catch {
+
+    return {
+      ...parsed,
+      createdAt: parsed.createdAt ? new Date(parsed.createdAt) : undefined,
+      updatedAt: parsed.updatedAt ? new Date(parsed.updatedAt) : undefined,
+    } as T;
+  } catch (error) {
+    console.error('Error reading from cache:', error);
     return null;
   }
 }
@@ -56,29 +68,37 @@ export default function Bookmarks() {
   const [showMobileList, setShowMobileList] = useState(false);
 
   // 提取获取分类的函数
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch("/api/bookmarkCategories");
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.categories);
-        setCache(CACHE_KEYS.CATEGORIES, data.categories);
-        if (data.categories.length > 0 && !selectedCategory) {
-          setSelectedCategory(data.categories[0]._id.toString());
+      const cachedCategories = getFromCache<IBookmarkCategory[]>(CACHE_KEYS.CATEGORIES);
+      if (cachedCategories && Array.isArray(cachedCategories)) {
+        setCategories(cachedCategories);
+      }
+
+      const response = await fetch("/api/bookmarks/categories");
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setCategories(data);
+          setCache(CACHE_KEYS.CATEGORIES, data);
+          
+          // Set initial selected category if none is selected
+          if (!selectedCategory && data.length > 0 && data[0]._id) {
+            setSelectedCategory(data[0]._id.toString());
+          }
+        } else {
+          console.error("Invalid categories data format:", data);
+          setCategories([]);
         }
+      } else {
+        console.error("Failed to fetch categories:", response.statusText);
+        setCategories([]);
       }
     } catch (error) {
-      console.error("Failed to fetch categories:", error);
-      // 如果请求失败，尝试使用缓存
-      const cached = getFromCache<IBookmarkCategory[]>(CACHE_KEYS.CATEGORIES);
-      if (cached) {
-        setCategories(cached);
-        if (cached.length > 0 && !selectedCategory) {
-          setSelectedCategory(cached[0]._id!.toString());
-        }
-      }
+      console.error("Error fetching categories:", error);
+      setCategories([]);
     }
-  };
+  }, [selectedCategory]);
 
   // 提取获取书签的函数
   const fetchBookmarks = async (categoryId: string) => {
@@ -104,23 +124,23 @@ export default function Bookmarks() {
   // 初始加载和定时刷新分类
   useEffect(() => {
     fetchCategories();
-    
+
     // 每30秒刷新一次分类
     const categoryInterval = setInterval(fetchCategories, 30000);
-    
+
     return () => clearInterval(categoryInterval);
-  }, []);
+  }, [fetchCategories]);
 
   // 当选中的分类改变或定时刷新时获取书签
   useEffect(() => {
     if (selectedCategory) {
       fetchBookmarks(selectedCategory);
-      
+
       // 每30秒刷新一次当前分类的书签
       const bookmarkInterval = setInterval(() => {
         fetchBookmarks(selectedCategory);
       }, 30000);
-      
+
       return () => clearInterval(bookmarkInterval);
     }
   }, [selectedCategory]);
@@ -170,19 +190,9 @@ export default function Bookmarks() {
   const WebLayout = () => (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <div className="w-64 min-h-screen border-r border-gray-100 flex-shrink-0">
-        <div className="p-4 flex justify-between items-center border-b border-gray-100">
-          <Link
-            href="/rss"
-            className="px-3 py-1 bg-black text-white text-sm rounded-md hover:bg-gray-800"
-          >
-            RSS 订阅
-          </Link>
-        </div>
-
-        {/* Categories */}
+      <aside className="w-64 border-r bg-white">
         <nav className="p-4">
-          {categories.map((category) => (
+          {Array.isArray(categories) && categories.map((category) => (
             <button
               key={category._id?.toString()}
               onClick={() =>
@@ -197,24 +207,20 @@ export default function Bookmarks() {
               <div className="flex justify-between items-center">
                 <span>{category.name}</span>
                 <span className="text-sm opacity-60">
-                  {category.bookmarks.length} 个站点
+                  {category.bookmarks?.length || 0} 个站点
                 </span>
               </div>
             </button>
           ))}
         </nav>
-      </div>
-
+      </aside>
       {/* Main Content */}
       <main className="flex-1 p-8">
         <h2 className="text-2xl font-bold mb-6">
-          {
-            categories.find((cat) => cat._id?.toString() === selectedCategory)
-              ?.name
-          }
+          {Array.isArray(categories) && categories.find((cat) => cat._id?.toString() === selectedCategory)?.name}
         </h2>
         <div className="grid grid-cols-2 gap-6 w-full">
-          {bookmarks.map((bookmark) => (
+          {Array.isArray(bookmarks) && bookmarks.map((bookmark) => (
             <Link
               href={bookmark.url}
               key={bookmark._id?.toString()}
@@ -251,31 +257,28 @@ export default function Bookmarks() {
 
   // Mobile layout
   const MobileLayout = () => (
-    <div className="lg:hidden">
+    <>
       {showMobileList ? (
         <div className="min-h-screen bg-white">
-          <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
-            <div className="p-4 flex items-center">
+          <div className="sticky top-0 bg-white border-b">
+            <div className="px-4 py-3">
               <button
                 onClick={() => setShowMobileList(false)}
-                className="flex items-center text-sm text-gray-600"
+                className="text-sm text-gray-500"
               >
-                <span className="mr-2">←</span>
                 返回分类
               </button>
             </div>
             <div className="px-4 pb-3">
               <h2 className="text-xl font-bold">
-                {
-                  categories.find(
-                    (cat) => cat._id?.toString() === selectedCategory
-                  )?.name
-                }
+                {Array.isArray(categories) && categories.find(
+                  (cat) => cat._id?.toString() === selectedCategory
+                )?.name}
               </h2>
             </div>
           </div>
           <div className="p-4 space-y-4">
-            {bookmarks.map((bookmark) => (
+            {Array.isArray(bookmarks) && bookmarks.map((bookmark) => (
               <Link
                 href={bookmark.url}
                 key={bookmark._id?.toString()}
@@ -309,19 +312,9 @@ export default function Bookmarks() {
         </div>
       ) : (
         <div className="p-4">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-4">导航站</h1>
-            <div className="flex items-center space-x-4">
-              <Link href="/rss" className="text-sm text-gray-600">
-                RSS 订阅
-              </Link>
-              <button className="px-3 py-1 bg-black text-white text-sm rounded-md">
-                提交
-              </button>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold mb-6">书签</h1>
           <div className="space-y-2">
-            {categories.map((category) => (
+            {Array.isArray(categories) && categories.map((category) => (
               <button
                 key={category._id?.toString()}
                 onClick={() => {
@@ -333,7 +326,7 @@ export default function Bookmarks() {
                 <div className="flex justify-between items-center">
                   <span>{category.name}</span>
                   <span className="text-sm text-gray-500">
-                    {category.bookmarks.length} 个站点
+                    {category.bookmarks?.length || 0} 个站点
                   </span>
                 </div>
               </button>
@@ -341,7 +334,7 @@ export default function Bookmarks() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 
   return (

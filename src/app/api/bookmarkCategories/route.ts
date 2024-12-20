@@ -36,7 +36,8 @@ export async function GET(request: Request) {
       bookmarks: bookmarksByCategory[category._id.toString()] || []
     }));
 
-    return NextResponse.json({ success: true, categories: categoriesWithBookmarks });
+    // Return the categories array wrapped in an object with a categories field
+    return NextResponse.json({ categories: categoriesWithBookmarks });
   } catch (error) {
     console.error("Get bookmark categories error:", error);
     return NextResponse.json(
