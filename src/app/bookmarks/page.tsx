@@ -387,7 +387,7 @@ export default function Bookmarks() {
   );
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex-1">
       <div className="lg:hidden">
         <MobileLayout />
       </div>
