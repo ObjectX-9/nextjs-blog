@@ -66,28 +66,61 @@ export default function Bookmarks() {
   const [bookmarks, setBookmarks] = useState<IBookmark[]>([]);
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
   const [showMobileList, setShowMobileList] = useState(false);
+  const [categoryBookmarkCounts, setCategoryBookmarkCounts] = useState<Record<string, number>>({});
 
   // 提取获取分类的函数
   const fetchCategories = useCallback(async () => {
     try {
+      console.log('Fetching categories...');
       const cachedCategories = getFromCache<IBookmarkCategory[]>(CACHE_KEYS.CATEGORIES);
       if (cachedCategories && Array.isArray(cachedCategories)) {
+        console.log('Using cached categories:', cachedCategories);
         setCategories(cachedCategories);
         if (!selectedCategory && cachedCategories.length > 0 && cachedCategories[0]._id) {
           setSelectedCategory(cachedCategories[0]._id.toString());
         }
       }
 
+      // 获取所有书签
+      const bookmarksResponse = await fetch("/api/bookmarks");
+      const bookmarksData = await bookmarksResponse.json();
+      const bookmarkCounts: Record<string, number> = {};
+
+      if (bookmarksData.success && Array.isArray(bookmarksData.bookmarks)) {
+        console.log('Bookmarks data:', bookmarksData.bookmarks);
+        bookmarksData.bookmarks.forEach((bookmark: IBookmark) => {
+          // 确保 categoryId 是字符串形式
+          const categoryId = typeof bookmark.categoryId === 'string'
+            ? bookmark.categoryId
+            : bookmark.categoryId.toString();
+          bookmarkCounts[categoryId] = (bookmarkCounts[categoryId] || 0) + 1;
+        });
+        console.log('Bookmark counts:', bookmarkCounts);
+      }
+
       const response = await fetch("/api/bookmarks/categories");
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.categories)) {
-          setCategories(data.categories);
-          setCache(CACHE_KEYS.CATEGORIES, data.categories);
-          
+          console.log('Categories data:', data.categories);
+          const processedCategories = data.categories.map((category: IBookmarkCategory) => {
+            const categoryId = typeof category._id === 'string'
+              ? category._id
+              : category._id!.toString();
+            return {
+              ...category,
+              _id: categoryId
+            };
+          });
+
+          console.log('Processed categories:', processedCategories);
+          setCategories(processedCategories);
+          setCache(CACHE_KEYS.CATEGORIES, processedCategories);
+          setCategoryBookmarkCounts(bookmarkCounts);
+
           // Set initial selected category if none is selected
-          if (!selectedCategory && data.categories.length > 0 && data.categories[0]._id) {
-            setSelectedCategory(data.categories[0]._id.toString());
+          if (!selectedCategory && processedCategories.length > 0 && processedCategories[0]._id) {
+            setSelectedCategory(processedCategories[0]._id);
           }
         } else {
           console.error("Invalid categories data format:", data);
@@ -102,6 +135,20 @@ export default function Bookmarks() {
       setCategories([]);
     }
   }, [selectedCategory]);
+
+  // 初始加载和定时刷新分类
+  useEffect(() => {
+    console.log('Initial categories fetch');
+    fetchCategories();
+
+    // 每30秒刷新一次分类
+    const categoryInterval = setInterval(() => {
+      console.log('Refreshing categories');
+      fetchCategories();
+    }, 30000);
+
+    return () => clearInterval(categoryInterval);
+  }, [fetchCategories]);
 
   // 提取获取书签的函数
   const fetchBookmarks = async (categoryId: string) => {
@@ -133,16 +180,6 @@ export default function Bookmarks() {
       setBookmarks([]);
     }
   };
-
-  // 初始加载和定时刷新分类
-  useEffect(() => {
-    fetchCategories();
-
-    // 每30秒刷新一次分类
-    const categoryInterval = setInterval(fetchCategories, 30000);
-
-    return () => clearInterval(categoryInterval);
-  }, [fetchCategories]);
 
   // 当选中的分类改变或定时刷新时获取书签
   useEffect(() => {
@@ -211,16 +248,15 @@ export default function Bookmarks() {
               onClick={() =>
                 setSelectedCategory(category._id?.toString() || null)
               }
-              className={`w-full text-left p-2 rounded-lg mb-2 ${
-                selectedCategory === category._id?.toString()
-                  ? "bg-black text-white"
-                  : "hover:bg-gray-100"
-              }`}
+              className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id?.toString()
+                ? "bg-black text-white"
+                : "hover:bg-gray-100"
+                }`}
             >
               <div className="flex justify-between items-center">
                 <span>{category.name}</span>
                 <span className="text-sm opacity-60">
-                  {category.bookmarks?.length || 0} 个站点
+                  {categoryBookmarkCounts[category._id?.toString() || ""] || 0} 个站点
                 </span>
               </div>
             </button>
@@ -339,7 +375,7 @@ export default function Bookmarks() {
                 <div className="flex justify-between items-center">
                   <span>{category.name}</span>
                   <span className="text-sm text-gray-500">
-                    {category.bookmarks?.length || 0} 个站点
+                    {categoryBookmarkCounts[category._id?.toString() || ""] || 0} 个站点
                   </span>
                 </div>
               </button>
