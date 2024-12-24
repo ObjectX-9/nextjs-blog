@@ -322,19 +322,13 @@ export default function Sidepanel() {
           }`}
         >
           {/* Drawer Header */}
-          <div className="relative flex h-14 items-center justify-between border-b px-4">
+          <div className="relative flex h-5 items-center justify-between border-b px-4">
             <div className="absolute left-1/2 top-1/2 h-1 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gray-300" />
             <div className="flex-1" />
-            <button
-              onClick={handleClose}
-              className="rounded-full p-2 text-gray-400 hover:bg-gray-100"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
           {/* Drawer Content */}
-          <div className="h-[calc(65vh-3.5rem)] overflow-y-auto overscroll-contain">
+          <div className="h-[calc(70vh-3.5rem)] overflow-y-auto overscroll-contain">
             <SidebarContent onNavClick={handleClose} />
           </div>
         </div>
