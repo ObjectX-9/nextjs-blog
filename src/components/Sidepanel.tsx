@@ -341,8 +341,10 @@ export default function Sidepanel() {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="min-w-60 relative hidden w-60 flex-col border-r bg-zinc-50 p-3 lg:flex xl:w-72">
-        <SidebarContent />
+      <aside className="min-w-60 relative hidden h-screen w-60 flex-col border-r bg-zinc-50 lg:flex xl:w-72">
+        <div className="overflow-y-auto scrollbar-hidden p-3 h-full">
+          <SidebarContent />
+        </div>
       </aside>
     </>
   );

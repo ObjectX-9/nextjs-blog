@@ -14,7 +14,7 @@ export default function Writing({ params }: { params: { slug: string } }) {
           返回文章列表
         </Link>
       </div>
-      
+
       {/* Sidebar - hidden on mobile */}
       <div className="overflow-y-auto flex-col hidden bg-zinc-50 lg:flex lg:flex-col lg:border-r flex-grow lg:max-w-96">
         <div className="sticky top-0 z-10 border-b bg-zinc-50 px-5 py-4">
@@ -25,17 +25,15 @@ export default function Writing({ params }: { params: { slug: string } }) {
         <div className="bg-zinc-50 p-3">
           <div className="flex flex-col gap-1 text-sm">
             {docsList.map((navItem) => {
-              const selectedClasses =
-                slug === navItem.name
-                  ? "bg-black text-white"
-                  : "hover:bg-gray-200";
-              const commonClasses =
-                "flex flex-col gap-1 transition-colors duration-300 hover:bg-gray-200 rounded-lg p-2";
+              const commonClasses = `flex flex-col gap-1 transition-colors duration-300 rounded-lg p-2`
+              const selectedClasses = `${commonClasses} bg-black text-white`
+              const hoverClasses =
+                `${commonClasses} hover:bg-gray-200`;
               return (
                 <Link
                   key={navItem.name}
                   href={`/writing/${navItem.name}`}
-                  className={`${commonClasses} ${selectedClasses}`}
+                  className={slug === navItem.name ? selectedClasses : hoverClasses}
                 >
                   <span className="font-medium">{navItem.name}</span>
                   <time

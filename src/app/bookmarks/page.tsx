@@ -5,11 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { IBookmark, IBookmarkCategory } from "../model/bookmark";
 
-interface Screenshot {
-  url: string;
-  screenshot?: string;
-}
-
 // Cache management functions
 const CACHE_KEYS = {
   CATEGORIES: "bookmark_categories",
@@ -18,7 +13,6 @@ const CACHE_KEYS = {
   LAST_FETCH: "bookmark_last_fetch_",
 };
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 function getFromCache<T>(key: string): T | null {
   try {
@@ -264,11 +258,11 @@ export default function Bookmarks() {
         </nav>
       </aside>
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 h-[100vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6">
           {Array.isArray(categories) && categories.find((cat) => cat._id?.toString() === selectedCategory)?.name}
         </h2>
-        <div className="grid grid-cols-2 gap-6 w-full">
+        <div className="grid grid-cols-2 gap-6 w-full overflow-auto-y">
           {Array.isArray(bookmarks) && bookmarks.map((bookmark) => (
             <Link
               href={bookmark.url}
