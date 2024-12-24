@@ -120,7 +120,7 @@ export default function Projects() {
       try {
         const response = await fetch('/api/projects');
         const data = await response.json();
-        if (data.success) {
+        if (data?.projects) {
           setProjects(data.projects);
           setCache(CACHE_KEYS.PROJECTS, data.projects);
           if (!selectedCategory && data.projects.length > 0) {
@@ -148,9 +148,9 @@ export default function Projects() {
       }
 
       try {
-        const response = await fetch('/api/project-categories');
+        const response = await fetch('/api/projects/categories');
         const data = await response.json();
-        if (data.success) {
+        if (data?.categories) {
           setCategories(data.categories);
           setCache(CACHE_KEYS.CATEGORIES, data.categories);
           if (!selectedCategory && data.categories.length > 0) {
