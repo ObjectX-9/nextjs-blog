@@ -323,7 +323,7 @@ export default function PhotosManagementPage() {
   };
 
   return (
-    <div className="p-6 md:p-6 max-w-[100vw] overflow-x-hidden">
+    <div className="p-6 md:p-6 max-w-[100vw] h-[100vh] overflow-x-hidden">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl md:text-2xl font-bold">相册管理</h1>
         <button

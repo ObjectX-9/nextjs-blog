@@ -274,7 +274,7 @@ export default function FriendsManagementPage() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col h-[100vh] w-full max-w-full overflow-x-hidden">
       <h1 className="text-2xl font-bold p-4 md:p-6">友链管理</h1>
 
       <div className="px-4 md:px-6 pb-6">

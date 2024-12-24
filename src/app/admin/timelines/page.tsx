@@ -359,7 +359,7 @@ export default function TimelinesAdmin() {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-white relative">
+    <div className="p-4 md:p-6 bg-white relative h-[100vh] overflow-y-auto">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
         <h1 className="text-xl md:text-2xl font-bold">时间轴管理</h1>
         <button

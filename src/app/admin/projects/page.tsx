@@ -157,7 +157,7 @@ export default function ProjectsAdmin() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[100vw] h-screen flex flex-col">
+    <div className="p-4 md:p-6 max-w-[100vw] flex flex-col h-[100vh] overflow-y-auto">
       <h1 className="text-xl md:text-2xl font-bold mb-6">项目管理</h1>
       
       {/* Add New Category Section */}

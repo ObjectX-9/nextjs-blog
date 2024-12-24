@@ -203,7 +203,7 @@ export default function BookmarksManagementPage() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col h-[100vh] w-full max-w-full overflow-x-hidden overflow-y-auto">
       <h1 className="text-2xl font-bold p-4 md:p-6">书签管理</h1>
 
       <div className="px-4 md:px-6 pb-4">
@@ -225,6 +225,16 @@ export default function BookmarksManagementPage() {
             onClick={() => setActiveTab("categories")}
           >
             分类管理
+          </button>
+
+          <button
+            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base ${activeTab === "categories"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200"
+              }`}
+            onClick={() => setShowAddBookmark(true)}
+          >
+            添加书签
           </button>
         </div>
       </div>
@@ -296,12 +306,7 @@ export default function BookmarksManagementPage() {
 
         {activeTab === "bookmarks" && (
           <div className="space-y-4">
-            <button
-              className="w-full md:w-auto mb-4 px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
-              onClick={() => setShowAddBookmark(true)}
-            >
-              添加书签
-            </button>
+
 
             {showAddBookmark && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
