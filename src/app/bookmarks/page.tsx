@@ -302,7 +302,7 @@ export default function Bookmarks() {
   const MobileLayout = () => (
     <>
       {showMobileList ? (
-        <div className="min-h-screen bg-white">
+        <div className="flex flex-col min-h-screen bg-white h-[100vh]">
           <div className="sticky top-0 bg-white border-b">
             <div className="px-4 py-3">
               <button
@@ -320,7 +320,7 @@ export default function Bookmarks() {
               </h2>
             </div>
           </div>
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 overflow-y-auto">
             {Array.isArray(bookmarks) && bookmarks.map((bookmark) => (
               <Link
                 href={bookmark.url}
