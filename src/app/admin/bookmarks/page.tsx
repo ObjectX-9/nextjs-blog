@@ -44,7 +44,7 @@ export default function BookmarksManagementPage() {
     try {
       const response = await fetch("/api/bookmarks/categories");
       const data = await response.json();
-      if (data.success) {
+      if (data?.categories) {
         setCategories(data.categories);
         if (data.categories.length > 0) {
           setSelectedCategoryId(data.categories[0]._id.toString());

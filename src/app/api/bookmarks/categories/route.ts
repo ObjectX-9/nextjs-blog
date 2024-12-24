@@ -36,14 +36,98 @@ export async function GET(request: Request) {
       bookmarks: bookmarksByCategory[category._id.toString()] || []
     }));
 
-    return NextResponse.json({
-      success: true,
-      categories: categoriesWithBookmarks
-    });
+    // Return the categories array wrapped in an object with a categories field
+    return NextResponse.json({ categories: categoriesWithBookmarks });
   } catch (error) {
     console.error("Get bookmark categories error:", error);
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// Create a new bookmark category
+export async function POST(request: Request) {
+  try {
+    const data = await request.json();
+    const db = await getDb();
+
+    if (!data.name) {
+      return NextResponse.json(
+        { error: "Category name is required" },
+        { status: 400 }
+      );
+    }
+
+    const category: Omit<IBookmarkCategory, "_id"> = {
+      name: data.name,
+      bookmarks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await db
+      .collection<IBookmarkCategory>("bookmarkCategories")
+      .insertOne(category as IBookmarkCategory);
+
+    if (result.acknowledged) {
+      return NextResponse.json({
+        success: true,
+        category: { ...category, _id: result.insertedId },
+      });
+    } else {
+      return NextResponse.json(
+        { error: "Failed to create category" },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("Create bookmark category error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// Delete a bookmark category
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Category ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDb();
+
+    // First delete all bookmarks in this category
+    await db.collection("bookmarks").deleteMany({
+      categoryId: new ObjectId(id),
+    });
+
+    // Then delete the category
+    const result = await db
+      .collection<IBookmarkCategory>("bookmarkCategories")
+      .deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount > 0) {
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 }
+      );
+    }
+  } catch (error) {
+    console.error("Delete bookmark category error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

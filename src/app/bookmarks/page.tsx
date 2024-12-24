@@ -95,7 +95,7 @@ export default function Bookmarks() {
       const response = await fetch("/api/bookmarks/categories");
       if (response.ok) {
         const data = await response.json();
-        if (data.success && Array.isArray(data.categories)) {
+        if (Array.isArray(data.categories)) {
           console.log('Categories data:', data.categories);
           const processedCategories = data.categories.map((category: IBookmarkCategory) => {
             const categoryId = typeof category._id === 'string'
@@ -158,7 +158,7 @@ export default function Bookmarks() {
       const response = await fetch(`/api/bookmarks?categoryId=${categoryId}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.success && Array.isArray(data.bookmarks)) {
+        if (Array.isArray(data.bookmarks)) {
           setBookmarks(data.bookmarks);
           setCache(cacheKey, data.bookmarks);
         } else {
