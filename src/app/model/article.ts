@@ -1,4 +1,7 @@
 export interface Article {
+  // MongoDB ID
+  _id?: string;
+
   // 文章标题
   title: string;
   

@@ -50,6 +50,17 @@ function setCache(key: string, data: any): void {
   );
 }
 
+interface ArticleTableItem extends Record<string, string | number> {
+  id: string;
+  year: string;
+  date: string;
+  title: string;
+  tags: string;
+  views: string;
+  likes: string;
+  url: string;
+}
+
 export default function Articles() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<ArticleCategory[]>([]);
@@ -78,9 +89,7 @@ export default function Articles() {
       if (articlesData.success && Array.isArray(articlesData.articles)) {
         console.log('Articles data:', articlesData.articles);
         articlesData.articles.forEach((article: Article) => {
-          const categoryId = typeof article.categoryId === 'string'
-            ? article.categoryId
-            : article.categoryId.toString();
+          const categoryId = article.categoryId;
           articleCounts[categoryId] = (articleCounts[categoryId] || 0) + 1;
         });
         console.log('Article counts:', articleCounts);
@@ -92,9 +101,7 @@ export default function Articles() {
         if (Array.isArray(data.categories)) {
           console.log('Categories data:', data.categories);
           const processedCategories = data.categories.map((category: ArticleCategory) => {
-            const categoryId = typeof category._id === 'string'
-              ? category._id
-              : category._id?.toString() || '';
+            const categoryId = category._id?.toString() || '';
             return {
               ...category,
               articleCount: articleCounts[categoryId] || 0,
@@ -173,9 +180,8 @@ export default function Articles() {
       </button>
 
       {/* 左侧分类列表 */}
-      <aside className={`${
-        showMobileList ? "fixed inset-0 z-40 bg-white" : "hidden"
-      } md:block md:w-64 md:sticky md:top-0 md:h-screen border-r bg-white overflow-y-auto`}>
+      <aside className={`${showMobileList ? "fixed inset-0 z-40 bg-white" : "hidden"
+        } md:block md:w-64 md:sticky md:top-0 md:h-screen border-r bg-white overflow-y-auto`}>
         <nav className="p-4">
           {Array.isArray(categories) && categories.map((category) => (
             <button
@@ -184,11 +190,10 @@ export default function Articles() {
                 setSelectedCategory(category._id?.toString() || null);
                 setShowMobileList(false);
               }}
-              className={`w-full text-left p-2 rounded-lg mb-2 ${
-                selectedCategory === category._id?.toString()
+              className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id?.toString()
                   ? "bg-black text-white"
                   : "hover:bg-gray-100"
-              }`}
+                }`}
             >
               <div className="flex justify-between items-center">
                 <span>{category.name}</span>
@@ -205,7 +210,7 @@ export default function Articles() {
       <main className="flex-1 h-screen overflow-y-auto">
         <div className="py-8 px-8">
           <h1 className="text-3xl font-bold mb-6">文章</h1>
-          <div className="mb-6 last:mb-0">收集的一些有趣的文章</div>
+          <div className="mb-6 last:mb-0">写过的一些技术文章</div>
           <div className="border border-gray-200 rounded-xl">
             {Array.isArray(articles) && articles.length > 0 ? (
               <Table
@@ -214,17 +219,18 @@ export default function Articles() {
                   const year = date.getFullYear();
                   const month = String(date.getMonth() + 1).padStart(2, '0');
                   const day = String(date.getDate()).padStart(2, '0');
-                  
-                  return {
+
+                  const item: ArticleTableItem = {
                     id: article._id?.toString() || '',
-                    year,
+                    year: year.toString(),
                     date: `${day}/${month}`,
                     title: article.title,
-                    tags: article.tags,
-                    views: article.views,
-                    likes: article.likes,
+                    tags: JSON.stringify(article.tags || []),
+                    views: article.views.toString(),
+                    likes: article.likes.toString(),
                     url: article.url,
                   };
+                  return item;
                 })}
                 fields={[
                   {
@@ -244,9 +250,9 @@ export default function Articles() {
                     label: 'Title',
                     align: 'left',
                     className: 'w-[35%]',
-                    render: (value, item) => (
+                    render: (value: any, item: { [key: string]: string | number }) => (
                       <Link
-                        href={item.url}
+                        href={item.url as string}
                         target="_blank"
                         className="text-gray-900 hover:text-blue-600 transition-colors block truncate"
                         title={value}
@@ -260,38 +266,41 @@ export default function Articles() {
                     label: 'Tags',
                     align: 'left',
                     className: 'w-[25%]',
-                    render: (tags: string[]) => (
-                      <div className="flex flex-wrap gap-1 max-w-full">
-                        {tags && tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded truncate max-w-[100px]"
-                            title={tag}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {tags && tags.length > 3 && (
-                          <span className="text-xs text-gray-500">
-                            +{tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    ),
+                    render: (value: any, item: { [key: string]: string | number }) => {
+                      const tags: string[] = JSON.parse(value as string);
+                      return (
+                        <div className="flex flex-wrap gap-1 max-w-full">
+                          {tags?.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded truncate max-w-[100px]"
+                              title={tag}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {tags && tags.length > 3 && (
+                            <span className="text-xs text-gray-500">
+                              +{tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    },
                   },
                   {
                     key: 'views',
                     label: 'Views',
                     align: 'right',
                     className: 'w-[10%] whitespace-nowrap',
-                    render: (value) => value.toLocaleString(),
+                    render: (value: any) => parseInt(value as string).toLocaleString(),
                   },
                   {
                     key: 'likes',
                     label: 'Likes',
                     align: 'right',
                     className: 'w-[10%] whitespace-nowrap',
-                    render: (value) => value.toLocaleString(),
+                    render: (value: any) => parseInt(value as string).toLocaleString(),
                   },
                 ]}
               />
