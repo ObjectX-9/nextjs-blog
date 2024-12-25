@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ISite } from "@/app/model/site";
 import Image from 'next/image';
 import imageCompression from "browser-image-compression";
@@ -324,9 +324,37 @@ export default function SiteManagementPage() {
     setIsEditing(false);
   };
 
+  const refreshSiteData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/site?" + new Date().getTime(), {
+        method: "GET",
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('获取数据失败');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setSite(data.site);
+        if (isEditing) {
+          setEditedSite(data.site as EditableSite);
+        }
+      }
+    } catch (error) {
+      console.error("刷新站点数据失败:", error);
+      setMessage({ type: 'error', text: '获取站点数据失败' });
+    }
+  }, [isEditing]);
+
   useEffect(() => {
     refreshSiteData();
-  }, []);
+  }, [refreshSiteData]);
 
   const renderImageUpload = (field: string, label: string, value: string) => (
     <div className="space-y-2">
@@ -393,40 +421,12 @@ export default function SiteManagementPage() {
     </div>
   );
 
-  const refreshSiteData = async () => {
-    try {
-      const response = await fetch("/api/site?" + new Date().getTime(), {
-        method: "GET",
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('获取数据失败');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setSite(data.site);
-        if (isEditing) {
-          setEditedSite(data.site as EditableSite);
-        }
-      }
-    } catch (error) {
-      console.error("刷新站点数据失败:", error);
-      setMessage({ type: 'error', text: '获取站点数据失败' });
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {message && (
         <div className={`mb-4 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700' : message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} sticky top-0 z-10`}>
-          {message.text}
-        </div>
+        {message.text}
+      </div>
       )}
 
       <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10">
