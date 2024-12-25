@@ -24,7 +24,7 @@ function getFromCache<T>(key: string): T | null {
 
     const data = parsed.data;
     if (Array.isArray(data)) {
-      return data.map(item => ({
+      return data.map((item: any) => ({
         ...item,
         createdAt: item.createdAt ? new Date(item.createdAt) : undefined,
         updatedAt: item.updatedAt ? new Date(item.updatedAt) : undefined,
@@ -92,7 +92,11 @@ export default function Articles() {
       const cachedArticles = getFromCache<Article[]>(`${CACHE_KEYS.ARTICLES}${categoryId}`);
       if (cachedArticles) {
         console.log('Using cached articles:', cachedArticles);
-        setArticles(cachedArticles);
+        // 过滤出属于当前分类的文章
+        const filteredArticles = cachedArticles.filter((article: Article) => 
+          article.categoryId && article.categoryId.toString() === categoryId
+        );
+        setArticles(filteredArticles);
         return;
       }
 
@@ -101,9 +105,12 @@ export default function Articles() {
         const data = await response.json();
         if (data.success && Array.isArray(data.articles)) {
           console.log('Articles data:', data.articles);
-          const articlesData = data.articles || [];
-          setArticles(articlesData);
-          setCache(`${CACHE_KEYS.ARTICLES}${categoryId}`, articlesData);
+          // 过滤出属于当前分类的文章
+          const filteredArticles = data.articles.filter((article: Article) => 
+            article.categoryId && article.categoryId.toString() === categoryId
+          );
+          setArticles(filteredArticles);
+          setCache(`${CACHE_KEYS.ARTICLES}${categoryId}`, filteredArticles);
         } else {
           setArticles([]);
         }
@@ -112,7 +119,7 @@ export default function Articles() {
       }
     } catch (error) {
       console.error('Error fetching articles:', error);
-      setArticles([]); // 设置为空数组以防止错误
+      setArticles([]);
     }
   }, []);
 
@@ -132,12 +139,22 @@ export default function Articles() {
       const articleCounts: Record<string, number> = {};
 
       if (articlesData.success && Array.isArray(articlesData.articles)) {
-        console.log('Articles data:', articlesData.articles);
-        articlesData.articles.forEach((article: Article) => {
-          const categoryId = article.categoryId;
-          articleCounts[categoryId] = (articleCounts[categoryId] || 0) + 1;
+        // 确保每篇文章只被计入一次
+        const uniqueArticles = articlesData.articles.reduce((acc: Article[], article: Article) => {
+          const existingArticle = acc.find(a => a._id === article._id);
+          if (!existingArticle && article.categoryId) {
+            acc.push(article);
+          }
+          return acc;
+        }, []);
+
+        // 计算每个分类的文章数量
+        uniqueArticles.forEach((article: Article) => {
+          if (article.categoryId) {
+            const categoryId = article.categoryId.toString();
+            articleCounts[categoryId] = (articleCounts[categoryId] || 0) + 1;
+          }
         });
-        console.log('Article counts:', articleCounts);
       }
 
       const response = await fetch("/api/articles/categories");
@@ -145,27 +162,21 @@ export default function Articles() {
         const data = await response.json();
         if (Array.isArray(data.categories)) {
           console.log('Categories data:', data.categories);
-          const processedCategories = data.categories.map((category: ArticleCategory) => {
-            const categoryId = category._id?.toString() || '';
-            return {
-              ...category,
-              articleCount: articleCounts[categoryId] || 0,
-            };
-          });
+          // 只保留有文章的分类
+          const processedCategories = data.categories
+            .filter((category: ArticleCategory) => {
+              const categoryId = category._id?.toString() || '';
+              return articleCounts[categoryId] > 0;
+            });
+
           setCategories(processedCategories);
           setCategoryArticleCounts(articleCounts);
           setCache(CACHE_KEYS.CATEGORIES, processedCategories);
 
-          // 只有当有文章的分类存在时，才设置选中的分类
-          const categoryWithArticles = processedCategories.find(
-            (category: ArticleCategory) => {
-              const categoryId = category._id?.toString() || '';
-              return articleCounts[categoryId] > 0;
-            }
-          );
-
-          if (!selectedCategory && categoryWithArticles) {
-            setSelectedCategory(categoryWithArticles._id?.toString() || null);
+          // 如果没有选中的分类，选择第一个有文章的分类
+          if (!selectedCategory && processedCategories.length > 0) {
+            const firstCategory = processedCategories[0];
+            setSelectedCategory(firstCategory._id?.toString() || null);
           }
         }
       }
