@@ -105,14 +105,14 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
     }
 
     // 验证文件大小（最大10MB）
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File size exceeds 10MB limit" },
+        { success: false, error: "File size exceeds 10MB limit" },
         { status: 400 }
       );
     }
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     // 验证文件类型
     if (!file.type.startsWith("image/")) {
       return NextResponse.json(
-        { error: "Only image files are allowed" },
+        { success: false, error: "Only image files are allowed" },
         { status: 400 }
       );
     }
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
 
     console.log("Upload successful:", result.url);
 
-    return NextResponse.json({ url: result.url });
+    return NextResponse.json({ success: true, url: result.url });
   } catch (error: any) {
     // 详细的错误日志记录
     console.error("Upload error details:", {
@@ -179,6 +179,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
+        success: false,
         error: errorMessage,
         details: error.message,
         requestId: error.requestId,

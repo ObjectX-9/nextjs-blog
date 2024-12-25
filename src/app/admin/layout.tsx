@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const navItems = [
+  { name: "网站信息管理", href: "/admin/site" },
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
@@ -93,8 +94,8 @@ export default function AdminLayout({
                     href={item.href}
                     onClick={() => setIsDrawerOpen(false)}
                     className={`block px-4 py-2 rounded-md ${isActive
-                        ? "bg-gray-200 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-100"
+                      ? "bg-gray-200 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-100"
                       }`}
                   >
                     {item.name}
