@@ -14,6 +14,7 @@ const navItems = [
   { name: "工作空间管理", href: "/admin/workspaces" },
   { name: "社交链接管理", href: "/admin/social-links" },
   { name: "工作经历管理", href: "/admin/work-experience" },
+  { name: "文章管理", href: "/admin/articles" },
 ];
 
 export default function AdminLayout({
@@ -49,7 +50,7 @@ export default function AdminLayout({
           onClick={() => setIsDrawerOpen(false)}
         />
       )}
-      
+
       {/* 移动端菜单按钮 */}
       <button
         onClick={() => setIsDrawerOpen(true)}
@@ -71,9 +72,8 @@ export default function AdminLayout({
       </button>
 
       {/* 侧边栏 */}
-      <aside className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${
-        isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
+      <aside className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}>
         <div className="p-4 border-b flex justify-between items-center">
           <h1 className="text-xl font-bold">后台管理</h1>
           <button
@@ -92,11 +92,10 @@ export default function AdminLayout({
                   <Link
                     href={item.href}
                     onClick={() => setIsDrawerOpen(false)}
-                    className={`block px-4 py-2 rounded-md ${
-                      isActive
+                    className={`block px-4 py-2 rounded-md ${isActive
                         ? "bg-gray-200 text-gray-900"
                         : "text-gray-600 hover:bg-gray-100"
-                    }`}
+                      }`}
                   >
                     {item.name}
                   </Link>

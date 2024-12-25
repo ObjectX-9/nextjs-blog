@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
+import { Article } from "./model/article";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);
@@ -46,10 +47,26 @@ async function getWorkExperiences() {
   }
 }
 
+async function getArticles() {
+  try {
+    const db = await getDb();
+    const articles = await db
+      .collection<Article>("articles")
+      .find()
+      .sort({ createdAt: -1 })
+      .toArray();
+    return articles as (Article & { _id?: any })[];
+  } catch (error) {
+    console.error("Error fetching articles:", error);
+    return [] as (Article & { _id?: any })[];
+  }
+}
+
 export default async function Index() {
   const docsList = getDocsList();
   const socialLinks = await getSocialLinks();
   const workExperiences = await getWorkExperiences();
+  const articles = await getArticles();
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
@@ -203,16 +220,14 @@ export default async function Index() {
                 >
                   <span className="grid grid-cols-6 items-center">
                     <span
-                      className={`col-span-1 text-left py-4${
-                        !isSameYear ? "" : " border-b border-gray-200"
-                      }`}
+                      className={`col-span-1 text-left py-4${!isSameYear ? "" : " border-b border-gray-200"
+                        }`}
                     >
                       {isSameYear && lastModified.getFullYear()}
                     </span>
                     <span
-                      className={`col-span-5 md:col-span-5 py-4 border-b border-gray-200${
-                        idx + 1 === docsList.length ? " border-b-0" : ""
-                      }`}
+                      className={`col-span-5 md:col-span-5 py-4 border-b border-gray-200${idx + 1 === docsList.length ? " border-b-0" : ""
+                        }`}
                     >
                       <span className="grid grid-cols-4 items-center md:grid-cols-8">
                         <span className="col-span-1 text-left">
@@ -220,18 +235,11 @@ export default async function Index() {
                             .getDate()
                             .toString()
                             .padStart(2, "0")}/${(lastModified.getMonth() + 1)
-                            .toString()
-                            .padStart(2, "0")}`}
+                              .toString()
+                              .padStart(2, "0")}`}
                         </span>
                         <span className="col-span-2 md:col-span-6">
                           {navItem.name}
-                        </span>
-                        <span className="col-span-1 flex flex-nowrap">
-                          <Star size={16} />
-                          <Star size={16} />
-                          <Star size={16} />
-                          <Star size={16} />
-                          <Star size={16} />
                         </span>
                       </span>
                     </span>
@@ -242,6 +250,98 @@ export default async function Index() {
           </div>
         </div>
       </div>
+      <div className="w-full max-w-3xl my-0 mx-auto">
+        <Link
+          className="mb-4 mt-8 font-semibold cursor-pointer text-lg hover:underline text-gray-900 underline-offset-4"
+          href="/articles"
+        >
+          📚 技术文章
+        </Link>
+        <div className="text-sm">
+          <div className="grid grid-cols-6 py-2 mt-4 mb-1 font-medium text-gray-500 border-b border-gray-200">
+            <span className="col-span-1 text-left md:grid">年份</span>
+            <span className="col-span-5 md:col-span-5">
+              <span className="grid grid-cols-4 items-center md:grid-cols-8">
+                <span className="col-span-1 text-left">日期</span>
+                <span className="col-span-3 md:col-span-6">标题</span>
+              </span>
+            </span>
+          </div>
+          <div className="grid grid-cols-6 transition-colors text-gray-700 duration-500 hover:text-gray-200">
+            {articles.map((article, idx) => {
+              const createdDate = new Date(article.createdAt);
+              const isSameYear =
+                idx === 0 ||
+                createdDate.getFullYear() !==
+                new Date(articles[idx - 1].createdAt).getFullYear();
+              return (
+                <Link
+                  key={article._id?.toString()}
+                  href={article.url}
+                  target="_blank"
+                  className="col-span-6 md:col-span-6 hover:text-gray-700"
+                >
+                  <span className="grid grid-cols-6 items-center">
+                    <span
+                      className={`col-span-1 text-left py-4${!isSameYear ? "" : " border-b border-gray-200"
+                        }`}
+                    >
+                      {isSameYear && createdDate.getFullYear()}
+                    </span>
+                    <span
+                      className={`col-span-5 md:col-span-5 py-4 border-b border-gray-200${idx + 1 === articles.length ? " border-b-0" : ""
+                        }`}
+                    >
+                      <span className="grid grid-cols-4 items-center md:grid-cols-8">
+                        <span className="col-span-1 text-left">
+                          {`${createdDate
+                            .getDate()
+                            .toString()
+                            .padStart(2, "0")}/${(createdDate.getMonth() + 1)
+                              .toString()
+                              .padStart(2, "0")}`}
+                        </span>
+                        <span className="col-span-2 md:col-span-6 flex items-center gap-2">
+                          {article.title}
+                          <span className="inline-flex gap-1 text-xs bg-gray-100 px-2 py-1 rounded">
+                            {article.category}
+                          </span>
+                          <div className="flex items-center gap-3 text-gray-500 text-xs">
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                              </svg>
+                              {article.likes}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                              {article.views}
+                            </span>
+                          </div>
+                        </span>
+                        {/* <span className="col-span-1 flex flex-wrap gap-1">
+                          {article.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </span> */}
+                      </span>
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {/* */}
     </main>
   );
 }
