@@ -3,9 +3,23 @@ import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { Article } from "@/app/model/article";
 
-// MongoDB中的文章接口，扩展Article接口并添加_id字段
-interface IArticleDB extends Article {
+// MongoDB中的文章接口
+interface IArticleDB extends Omit<Article, '_id'> {
   _id?: ObjectId;
+}
+
+// 数据转换函数
+function toArticle(dbArticle: IArticleDB): Article {
+  const { _id, ...rest } = dbArticle;
+  return {
+    ...rest,
+    _id: _id?.toString(),
+  };
+}
+
+function toDBArticle(article: Article): Omit<IArticleDB, '_id'> {
+  const { _id, ...rest } = article;
+  return rest;
 }
 
 // 创建新文章
@@ -27,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const articleToInsert: IArticleDB = {
-      ...article,
+      ...toDBArticle(article),
       likes: 0,
       views: 0,
       createdAt: new Date().toISOString(),
@@ -39,7 +53,7 @@ export async function POST(request: Request) {
     if (result.acknowledged) {
       return NextResponse.json({
         success: true,
-        article: { ...articleToInsert, _id: result.insertedId },
+        article: toArticle({ ...articleToInsert, _id: result.insertedId }),
       });
     }
 
@@ -76,7 +90,7 @@ export async function GET(request: Request) {
 
     // 为每个文章添加分类名称
     const articlesWithCategories = articles.map(article => ({
-      ...article,
+      ...toArticle(article),
       category: categoryMap.get(article.categoryId) || "未分类"
     }));
 
@@ -112,7 +126,7 @@ export async function PUT(request: Request) {
 
     // 确保更新时间被设置
     const updatedArticle = {
-      ...updates,
+      ...toDBArticle(updates),
       updatedAt: new Date().toISOString(),
     };
 
