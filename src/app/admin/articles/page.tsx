@@ -635,7 +635,7 @@ export default function ArticlesManagementPage() {
 
       {/* 添加文章模态框 */}
       {showAddArticle && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[1000]">
           <div className="bg-white rounded-lg p-8 max-w-xl w-full relative">
             <h2 className="text-2xl font-bold mb-8">添加文章</h2>
             <div className="space-y-6">
@@ -750,7 +750,7 @@ export default function ArticlesManagementPage() {
 
       {/* 编辑文章模态框 */}
       {editingArticle && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto z-[1000]">
           <div className="min-h-screen px-4 text-center">
             {/* 这个元素用于垂直居中 */}
             <span
@@ -936,7 +936,7 @@ export default function ArticlesManagementPage() {
 
       {/* 编辑分类模态框 */}
       {editingCategory && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[1000]">
           <div className="bg-white rounded-lg p-8 max-w-xl w-full relative">
             <h2 className="text-2xl font-bold mb-8">编辑分类</h2>
             <div className="space-y-6">
@@ -996,7 +996,7 @@ export default function ArticlesManagementPage() {
 
       {/* 添加分类模态框 */}
       {showAddCategory && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[1000]">
           <div className="bg-white rounded-lg p-8 max-w-xl w-full relative">
             <h2 className="text-2xl font-bold mb-8">添加分类</h2>
             <div className="space-y-6">

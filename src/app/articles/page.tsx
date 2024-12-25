@@ -20,10 +20,11 @@ function getFromCache<T>(key: string): T | null {
     if (!item) return null;
 
     const parsed = JSON.parse(item);
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || !parsed.data) return null;
 
-    if (Array.isArray(parsed)) {
-      return parsed.map(item => ({
+    const data = parsed.data;
+    if (Array.isArray(data)) {
+      return data.map(item => ({
         ...item,
         createdAt: item.createdAt ? new Date(item.createdAt) : undefined,
         updatedAt: item.updatedAt ? new Date(item.updatedAt) : undefined,
@@ -31,9 +32,9 @@ function getFromCache<T>(key: string): T | null {
     }
 
     return {
-      ...parsed,
-      createdAt: parsed.createdAt ? new Date(parsed.createdAt) : undefined,
-      updatedAt: parsed.updatedAt ? new Date(parsed.updatedAt) : undefined,
+      ...data,
+      createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
+      updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
     } as T;
   } catch (error) {
     console.error('Error reading from cache:', error);
@@ -70,6 +71,37 @@ export default function Articles() {
   const [showMobileList, setShowMobileList] = useState(false);
   const [categoryArticleCounts, setCategoryArticleCounts] = useState<Record<string, number>>({});
 
+  // 获取文章列表
+  const fetchArticles = useCallback(async (categoryId: string) => {
+    try {
+      console.log('Fetching articles for category:', categoryId);
+      const cachedArticles = getFromCache<Article[]>(`${CACHE_KEYS.ARTICLES}${categoryId}`);
+      if (cachedArticles) {
+        console.log('Using cached articles:', cachedArticles);
+        setArticles(cachedArticles);
+        return;
+      }
+
+      const response = await fetch(`/api/articles?categoryId=${categoryId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.articles)) {
+          console.log('Articles data:', data.articles);
+          const articlesData = data.articles || [];
+          setArticles(articlesData);
+          setCache(`${CACHE_KEYS.ARTICLES}${categoryId}`, articlesData);
+        } else {
+          setArticles([]);
+        }
+      } else {
+        setArticles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+      setArticles([]); // 设置为空数组以防止错误
+    }
+  }, []);
+
   // 获取分类列表
   const fetchCategories = useCallback(async () => {
     try {
@@ -78,9 +110,6 @@ export default function Articles() {
       if (cachedCategories && Array.isArray(cachedCategories)) {
         console.log('Using cached categories:', cachedCategories);
         setCategories(cachedCategories);
-        if (!selectedCategory && cachedCategories.length > 0 && cachedCategories[0]._id) {
-          setSelectedCategory(cachedCategories[0]._id.toString());
-        }
       }
 
       // 获取所有文章以计算每个分类的文章数量
@@ -113,8 +142,16 @@ export default function Articles() {
           setCategoryArticleCounts(articleCounts);
           setCache(CACHE_KEYS.CATEGORIES, processedCategories);
 
-          if (!selectedCategory && processedCategories.length > 0) {
-            setSelectedCategory(processedCategories[0]._id?.toString() || null);
+          // 只有当有文章的分类存在时，才设置选中的分类
+          const categoryWithArticles = processedCategories.find(
+            (category: ArticleCategory) => {
+              const categoryId = category._id?.toString() || '';
+              return articleCounts[categoryId] > 0;
+            }
+          );
+          
+          if (!selectedCategory && categoryWithArticles) {
+            setSelectedCategory(categoryWithArticles._id?.toString() || null);
           }
         }
       }
@@ -123,41 +160,26 @@ export default function Articles() {
     }
   }, [selectedCategory]);
 
-  // 获取文章列表
-  const fetchArticles = useCallback(async (categoryId: string) => {
-    try {
-      console.log('Fetching articles for category:', categoryId);
-      const cachedArticles = getFromCache<Article[]>(`${CACHE_KEYS.ARTICLES}${categoryId}`);
-      if (cachedArticles) {
-        console.log('Using cached articles:', cachedArticles);
-        setArticles(cachedArticles);
-      }
-
-      const response = await fetch(`/api/articles?categoryId=${categoryId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && Array.isArray(data.articles)) {
-          console.log('Articles data:', data.articles);
-          const articlesData = data.articles || [];
-          setArticles(articlesData);
-          setCache(`${CACHE_KEYS.ARTICLES}${categoryId}`, articlesData);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching articles:', error);
-      setArticles([]); // 设置为空数组以防止错误
-    }
-  }, []);
-
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
   useEffect(() => {
     if (selectedCategory) {
-      fetchArticles(selectedCategory);
+      // 检查选中的分类是否有文章
+      const categoryId = selectedCategory;
+      const hasArticles = categoryArticleCounts[categoryId] > 0;
+      
+      if (hasArticles) {
+        setArticles([]); // 清空当前文章列表
+        fetchArticles(selectedCategory);
+      } else {
+        setArticles([]); // 如果分类没有文章，直接设置为空数组
+      }
+    } else {
+      setArticles([]); // 如果没有选中分类，设置为空数组
     }
-  }, [selectedCategory, fetchArticles]);
+  }, [selectedCategory, fetchArticles, categoryArticleCounts]);
 
   return (
     <div className="flex h-screen w-full box-border">
@@ -219,13 +241,13 @@ export default function Articles() {
                 items={articles.map((article) => {
                   const date = new Date(article.createdAt);
                   const year = date.getFullYear();
-                  const month = String(date.getMonth() + 1).padStart(2, '0');
-                  const day = String(date.getDate()).padStart(2, '0');
+                  const month = String(date.getMonth() + 1);
+                  const day = String(date.getDate());
 
                   const item: ArticleTableItem = {
                     id: article._id?.toString() || '',
                     year: year.toString(),
-                    date: `${day}/${month}`,
+                    date: `${month}/${day}`,
                     title: article.title,
                     tags: JSON.stringify(article.tags || []),
                     views: article.views.toString(),
