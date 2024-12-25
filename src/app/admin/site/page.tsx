@@ -37,9 +37,9 @@ export default function SiteManagementPage() {
   const [activeTab, setActiveTab] = useState("basic");
   const [editedSite, setEditedSite] = useState<SiteWithId>(defaultSite);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
-  const [isUploading, setIsUploading] = useState<{[key: string]: boolean}>({});
-  const [selectedFiles, setSelectedFiles] = useState<{[key: string]: File}>({});
-  const [previewUrls, setPreviewUrls] = useState<{[key: string]: string}>({});
+  const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>({});
+  const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File }>({});
+  const [previewUrls, setPreviewUrls] = useState<{ [key: string]: string }>({});
 
   // 获取网站信息
   const fetchSite = async () => {
@@ -62,13 +62,20 @@ export default function SiteManagementPage() {
 
   const handleInputChange = (
     field: string,
-    value: string | string[] | number | object
+    value: string | string[] | number | object | Date
   ) => {
     if (!editedSite) return;
 
     const fields = field.split(".");
     if (fields.length === 1) {
-      setEditedSite({ ...editedSite, [field]: value });
+      // 特殊处理数字类型的字段
+      if (field === "visitCount" || field === "likeCount") {
+        // 如果是空字符串，设置为 null，这样在保存时会使用默认值
+        const numValue = value === "" ? null : Number(value);
+        setEditedSite({ ...editedSite, [field]: numValue });
+      } else {
+        setEditedSite({ ...editedSite, [field]: value });
+      }
     } else if (fields.length === 2) {
       // 处理嵌套对象的情况
       const [parentField, childField] = fields;
@@ -126,7 +133,7 @@ export default function SiteManagementPage() {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || `上传失败: ${response.status}`);
       }
@@ -170,6 +177,18 @@ export default function SiteManagementPage() {
 
       // 创建一个新的对象来存储最终要保存的数据
       let finalSiteData = { ...editedSite };
+
+      // 处理数字字段，确保是数字类型
+      if (typeof finalSiteData.visitCount === 'string' || finalSiteData.visitCount === null) {
+        finalSiteData.visitCount = finalSiteData.visitCount === null || finalSiteData.visitCount === "" 
+          ? 0 
+          : Number(finalSiteData.visitCount);
+      }
+      if (typeof finalSiteData.likeCount === 'string' || finalSiteData.likeCount === null) {
+        finalSiteData.likeCount = finalSiteData.likeCount === null || finalSiteData.likeCount === "" 
+          ? 0 
+          : Number(finalSiteData.likeCount);
+      }
 
       // 先上传所有未上传的图片
       const uploadTasks = [];
@@ -250,7 +269,7 @@ export default function SiteManagementPage() {
       // 保存站点信息
       const response = await fetch("/api/site", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -371,11 +390,11 @@ export default function SiteManagementPage() {
           'Expires': '0',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error('获取数据失败');
       }
-      
+
       const data = await response.json();
       if (data.success) {
         setSite(data.site);
@@ -430,42 +449,55 @@ export default function SiteManagementPage() {
       <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 sticky top-20 bg-white z-10 py-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="text-center">
-            <div className="text-2xl font-bold">{site.visitCount}</div>
+            <div className="text-2xl font-bold">
+              {isEditing ? (
+                <input
+                  type="number"
+                  value={editedSite.visitCount === "" ? "" : editedSite.visitCount}
+                  onChange={(e) => handleInputChange("visitCount", e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                site.visitCount
+              )}
+            </div>
             <div className="text-sm text-gray-500">访问人数</div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow cursor-pointer hover:bg-gray-50" onClick={async () => {
-          try {
-            const response = await fetch("/api/site", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ type: "like" }),
-            });
-            const data = await response.json();
-            if (data.success) {
-              setSite(data.site);
-              setEditedSite(data.site);
-              setMessage({ type: 'success', text: '点赞成功！' });
-            }
-          } catch (error) {
-            console.error("Error updating like count:", error);
-            setMessage({ type: 'error', text: '点赞失败' });
-          }
-        }}>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{site.likeCount}</div>
-            <div className="text-sm text-gray-500">点赞数</div>
-            <div className="mt-2 text-blue-500 text-sm">点击点赞</div>
           </div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="text-center">
             <div className="text-2xl font-bold">
-              {new Date(site.createdAt).toLocaleDateString('zh-CN', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+              {isEditing ? (
+                <input
+                  type="number"
+                  value={editedSite.likeCount === "" ? "" : editedSite.likeCount}
+                  onChange={(e) => handleInputChange("likeCount", e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                site.likeCount
+              )}
+            </div>
+            <div className="text-sm text-gray-500">点赞数</div>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-center">
+            <div className="text-2xl font-bold">
+              {isEditing ? (
+                <input
+                  type="datetime-local"
+                  value={new Date(editedSite.createdAt).toISOString().slice(0, 16)}
+                  onChange={(e) => handleInputChange("createdAt", new Date(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                new Date(site.createdAt).toLocaleDateString('zh-CN', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })
+              )}
             </div>
             <div className="text-sm text-gray-500">创建时间</div>
           </div>

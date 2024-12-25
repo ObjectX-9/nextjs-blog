@@ -125,9 +125,10 @@ export async function POST(request: Request) {
     
     const updatedSiteData = {
       ...siteDataWithoutId,
-      visitCount: currentSite?.visitCount || 0,
-      likeCount: currentSite?.likeCount || 0,
-      createdAt: currentSite?.createdAt || new Date(),
+      // 使用传入的访问量和点赞数，如果没有则使用当前值或默认值0
+      visitCount: siteDataWithoutId.visitCount ?? currentSite?.visitCount ?? 0,
+      likeCount: siteDataWithoutId.likeCount ?? currentSite?.likeCount ?? 0,
+      createdAt: siteDataWithoutId.createdAt ? new Date(siteDataWithoutId.createdAt) : (currentSite?.createdAt || new Date()),
       // 确保嵌套对象存在
       author: {
         name: siteData.author?.name || '',
