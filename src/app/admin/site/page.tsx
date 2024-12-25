@@ -9,6 +9,13 @@ interface SiteWithId extends ISite {
   _id?: string;
 }
 
+// 用于编辑状态的接口
+interface EditableSite extends Omit<ISite, 'visitCount' | 'likeCount'> {
+  _id?: string;
+  visitCount: number | null;  // 允许为 null 以支持输入框清空
+  likeCount: number | null;   // 允许为 null 以支持输入框清空
+}
+
 // 默认的空站点数据
 const defaultSite: SiteWithId = {
   createdAt: new Date(),
@@ -35,7 +42,7 @@ export default function SiteManagementPage() {
   const [site, setSite] = useState<SiteWithId>(defaultSite);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const [editedSite, setEditedSite] = useState<SiteWithId>(defaultSite);
+  const [editedSite, setEditedSite] = useState<EditableSite>(defaultSite as EditableSite);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
   const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>({});
   const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File }>({});
@@ -48,7 +55,7 @@ export default function SiteManagementPage() {
       const data = await response.json();
       if (data.success && data.site) {
         setSite(data.site);
-        setEditedSite(data.site);
+        setEditedSite(data.site as EditableSite);
       }
     } catch (error) {
       console.error("获取网站信息失败:", error);
@@ -70,31 +77,37 @@ export default function SiteManagementPage() {
     if (fields.length === 1) {
       // 特殊处理数字类型的字段
       if (field === "visitCount" || field === "likeCount") {
-        // 如果是空字符串，设置为 null，这样在保存时会使用默认值
+        // 如果是空字符串，设置为 null
         const numValue = value === "" ? null : Number(value);
-        setEditedSite({ ...editedSite, [field]: numValue });
+        setEditedSite(prev => ({
+          ...prev,
+          [field]: numValue
+        }));
       } else {
-        setEditedSite({ ...editedSite, [field]: value });
+        setEditedSite(prev => ({
+          ...prev,
+          [field]: value
+        }));
       }
     } else if (fields.length === 2) {
       // 处理嵌套对象的情况
       const [parentField, childField] = fields;
       if (parentField === 'author') {
-        setEditedSite({
-          ...editedSite,
+        setEditedSite(prev => ({
+          ...prev,
           author: {
-            ...editedSite.author,
+            ...prev.author,
             [childField]: value
           }
-        });
+        }));
       } else if (parentField === 'seo') {
-        setEditedSite({
-          ...editedSite,
+        setEditedSite(prev => ({
+          ...prev,
           seo: {
-            ...editedSite.seo,
+            ...prev.seo,
             [childField]: value
           }
-        });
+        }));
       }
     }
   };
@@ -307,7 +320,7 @@ export default function SiteManagementPage() {
   };
 
   const handleCancel = () => {
-    setEditedSite(site);
+    setEditedSite(site as EditableSite);
     setIsEditing(false);
   };
 
@@ -399,7 +412,7 @@ export default function SiteManagementPage() {
       if (data.success) {
         setSite(data.site);
         if (isEditing) {
-          setEditedSite(data.site);
+          setEditedSite(data.site as EditableSite);
         }
       }
     } catch (error) {
@@ -453,7 +466,7 @@ export default function SiteManagementPage() {
               {isEditing ? (
                 <input
                   type="number"
-                  value={editedSite.visitCount === "" ? "" : editedSite.visitCount}
+                  value={editedSite.visitCount === null ? "" : editedSite.visitCount}
                   onChange={(e) => handleInputChange("visitCount", e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -470,7 +483,7 @@ export default function SiteManagementPage() {
               {isEditing ? (
                 <input
                   type="number"
-                  value={editedSite.likeCount === "" ? "" : editedSite.likeCount}
+                  value={editedSite.likeCount === null ? "" : editedSite.likeCount}
                   onChange={(e) => handleInputChange("likeCount", e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
