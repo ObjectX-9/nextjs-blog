@@ -11,6 +11,7 @@ const navItems = [
   { name: "相册管理", href: "/admin/photos" },
   { name: "时间线管理", href: "/admin/timelines" },
   { name: "项目管理", href: "/admin/projects" },
+  { name: "demo管理", href: "/admin/demos" },
   { name: "技术栈", href: "/admin/stacks" },
   { name: "工作空间管理", href: "/admin/workspaces" },
   { name: "社交链接管理", href: "/admin/social-links" },
