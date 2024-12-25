@@ -20,6 +20,7 @@ import {
   FileEdit,
   Eye,
   BookOpen,
+  Blocks, // 添加 Blocks 图标
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -41,6 +42,7 @@ const navList = [
   { title: "导航站", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
   { title: "时间轴", href: "/timeline", prefix: <History size={16} /> },
   { title: "项目", href: "/projects", prefix: <Folder size={16} /> },
+  { title: "demo", href: "/demos", prefix: <Blocks size={16} /> },
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];
 
