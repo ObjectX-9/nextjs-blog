@@ -68,8 +68,22 @@ export default function Articles() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<ArticleCategory[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
-  const [showMobileList, setShowMobileList] = useState(false);
   const [categoryArticleCounts, setCategoryArticleCounts] = useState<Record<string, number>>({});
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [showArticleList, setShowArticleList] = useState(false);
+
+  useEffect(() => {
+    const checkMobileView = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileView(isMobile);
+      if (isMobile) {
+        setShowArticleList(false);
+      }
+    };
+    checkMobileView();
+    window.addEventListener('resize', checkMobileView);
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
 
   // 获取文章列表
   const fetchArticles = useCallback(async (categoryId: string) => {
@@ -149,7 +163,7 @@ export default function Articles() {
               return articleCounts[categoryId] > 0;
             }
           );
-          
+
           if (!selectedCategory && categoryWithArticles) {
             setSelectedCategory(categoryWithArticles._id?.toString() || null);
           }
@@ -169,7 +183,7 @@ export default function Articles() {
       // 检查选中的分类是否有文章
       const categoryId = selectedCategory;
       const hasArticles = categoryArticleCounts[categoryId] > 0;
-      
+
       if (hasArticles) {
         setArticles([]); // 清空当前文章列表
         fetchArticles(selectedCategory);
@@ -181,231 +195,280 @@ export default function Articles() {
     }
   }, [selectedCategory, fetchArticles, categoryArticleCounts]);
 
-  return (
-    <div className="flex h-screen w-full box-border">
-      {/* 移动端切换按钮 */}
-      <button
-        className="md:hidden fixed bottom-4 right-4 z-50 bg-blue-500 text-white p-3 rounded-full shadow-lg"
-        onClick={() => setShowMobileList(!showMobileList)}
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d={showMobileList ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-          />
-        </svg>
-      </button>
+  // 当选择分类时的处理
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    if (isMobileView) {
+      setShowArticleList(true);
+    }
+  };
 
-      {/* 左侧分类列表 */}
-      <aside className={`${showMobileList ? "fixed inset-0 z-40 bg-white" : "hidden"
-        } md:block md:w-64 md:sticky md:top-0 md:h-screen border-r bg-white overflow-y-auto`}>
-        <nav className="p-4">
-          {Array.isArray(categories) && categories.map((category) => (
-            <button
-              key={category._id?.toString()}
-              onClick={() => {
-                setSelectedCategory(category._id?.toString() || null);
-                setShowMobileList(false);
-              }}
-              className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id?.toString()
-                ? "bg-black text-white"
-                : "hover:bg-gray-100"
-                }`}
-            >
-              <div className="flex justify-between items-center">
-                <span>{category.name}</span>
-                <span className="text-sm opacity-60">
-                  {categoryArticleCounts[category._id?.toString() || ""] || 0} 篇文章
-                </span>
-              </div>
-            </button>
-          ))}
-        </nav>
-      </aside>
+  // 返回分类列表
+  const handleBackToCategories = () => {
+    if (isMobileView) {
+      setShowArticleList(false);
+    }
+  };
 
-      {/* 右侧文章列表 */}
-      <main className="flex-1 h-screen overflow-y-auto">
-        <div className="py-8 px-8">
-          <h1 className="text-3xl font-bold mb-6">文章</h1>
-          <div className="mb-6 last:mb-0">写过的一些技术文章</div>
-          <div className="border border-gray-200 rounded-xl">
-            {Array.isArray(articles) && articles.length > 0 ? (
-              <Table
-                items={articles.map((article) => {
-                  const date = new Date(article.createdAt);
-                  const year = date.getFullYear();
-                  const month = String(date.getMonth() + 1);
-                  const day = String(date.getDate());
+  const renderArticleList = () => {
+    return (
+      <Table
+        items={articles.map((article) => {
+          const date = new Date(article.createdAt);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1);
+          const day = String(date.getDate());
 
-                  const item: ArticleTableItem = {
-                    id: article._id?.toString() || '',
-                    year: year.toString(),
-                    date: `${month}/${day}`,
-                    title: article.title,
-                    tags: JSON.stringify(article.tags || []),
-                    views: article.views.toString(),
-                    likes: article.likes.toString(),
-                    url: article.url,
-                  };
-                  return item;
-                })}
-                onRowClick={async (item) => {
-                  if (item.url) {
-                    // 增加浏览量
+          const item: ArticleTableItem = {
+            id: article._id?.toString() || '',
+            year: year.toString(),
+            date: `${month}/${day}`,
+            title: article.title,
+            tags: JSON.stringify(article.tags || []),
+            views: article.views.toString(),
+            likes: article.likes.toString(),
+            url: article.url,
+          };
+          return item;
+        })}
+        onRowClick={async (item) => {
+          if (item.url) {
+            // 增加浏览量
+            try {
+              const response = await fetch(`/api/articles/${item.id}/view`, {
+                method: 'POST',
+              });
+
+              if (response.ok) {
+                const newViews = parseInt(item.views as string) + 1;
+
+                // 更新本地状态
+                setArticles(prev => prev.map(article =>
+                  article._id?.toString() === item.id
+                    ? { ...article, views: newViews }
+                    : article
+                ));
+
+                // 更新所有缓存中的文章浏览量
+                const cacheKeys = Object.keys(localStorage);
+                cacheKeys.forEach(key => {
+                  if (key.startsWith('docs_articles_')) {
                     try {
-                      const response = await fetch(`/api/articles/${item.id}/view`, {
-                        method: 'POST',
-                      });
-
-                      if (response.ok) {
-                        const newViews = parseInt(item.views as string) + 1;
-
-                        // 更新本地状态
-                        setArticles(prev => prev.map(article =>
-                          article._id?.toString() === item.id
-                            ? { ...article, views: newViews }
-                            : article
-                        ));
-
-                        // 更新所有缓存中的文章浏览量
-                        const cacheKeys = Object.keys(localStorage);
-                        cacheKeys.forEach(key => {
-                          if (key.startsWith('docs_articles_')) {
-                            try {
-                              const cachedData = localStorage.getItem(key);
-                              if (cachedData) {
-                                const parsed = JSON.parse(cachedData);
-                                if (parsed.data && Array.isArray(parsed.data)) {
-                                  const updatedArticles = parsed.data.map((article: Article) => {
-                                    if (article._id?.toString() === item.id) {
-                                      return {
-                                        ...article,
-                                        views: newViews
-                                      };
-                                    }
-                                    return article;
-                                  });
-                                  
-                                  localStorage.setItem(
-                                    key,
-                                    JSON.stringify({
-                                      data: updatedArticles,
-                                      timestamp: Date.now(),
-                                    })
-                                  );
-                                }
-                              }
-                            } catch (error) {
-                              console.error('Error updating cache:', error);
+                      const cachedData = localStorage.getItem(key);
+                      if (cachedData) {
+                        const parsed = JSON.parse(cachedData);
+                        if (parsed.data && Array.isArray(parsed.data)) {
+                          const updatedArticles = parsed.data.map((article: Article) => {
+                            if (article._id?.toString() === item.id) {
+                              return {
+                                ...article,
+                                views: newViews
+                              };
                             }
-                          }
-                        });
+                            return article;
+                          });
+
+                          localStorage.setItem(
+                            key,
+                            JSON.stringify({
+                              data: updatedArticles,
+                              timestamp: Date.now(),
+                            })
+                          );
+                        }
                       }
                     } catch (error) {
-                      console.error('Error incrementing view:', error);
+                      console.error('Error updating cache:', error);
                     }
-
-                    // 打开文章链接
-                    window.open(item.url as string, '_blank');
                   }
-                }}
-                fields={[
-                  {
-                    key: 'year',
-                    label: '年',
-                    align: 'left',
-                    className: 'w-[10%] whitespace-nowrap',
-                  },
-                  {
-                    key: 'date',
-                    label: '日期',
-                    align: 'left',
-                    className: 'w-[10%] whitespace-nowrap',
-                  },
-                  {
-                    key: 'title',
-                    label: '标题',
-                    align: 'left',
-                    className: 'w-[35%]',
-                    render: (value: any, item: { [key: string]: string | number }) => (
-                      <Link
-                        href={item.url as string}
-                        target="_blank"
-                        className="text-gray-900 hover:text-blue-600 transition-colors block truncate"
-                        title={value}
-                      >
-                        {value}
-                      </Link>
-                    ),
-                  },
-                  {
-                    key: 'tags',
-                    label: '标签',
-                    align: 'left',
-                    className: 'w-[25%]',
-                    render: (value: any, item: { [key: string]: string | number }) => {
-                      const tags: string[] = JSON.parse(value as string);
-                      return (
-                        <div className="flex flex-wrap gap-1 max-w-full">
-                          {tags?.slice(0, 3).map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded truncate max-w-[100px]"
-                              title={tag}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {tags && tags.length > 3 && (
-                            <span className="text-xs text-gray-500">
-                              +{tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    },
-                  },
-                  {
-                    key: 'views',
-                    label: '浏览',
-                    align: 'right',
-                    className: 'w-[10%] whitespace-nowrap',
-                    render: (value: any, item: { [key: string]: string | number }) => (
-                      <ViewCounter
-                        articleId={item.id as string}
-                        initialViews={parseInt(value as string)}
-                      />
-                    ),
-                  },
-                  {
-                    key: 'likes',
-                    label: '点赞',
-                    align: 'right',
-                    className: 'w-[10%] whitespace-nowrap',
-                    render: (value: any, item: { [key: string]: string | number }) => (
-                      <LikeButton
-                        articleId={item.id as string}
-                        initialLikes={parseInt(value as string)}
-                      />
-                    ),
-                  },
-                ]}
+                });
+              }
+            } catch (error) {
+              console.error('Error incrementing view:', error);
+            }
+
+            // 打开文章链接
+            window.open(item.url as string, '_blank');
+          }
+        }}
+        fields={[
+          {
+            key: 'year',
+            label: '年',
+            align: 'left',
+            className: 'w-[10%] whitespace-nowrap',
+          },
+          {
+            key: 'date',
+            label: '日期',
+            align: 'left',
+            className: 'w-[10%] whitespace-nowrap',
+          },
+          {
+            key: 'title',
+            label: '标题',
+            align: 'left',
+            className: 'w-[35%]',
+            render: (value: any, item: { [key: string]: string | number }) => (
+              <Link
+                href={item.url as string}
+                target="_blank"
+                className="text-gray-900 hover:text-blue-600 transition-colors block truncate"
+                title={value}
+              >
+                {value}
+              </Link>
+            ),
+          },
+          {
+            key: 'tags',
+            label: '标签',
+            align: 'left',
+            className: 'w-[25%]',
+            render: (value: any, item: { [key: string]: string | number }) => {
+              const tags: string[] = JSON.parse(value as string);
+              return (
+                <div className="flex flex-wrap gap-1 max-w-full">
+                  {tags?.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded truncate max-w-[100px]"
+                      title={tag}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {tags && tags.length > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{tags.length - 3}
+                    </span>
+                  )}
+                </div>
+              );
+            },
+          },
+          {
+            key: 'views',
+            label: '浏览',
+            align: 'right',
+            className: 'w-[10%] whitespace-nowrap',
+            render: (value: any, item: { [key: string]: string | number }) => (
+              <ViewCounter
+                articleId={item.id as string}
+                initialViews={parseInt(value as string)}
               />
-            ) : (
-              <div className="text-center text-gray-500 py-8">
-                暂无文章
-              </div>
-            )}
+            ),
+          },
+          {
+            key: 'likes',
+            label: '点赞',
+            align: 'right',
+            className: 'w-[10%] whitespace-nowrap',
+            render: (value: any, item: { [key: string]: string | number }) => (
+              <LikeButton
+                articleId={item.id as string}
+                initialLikes={parseInt(value as string)}
+              />
+            ),
+          },
+        ]}
+      />
+    );
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-white">
+      {/* 移动端布局 */}
+      <div className="lg:hidden w-full">
+        {/* 移动端分类列表 */}
+        {isMobileView && !showArticleList && (
+          <div className="w-full p-4">
+            <h1 className="text-2xl font-bold mb-6">文章分类</h1>
+            <div className="space-y-2 w-full">
+              {Array.isArray(categories) && categories.map((category) => (
+                <button
+                  key={category._id?.toString()}
+                  onClick={() => handleCategorySelect(category._id?.toString() || '')}
+                  className="w-full p-3 rounded-lg border border-gray-200 text-left"
+                >
+                  <div className="flex justify-between items-center">
+                    <span>{category.name}</span>
+                    <span className="text-sm text-gray-500">
+                      {categoryArticleCounts[category._id?.toString() || ""] || 0} 篇文章
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </main>
+        )}
+
+        {/* 移动端文章列表 */}
+        {isMobileView && showArticleList && (
+          <div className="flex flex-col w-full min-h-screen bg-white">
+            <div className="sticky top-0 bg-white border-b">
+              <div className="px-4 py-3">
+                <button
+                  onClick={handleBackToCategories}
+                  className="text-sm text-gray-500"
+                >
+                  返回分类
+                </button>
+              </div>
+              <div className="px-4 pb-3">
+                <h2 className="text-xl font-bold">
+                  {Array.isArray(categories) && categories.find(
+                    (cat) => cat._id?.toString() === selectedCategory
+                  )?.name}
+                </h2>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="mb-6 last:mb-0">写过的一些技术文章</div>
+              <div className="border border-gray-200 rounded-xl">
+                {renderArticleList()}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Web布局 */}
+      <div className="hidden lg:flex w-full">
+        {/* 分类侧边栏 */}
+        <aside className="w-64 min-w-64 border-r bg-white">
+          <nav className="p-4 w-full">
+            {Array.isArray(categories) && categories.map((category) => (
+              <button
+                key={category._id?.toString()}
+                onClick={() => handleCategorySelect(category._id?.toString() || '')}
+                className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id?.toString()
+                    ? "bg-black text-white"
+                    : "hover:bg-gray-100"
+                  }`}
+              >
+                <div className="flex justify-between items-center">
+                  <span>{category.name}</span>
+                  <span className="text-sm opacity-60">
+                    {categoryArticleCounts[category._id?.toString() || ""] || 0} 篇文章
+                  </span>
+                </div>
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        {/* 文章列表 */}
+        <main className="flex-1 p-8 h-[100vh] overflow-y-auto w-full">
+          <div className="py-8 px-8">
+            <h1 className="text-3xl font-bold mb-6">文章</h1>
+            <div className="mb-6 last:mb-0">写过的一些技术文章</div>
+            <div className="border border-gray-200 rounded-xl">
+              {renderArticleList()}
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
