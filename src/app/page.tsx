@@ -6,6 +6,7 @@ import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
 import { Article } from "./model/article";
+import LikeButton from "@/components/LikeButton";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);
@@ -294,44 +295,29 @@ export default async function Index() {
                     >
                       <span className="grid grid-cols-4 items-center md:grid-cols-8">
                         <span className="col-span-1 text-left">
-                          {`${createdDate
+                          {`${createdDate.getMonth() + 1}/${createdDate
                             .getDate()
                             .toString()
-                            .padStart(2, "0")}/${(createdDate.getMonth() + 1)
-                              .toString()
-                              .padStart(2, "0")}`}
+                            .padStart(2, "0")}`}
                         </span>
-                        <span className="col-span-2 md:col-span-6 flex items-center gap-2">
-                          {article.title}
-                          <span className="inline-flex gap-1 text-xs bg-gray-100 px-2 py-1 rounded">
-                            {article.category}
+                        <span className="col-span-2 md:col-span-5 flex items-center">
+                          <span className="truncate block max-w-[200px] md:max-w-[500px]">
+                            {article.title}
                           </span>
-                          <div className="flex items-center gap-3 text-gray-500 text-xs">
-                            <span className="flex items-center gap-1">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                              </svg>
-                              {article.likes}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                              </svg>
-                              {article.views}
-                            </span>
-                          </div>
                         </span>
-                        {/* <span className="col-span-1 flex flex-wrap gap-1">
-                          {article.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </span> */}
+                        <span className="col-span-1 md:col-span-2 flex items-center justify-end gap-4 text-gray-500 text-xs">
+                          <LikeButton 
+                            articleId={article._id?.toString() || ''} 
+                            initialLikes={article.likes} 
+                          />
+                          <span className="flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <span>{article.views}</span>
+                          </span>
+                        </span>
                       </span>
                     </span>
                   </span>
