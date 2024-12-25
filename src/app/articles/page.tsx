@@ -260,26 +260,53 @@ export default function Articles() {
                   if (item.url) {
                     // 增加浏览量
                     try {
-                      await fetch(`/api/articles/${item.id}/view`, {
+                      const response = await fetch(`/api/articles/${item.id}/view`, {
                         method: 'POST',
                       });
 
-                      // 更新本地状态
-                      setArticles(prev => prev.map(article =>
-                        article._id?.toString() === item.id
-                          ? { ...article, views: article.views + 1 }
-                          : article
-                      ));
+                      if (response.ok) {
+                        const newViews = parseInt(item.views as string) + 1;
 
-                      // 更新缓存
-                      const cachedArticles = getFromCache<Article[]>(`${CACHE_KEYS.ARTICLES}${selectedCategory}`);
-                      if (cachedArticles) {
-                        const updatedCache = cachedArticles.map(article =>
+                        // 更新本地状态
+                        setArticles(prev => prev.map(article =>
                           article._id?.toString() === item.id
-                            ? { ...article, views: article.views + 1 }
+                            ? { ...article, views: newViews }
                             : article
-                        );
-                        setCache(`${CACHE_KEYS.ARTICLES}${selectedCategory}`, updatedCache);
+                        ));
+
+                        // 更新所有缓存中的文章浏览量
+                        const cacheKeys = Object.keys(localStorage);
+                        cacheKeys.forEach(key => {
+                          if (key.startsWith('docs_articles_')) {
+                            try {
+                              const cachedData = localStorage.getItem(key);
+                              if (cachedData) {
+                                const parsed = JSON.parse(cachedData);
+                                if (parsed.data && Array.isArray(parsed.data)) {
+                                  const updatedArticles = parsed.data.map((article: Article) => {
+                                    if (article._id?.toString() === item.id) {
+                                      return {
+                                        ...article,
+                                        views: newViews
+                                      };
+                                    }
+                                    return article;
+                                  });
+                                  
+                                  localStorage.setItem(
+                                    key,
+                                    JSON.stringify({
+                                      data: updatedArticles,
+                                      timestamp: Date.now(),
+                                    })
+                                  );
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Error updating cache:', error);
+                            }
+                          }
+                        });
                       }
                     } catch (error) {
                       console.error('Error incrementing view:', error);

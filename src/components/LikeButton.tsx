@@ -7,6 +7,11 @@ interface LikeButtonProps {
   initialLikes: number;
 }
 
+interface Article {
+  _id?: string;
+  likes: number;
+}
+
 export default function LikeButton({ articleId, initialLikes }: LikeButtonProps) {
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(() => {
@@ -29,9 +34,44 @@ export default function LikeButton({ articleId, initialLikes }: LikeButtonProps)
       });
 
       if (response.ok) {
-        setLikes(prev => prev + 1);
+        const newLikes = likes + 1;
+        setLikes(newLikes);
         setIsLiked(true);
         localStorage.setItem(`liked_${articleId}`, 'true');
+
+        // 更新所有缓存中的文章点赞数
+        const cacheKeys = Object.keys(localStorage);
+        cacheKeys.forEach(key => {
+          if (key.startsWith('docs_articles_')) {
+            try {
+              const cachedData = localStorage.getItem(key);
+              if (cachedData) {
+                const parsed = JSON.parse(cachedData);
+                if (parsed.data && Array.isArray(parsed.data)) {
+                  const updatedArticles = parsed.data.map((article: Article) => {
+                    if (article._id?.toString() === articleId) {
+                      return {
+                        ...article,
+                        likes: newLikes
+                      };
+                    }
+                    return article;
+                  });
+                  
+                  localStorage.setItem(
+                    key,
+                    JSON.stringify({
+                      data: updatedArticles,
+                      timestamp: Date.now(),
+                    })
+                  );
+                }
+              }
+            } catch (error) {
+              console.error('Error updating cache:', error);
+            }
+          }
+        });
       }
     } catch (error) {
       console.error('Error liking article:', error);
@@ -42,7 +82,6 @@ export default function LikeButton({ articleId, initialLikes }: LikeButtonProps)
     <span 
       className="flex items-center gap-1 cursor-pointer" 
       onClick={handleLike}
-      onMouseDown={(e) => e.stopPropagation()} // 防止鼠标事件冒泡
     >
       <svg 
         xmlns="http://www.w3.org/2000/svg" 
