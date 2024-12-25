@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Article, ArticleCategory } from "../model/article";
 import { Table } from "@/components/Table";
+import LikeButton from "@/components/LikeButton";
+import ViewCounter from "@/components/ViewCounter";
 
 // 缓存管理
 const CACHE_KEYS = {
@@ -191,8 +193,8 @@ export default function Articles() {
                 setShowMobileList(false);
               }}
               className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id?.toString()
-                  ? "bg-black text-white"
-                  : "hover:bg-gray-100"
+                ? "bg-black text-white"
+                : "hover:bg-gray-100"
                 }`}
             >
               <div className="flex justify-between items-center">
@@ -232,22 +234,55 @@ export default function Articles() {
                   };
                   return item;
                 })}
+                onRowClick={async (item) => {
+                  if (item.url) {
+                    // 增加浏览量
+                    try {
+                      await fetch(`/api/articles/${item.id}/view`, {
+                        method: 'POST',
+                      });
+
+                      // 更新本地状态
+                      setArticles(prev => prev.map(article =>
+                        article._id?.toString() === item.id
+                          ? { ...article, views: article.views + 1 }
+                          : article
+                      ));
+
+                      // 更新缓存
+                      const cachedArticles = getFromCache<Article[]>(`${CACHE_KEYS.ARTICLES}${selectedCategory}`);
+                      if (cachedArticles) {
+                        const updatedCache = cachedArticles.map(article =>
+                          article._id?.toString() === item.id
+                            ? { ...article, views: article.views + 1 }
+                            : article
+                        );
+                        setCache(`${CACHE_KEYS.ARTICLES}${selectedCategory}`, updatedCache);
+                      }
+                    } catch (error) {
+                      console.error('Error incrementing view:', error);
+                    }
+
+                    // 打开文章链接
+                    window.open(item.url as string, '_blank');
+                  }
+                }}
                 fields={[
                   {
                     key: 'year',
-                    label: 'Year',
+                    label: '年',
                     align: 'left',
                     className: 'w-[10%] whitespace-nowrap',
                   },
                   {
                     key: 'date',
-                    label: 'Date',
+                    label: '日期',
                     align: 'left',
                     className: 'w-[10%] whitespace-nowrap',
                   },
                   {
                     key: 'title',
-                    label: 'Title',
+                    label: '标题',
                     align: 'left',
                     className: 'w-[35%]',
                     render: (value: any, item: { [key: string]: string | number }) => (
@@ -263,7 +298,7 @@ export default function Articles() {
                   },
                   {
                     key: 'tags',
-                    label: 'Tags',
+                    label: '标签',
                     align: 'left',
                     className: 'w-[25%]',
                     render: (value: any, item: { [key: string]: string | number }) => {
@@ -290,17 +325,27 @@ export default function Articles() {
                   },
                   {
                     key: 'views',
-                    label: 'Views',
+                    label: '浏览',
                     align: 'right',
                     className: 'w-[10%] whitespace-nowrap',
-                    render: (value: any) => parseInt(value as string).toLocaleString(),
+                    render: (value: any, item: { [key: string]: string | number }) => (
+                      <ViewCounter
+                        articleId={item.id as string}
+                        initialViews={parseInt(value as string)}
+                      />
+                    ),
                   },
                   {
                     key: 'likes',
-                    label: 'Likes',
+                    label: '点赞',
                     align: 'right',
                     className: 'w-[10%] whitespace-nowrap',
-                    render: (value: any) => parseInt(value as string).toLocaleString(),
+                    render: (value: any, item: { [key: string]: string | number }) => (
+                      <LikeButton
+                        articleId={item.id as string}
+                        initialLikes={parseInt(value as string)}
+                      />
+                    ),
                   },
                 ]}
               />

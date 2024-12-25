@@ -20,6 +20,7 @@ interface TableProps {
   items: ItemType[];
   caption?: string | React.ReactNode;
   footer?: string | React.ReactNode;
+  onRowClick?: (item: ItemType) => void;
   fields: {
     key: string;
     label?: string;
@@ -30,7 +31,15 @@ interface TableProps {
 }
 
 export const Table = memo<TableProps>((props) => {
-  const { items = [], fields = [], caption, footer } = props;
+  const { items = [], fields = [], caption, footer, onRowClick } = props;
+
+  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>, item: ItemType) => {
+    // 如果点击的是按钮或链接，不触发行点击
+    if ((e.target as HTMLElement).closest('button, a, [role="button"]')) {
+      return;
+    }
+    onRowClick?.(item);
+  };
 
   return (
     <TableComponent>
@@ -51,10 +60,14 @@ export const Table = memo<TableProps>((props) => {
       </TableHeader>
       <TableBody>
         {items.map((item, idx) => (
-          <TableRow key={item.id}>
+          <TableRow 
+            key={item.id}
+            onClick={(e) => handleRowClick(e, item)}
+            className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${item.className ?? ''}`.trim()}
+          >
             {fields.map((field) => (
               <TableCell
-                className={`${item.className ?? ""} ${
+                className={`${
                   field.align ? `text-${field.align}` : ""
                 }`.trim()}
                 key={`${field.key}-${item.id}`}
