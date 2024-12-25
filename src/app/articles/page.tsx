@@ -74,7 +74,7 @@ export default function Articles() {
 
   useEffect(() => {
     const checkMobileView = () => {
-      const isMobile = window.innerWidth < 768;
+      const isMobile = window.innerWidth < 1024; 
       setIsMobileView(isMobile);
       if (isMobile) {
         setShowArticleList(false);
@@ -377,11 +377,11 @@ export default function Articles() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white">
+    <div className="min-h-screen w-full bg-white flex flex-col lg:flex-row">
       {/* 移动端布局 */}
       <div className="lg:hidden w-full">
         {/* 移动端分类列表 */}
-        {isMobileView && !showArticleList && (
+        {!showArticleList && (
           <div className="w-full p-4">
             <h1 className="text-2xl font-bold mb-6">文章分类</h1>
             <div className="space-y-2 w-full">
@@ -404,7 +404,7 @@ export default function Articles() {
         )}
 
         {/* 移动端文章列表 */}
-        {isMobileView && showArticleList && (
+        {showArticleList && (
           <div className="flex flex-col w-full min-h-screen bg-white">
             <div className="sticky top-0 bg-white border-b">
               <div className="px-4 py-3">
@@ -434,10 +434,10 @@ export default function Articles() {
       </div>
 
       {/* Web布局 */}
-      <div className="hidden lg:flex w-full">
+      <div className="hidden lg:block w-64 border-r bg-white">
         {/* 分类侧边栏 */}
-        <aside className="w-64 min-w-64 border-r bg-white">
-          <nav className="p-4 w-full">
+        <div className="sticky top-0 h-screen overflow-y-auto">
+          <nav className="p-4">
             {Array.isArray(categories) && categories.map((category) => (
               <button
                 key={category._id?.toString()}
@@ -456,10 +456,12 @@ export default function Articles() {
               </button>
             ))}
           </nav>
-        </aside>
+        </div>
+      </div>
 
-        {/* 文章列表 */}
-        <main className="flex-1 p-8 h-[100vh] overflow-y-auto w-full">
+      {/* 文章列表 */}
+      <div className="hidden lg:block flex-1">
+        <div className="h-screen overflow-y-auto">
           <div className="py-8 px-8">
             <h1 className="text-3xl font-bold mb-6">文章</h1>
             <div className="mb-6 last:mb-0">写过的一些技术文章</div>
@@ -467,7 +469,7 @@ export default function Articles() {
               {renderArticleList()}
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
