@@ -7,6 +7,7 @@ import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
 import { Article } from "./model/article";
 import LikeButton from "@/components/LikeButton";
+import ViewCounter from "@/components/ViewCounter";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);
@@ -310,13 +311,10 @@ export default async function Index() {
                             articleId={article._id?.toString() || ''} 
                             initialLikes={article.likes} 
                           />
-                          <span className="flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                              <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                            <span>{article.views}</span>
-                          </span>
+                          <ViewCounter
+                            articleId={article._id?.toString() || ''}
+                            initialViews={article.views}
+                          />
                         </span>
                       </span>
                     </span>
