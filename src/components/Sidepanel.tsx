@@ -41,6 +41,7 @@ const navList = [
   },
   { title: "技术栈", href: "/stack", prefix: <Slack size={16} /> },
   { title: "时间笔记", href: "/writing", prefix: <PencilLine size={16} /> },
+  { title: "文章", href: "/articles", prefix: <SquareDashedBottomCode size={16} /> },
   { title: "生活相册", href: "/album", prefix: <Camera size={16} /> },
   { title: "工作空间", href: "/workspace", prefix: <Laptop size={16} /> },
   { title: "导航站", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
@@ -299,15 +300,13 @@ export default function Sidepanel() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-0 z-50 transform transition-all duration-300 ease-in-out lg:hidden ${
-          isOpen ? "pointer-events-auto" : "pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-50 transform transition-all duration-300 ease-in-out lg:hidden ${isOpen ? "pointer-events-auto" : "pointer-events-none"
+          }`}
       >
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
-            isOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"
+            }`}
           onClick={handleClose}
         />
 
@@ -317,9 +316,8 @@ export default function Sidepanel() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className={`absolute bottom-0 left-0 right-0 h-[65vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${
-            isOpen ? "translate-y-0" : "translate-y-full"
-          }`}
+          className={`absolute bottom-0 left-0 right-0 h-[65vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${isOpen ? "translate-y-0" : "translate-y-full"
+            }`}
         >
           {/* Drawer Header */}
           <div className="relative flex h-5 items-center justify-between border-b px-4">
