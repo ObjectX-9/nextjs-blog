@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { IInspiration } from '@/app/model/inspiration';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function InspirationManagement() {
   const [inspirations, setInspirations] = useState<IInspiration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedInspiration, setSelectedInspiration] = useState<IInspiration | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
 
   // 获取灵感笔记列表
@@ -31,7 +30,7 @@ export default function InspirationManagement() {
   // 删除灵感笔记
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除这条灵感笔记吗？')) return;
-    
+
     try {
       await fetch(`/api/inspirations/${id}`, {
         method: 'DELETE',
@@ -73,18 +72,19 @@ export default function InspirationManagement() {
                 <h2 className="text-xl font-semibold text-gray-800 mb-2">
                   {inspiration.title}
                 </h2>
-                <span className={`px-2 py-1 rounded text-sm ${
-                  inspiration.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
+                <span className={`px-2 py-1 rounded text-sm ${inspiration.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
                   {inspiration.status === 'published' ? '已发布' : '草稿'}
                 </span>
               </div>
               {inspiration.images && inspiration.images.length > 0 && (
-                <div className="mb-4">
-                  <img 
-                    src={inspiration.images[0]} 
+                <div className="relative h-48 w-full">
+                  <Image
+                    src={inspiration.images[0]}
                     alt={inspiration.title}
-                    className="w-full h-48 object-cover rounded-lg"
+                    fill
+                    className="object-cover rounded-lg"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                 </div>
               )}

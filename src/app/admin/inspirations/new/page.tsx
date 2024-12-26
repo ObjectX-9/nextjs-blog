@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function NewInspiration() {
   const router = useRouter();
@@ -119,11 +120,13 @@ export default function NewInspiration() {
                 {images.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
                     {images.map((image, index) => (
-                      <div key={index} className="relative group aspect-w-16 aspect-h-9">
-                        <img
+                      <div key={index} className="relative group aspect-w-16 aspect-h-9 h-48">
+                        <Image
                           src={image}
                           alt={`上传的图片 ${index + 1}`}
-                          className="w-full h-full object-cover rounded-lg"
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 rounded-lg">
                           <button
