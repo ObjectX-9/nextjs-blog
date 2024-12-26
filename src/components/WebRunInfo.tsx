@@ -11,12 +11,12 @@ const LIKE_KEY = 'site_liked'
 // Web端二维码展示组件
 const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) => {
   return (
-    <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-2xl z-50">
+    <div className="fixed md:absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-2xl z-[100]">
       <div className="relative p-4">
         <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white transform rotate-45" />
         <div className="flex gap-6">
           {site?.qrcode && (
-            <div className="text-center">
+            <div className="text-center" key="wechat">
               <div className="relative w-20 h-20">
                 <Image
                   src={site.qrcode}
@@ -35,7 +35,7 @@ const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) =>
             </div>
           )}
           {site?.appreciationCode && (
-            <div className="text-center">
+            <div className="text-center" key="appreciation">
               <div className="relative w-20 h-20">
                 <Image
                   src={site.appreciationCode}
@@ -54,7 +54,7 @@ const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) =>
             </div>
           )}
           {site?.wechatGroup && (
-            <div className="text-center">
+            <div className="text-center" key="group">
               <div className="relative w-20 h-20">
                 <Image
                   src={site.wechatGroup}
@@ -103,7 +103,7 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {site?.qrcode && (
-            <div className="text-center">
+            <div className="text-center" key="wechat">
               <div className="relative w-28 h-28 mx-auto">
                 <Image
                   src={site.qrcode}
@@ -122,7 +122,7 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
             </div>
           )}
           {site?.appreciationCode && (
-            <div className="text-center">
+            <div className="text-center" key="appreciation">
               <div className="relative w-28 h-28 mx-auto">
                 <Image
                   src={site.appreciationCode}
@@ -141,7 +141,7 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
             </div>
           )}
           {site?.wechatGroup && (
-            <div className="text-center">
+            <div className="text-center" key="group">
               <div className="relative w-28 h-28 mx-auto">
                 <Image
                   src={site.wechatGroup}
@@ -202,7 +202,7 @@ export const WebRunInfo = () => {
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
-      setRunningTime(`${days}天${hours}小时${minutes}分钟`)
+      setRunningTime(`${days}天${hours}时${minutes}分`)
     }
 
     calculateRunningTime()
@@ -295,7 +295,7 @@ export const WebRunInfo = () => {
   const hasAnyQrcode = qrcodeCount > 0
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap md:flex-nowrap items-center gap-2 md:overflow-visible py-1">
       <div
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 ${hasLiked
           ? 'bg-gray-200 cursor-not-allowed'
@@ -305,9 +305,9 @@ export const WebRunInfo = () => {
         title={hasLiked ? "您已经点过赞啦" : "点赞支持一下"}
       >
         <Heart
-          className={`w-4 h-4 ${hasLiked ? 'fill-[#ff7e95] text-[#ff7e95]' : 'text-[#ff7e95]'}`}
+          className={`w-4 h-4 ${hasLiked ? 'fill-[#ff7e95] text-[#ff7e95]' : 'text-[#ff7e95]'} translate-y-[1px]`}
         />
-        <span className="text-sm">喜欢本站</span>
+        <span className="text-sm whitespace-nowrap">喜欢本站</span>
         <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
           {site?.likeCount || 0}
         </span>
@@ -316,8 +316,8 @@ export const WebRunInfo = () => {
       <span className="text-gray-300 flex items-center">|</span>
 
       <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-[#48bfaf]/20">
-        <Eye className="w-4 h-4 text-[#48bfaf]" />
-        <span className="text-sm">访问量</span>
+        <Eye className="w-4 h-4 text-[#48bfaf] translate-y-[1px]" />
+        <span className="text-sm whitespace-nowrap">访问量</span>
         <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
           {site?.visitCount || 0}
         </span>
@@ -326,9 +326,9 @@ export const WebRunInfo = () => {
       <span className="text-gray-300 flex items-center">|</span>
 
       <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-gray-500/20">
-        <Timer className="w-4 h-4 text-gray-500" />
-        <span className="text-sm">运行时间</span>
-        <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm">
+        <Timer className="w-4 h-4 text-gray-500 translate-y-[1px]" />
+        <span className="text-sm whitespace-nowrap">运行时间</span>
+        <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm whitespace-nowrap">
           {runningTime}
         </span>
       </div>
@@ -342,12 +342,13 @@ export const WebRunInfo = () => {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onClick={handleQrcodeClick}
+          style={{ zIndex: 50 }}
         >
           <div
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-purple-500/20 cursor-pointer hover:bg-purple-500/30 hover:scale-105 transition-all duration-200"
           >
-            <QrCode className="w-4 h-4 text-purple-500" />
-            <span className="text-sm">关注我</span>
+            <QrCode className="w-4 h-4 text-purple-500 translate-y-[1px]" />
+            <span className="text-sm whitespace-nowrap">关注我</span>
             <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
               {qrcodeCount}
             </span>

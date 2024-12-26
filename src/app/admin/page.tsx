@@ -15,24 +15,6 @@ export default function AdminPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">系统设置</h1>
       <div className="space-y-4">
-        {/* <Link
-          href="/admin/bookmarks"
-          className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          书签管理
-        </Link>
-        <Link
-          href="/admin/friends"
-          className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          友链管理
-        </Link>
-        <Link
-          href="/admin/workspaces"
-          className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          工作空间管理
-        </Link> */}
       </div>
     </div>
   );
