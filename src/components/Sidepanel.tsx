@@ -20,7 +20,8 @@ import {
   FileEdit,
   Eye,
   BookOpen,
-  Blocks, // 添加 Blocks 图标
+  Blocks,
+  Lightbulb, // 添加 Lightbulb 图标
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -37,6 +38,11 @@ const navList = [
   },
   { title: "技术栈", href: "/stack", prefix: <Slack size={16} /> },
   { title: "时间笔记", href: "/writing", prefix: <PencilLine size={16} /> },
+  {
+    title: "灵感笔记",
+    href: "/inspirations",
+    prefix: <Lightbulb size={16} />,
+  },
   { title: "技术文章", href: "/articles", prefix: <BookOpen size={16} /> },
   { title: "生活相册", href: "/album", prefix: <Camera size={16} /> },
   { title: "工作空间", href: "/workspace", prefix: <Laptop size={16} /> },
@@ -48,18 +54,18 @@ const navList = [
 ];
 
 const iconMap = {
-  "博客": <Globe size={16} />,
-  "掘金": <MapPin size={16} />,
-  "Github": <Github size={16} />,
-  "Codesandbox": <FileEdit size={16} />,
-  "灵感笔记": <FileEdit size={16} />,
-  "Follow": <Eye size={16} />,
+  博客: <Globe size={16} />,
+  掘金: <MapPin size={16} />,
+  Github: <Github size={16} />,
+  Codesandbox: <FileEdit size={16} />,
+  灵感笔记: <FileEdit size={16} />,
+  Follow: <Eye size={16} />,
 } as const;
 
 // Cache management
 const CACHE_KEYS = {
-  SOCIAL_LINKS: 'social_links_data',
-  LAST_FETCH: 'social_links_last_fetch',
+  SOCIAL_LINKS: "social_links_data",
+  LAST_FETCH: "social_links_last_fetch",
 };
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -99,7 +105,6 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const [error, setError] = useState<string | null>(null);
   const { site } = useSiteStore();
 
-
   useEffect(() => {
     const fetchSocialLinks = async () => {
       // Try to get from cache first
@@ -124,7 +129,11 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
         }
       } catch (error) {
         console.error("Error fetching social links:", error);
-        setError(error instanceof Error ? error.message : "Failed to fetch social links");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch social links"
+        );
       } finally {
         setLoading(false);
       }
@@ -136,7 +145,7 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const socialList = socialLinks.map((link) => ({
     title: link.name,
     href: link.url,
-    icon: link.icon || '',
+    icon: link.icon || "",
   }));
 
   const renderIcon = (icon: string, title: string) => {
@@ -154,7 +163,9 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
           className="object-contain"
           onError={() => {
             console.error(`Failed to load icon for ${title}`);
-            return iconMap[title as keyof typeof iconMap] || <Globe size={16} />;
+            return (
+              iconMap[title as keyof typeof iconMap] || <Globe size={16} />
+            );
           }}
         />
       </div>
@@ -165,12 +176,19 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
     <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
       <div className="mb-4 p-2 flex flex-row flex-nowrap gap-2">
         <Avatar>
-          <AvatarImage src={site?.author?.avatar || './avatar.png'} alt="vespser" />
+          <AvatarImage
+            src={site?.author?.avatar || "./avatar.png"}
+            alt="vespser"
+          />
           <AvatarFallback>ObjectX</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="font-semibold tracking-tight">{site?.author?.name ?? 'ObjectX-不知名程序员'}</h1>
-          <p className="text-gray-600">{site?.author?.bio ?? '👨🏻‍💻 前端工程师'}</p>
+          <h1 className="font-semibold tracking-tight">
+            {site?.author?.name ?? "ObjectX-不知名程序员"}
+          </h1>
+          <p className="text-gray-600">
+            {site?.author?.bio ?? "👨🏻‍💻 前端工程师"}
+          </p>
         </div>
       </div>
       <nav className="flex flex-col gap-1">
@@ -299,13 +317,15 @@ export default function Sidepanel() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-0 z-50 transform transition-all duration-300 ease-in-out lg:hidden ${isOpen ? "pointer-events-auto" : "pointer-events-none"
-          }`}
+        className={`fixed inset-0 z-50 transform transition-all duration-300 ease-in-out lg:hidden ${
+          isOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
       >
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"
-            }`}
+          className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
+            isOpen ? "opacity-100" : "opacity-0"
+          }`}
           onClick={handleClose}
         />
 
@@ -315,8 +335,9 @@ export default function Sidepanel() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className={`absolute bottom-0 left-0 right-0 h-[65vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${isOpen ? "translate-y-0" : "translate-y-full"
-            }`}
+          className={`absolute bottom-0 left-0 right-0 h-[65vh] transform rounded-t-[20px] bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+            isOpen ? "translate-y-0" : "translate-y-full"
+          }`}
         >
           {/* Drawer Header */}
           <div className="relative flex h-5 items-center justify-between border-b px-4">

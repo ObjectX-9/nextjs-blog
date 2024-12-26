@@ -44,10 +44,31 @@ export async function PUT(
     const collection = db.collection<InspirationDocument>("inspirations");
 
     const now = new Date();
-    const updateData = {
-      ...data,
+    let updateData: any = {
       updatedAt: now,
     };
+
+    // Support incrementing likes
+    if (data.incrementLikes) {
+      updateData.$inc = { likes: 1 };
+    }
+
+    // Support incrementing views
+    if (data.incrementViews) {
+      updateData.$inc = { ...updateData.$inc, views: 1 };
+    }
+
+    // Add any other update fields
+    if (Object.keys(data).length > 0) {
+      updateData = { 
+        ...updateData, 
+        ...Object.fromEntries(
+          Object.entries(data).filter(([key]) => 
+            !['incrementLikes', 'incrementViews'].includes(key)
+          )
+        )
+      };
+    }
 
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(params.id) },
@@ -67,6 +88,53 @@ export async function PUT(
     console.error("Error updating inspiration:", error);
     return NextResponse.json(
       { error: "Failed to update inspiration" },
+      { status: 500 }
+    );
+  }
+}
+
+// 点赞和浏览量接口
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { type } = await request.json();
+    const db = await getDb();
+    const collection = db.collection<InspirationDocument>("inspirations");
+
+    let updateData: any = {};
+
+    // Increment likes or views based on the type
+    if (type === 'like') {
+      updateData.$inc = { likes: 1 };
+    } else if (type === 'view') {
+      updateData.$inc = { views: 1 };
+    } else {
+      return NextResponse.json(
+        { error: "Invalid type. Use 'like' or 'view'." },
+        { status: 400 }
+      );
+    }
+
+    const result = await collection.findOneAndUpdate(
+      { _id: new ObjectId(params.id) },
+      updateData,
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
+      return NextResponse.json(
+        { error: "Inspiration not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error updating likes/views:", error);
+    return NextResponse.json(
+      { error: "Failed to update likes/views" },
       { status: 500 }
     );
   }
