@@ -1,4 +1,5 @@
 import { Schema, model, models } from 'mongoose';
+import { IEducation } from "./education";
 
 export interface ISite {
   createdAt: Date;           // 网站创建时间
@@ -14,7 +15,9 @@ export interface ISite {
   author: {                 // 作者信息
     name: string;
     avatar: string;
-    bio: string;
+    description: string;    // 作者一句话描述
+    bio: string;           // 作者详细介绍
+    education: IEducation[];  // 教育经历
   };
   icp?: string;           // 备案信息
   seo: {                  // SEO相关信息
@@ -37,7 +40,9 @@ const siteSchema = new Schema<ISite>({
   author: {
     name: { type: String, required: true },
     avatar: { type: String, required: true },
-    bio: { type: String, required: true }
+    description: { type: String, required: true },
+    bio: { type: String, required: true },
+    education: [{ type: Schema.Types.ObjectId, ref: 'Education' }]
   },
   icp: String,
   seo: {

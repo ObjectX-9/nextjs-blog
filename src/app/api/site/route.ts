@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ISite } from "@/app/model/site";
+import { IEducation } from "@/app/model/education";
 
 // Get site information
 export async function GET() {
   try {
     const db = await getDb();
     const collection = db.collection<ISite>("sites");
-    
+
     // Get the first site document (assuming we only have one site)
     const site = await collection.findOne({}, { maxTimeMS: 1000 });
-    
+
     // 设置响应头以防止缓存
     const headers = new Headers({
       'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -30,11 +31,20 @@ export async function GET() {
         wechatGroup: "",
         title: "我的博客",
         description: "这是一个博客网站",
-        backgroundImage: "/images/default-bg.jpg",
+        backgroundImage: "/images/background.jpg",
         author: {
           name: "作者",
           avatar: "",
+          description: "一个热爱生活和分享技术的程序员",
           bio: "这是作者简介",
+          education: [{
+            school: "示例大学",
+            major: "计算机科学与技术",
+            degree: "学士",
+            certifications: ["CET6"],
+            startDate: "2018-09-01",
+            endDate: "2022-07-01"
+          }]
         },
         seo: {
           keywords: ["博客"],
@@ -105,7 +115,7 @@ export async function POST(request: Request) {
   try {
     const siteData = await request.json();
     console.log('Received site data:', siteData);
-    
+
     // 验证数据结构
     if (!siteData || typeof siteData !== 'object') {
       return NextResponse.json(
@@ -120,10 +130,10 @@ export async function POST(request: Request) {
     // 保持原有的访问量和点赞数
     const currentSite = await collection.findOne({});
     console.log('Current site data:', currentSite);
-    
+
     // 从数据中移除 _id 字段
     const { _id, ...siteDataWithoutId } = siteData;
-    
+
     const updatedSiteData = {
       ...siteDataWithoutId,
       // 使用传入的访问量和点赞数，如果没有则使用当前值或默认值0
@@ -135,6 +145,17 @@ export async function POST(request: Request) {
         name: siteData.author?.name || '',
         avatar: siteData.author?.avatar || '',
         bio: siteData.author?.bio || '',
+        description: siteData.author?.description || '',
+        education: Array.isArray(siteData.author?.education)
+          ? siteData.author.education.map((edu: IEducation) => ({
+            school: edu.school || '',
+            major: edu.major || '',
+            degree: edu.degree || '',
+            certifications: Array.isArray(edu.certifications) ? edu.certifications : [],
+            startDate: edu.startDate || '',
+            endDate: edu.endDate || ''
+          }))
+          : currentSite?.author?.education || []
       },
       seo: {
         keywords: Array.isArray(siteData.seo?.keywords) ? siteData.seo.keywords : [],
@@ -147,7 +168,7 @@ export async function POST(request: Request) {
       qrcode: siteData.qrcode || '',
       appreciationCode: siteData.appreciationCode || '',
       wechatGroup: siteData.wechatGroup || '',
-      backgroundImage: siteData.backgroundImage || '/images/default-bg.jpg',
+      backgroundImage: siteData.backgroundImage || '/images/background.jpg',
       icp: siteData.icp || ''
     };
 
@@ -163,13 +184,13 @@ export async function POST(request: Request) {
           filter,
           { $set: updatedSiteData }
         );
-        
+
         console.log('Update result:', updateResult);
-        
+
         if (!updateResult.acknowledged) {
           throw new Error("更新站点信息失败");
         }
-        
+
         // 获取更新后的文档
         result = await collection.findOne(filter);
         console.log('Updated site data:', result);
@@ -177,13 +198,13 @@ export async function POST(request: Request) {
         // 如果不存在，则创建新文档
         console.log('Creating new site...');
         const insertResult = await collection.insertOne(updatedSiteData);
-        
+
         console.log('Insert result:', insertResult);
-        
+
         if (!insertResult.acknowledged) {
           throw new Error("创建站点信息失败");
         }
-        
+
         result = updatedSiteData;
       }
 

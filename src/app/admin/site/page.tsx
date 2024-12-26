@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ISite } from "@/app/model/site";
 import Image from 'next/image';
-import imageCompression from "browser-image-compression";
 
 interface SiteWithId extends ISite {
   _id?: string;
@@ -32,6 +31,8 @@ const defaultSite: SiteWithId = {
     name: "",
     avatar: "",
     bio: "",
+    description: "",
+    education: []
   },
   seo: {
     keywords: [],
@@ -194,13 +195,13 @@ export default function SiteManagementPage() {
 
       // 处理数字字段，确保是数字类型
       if (typeof finalSiteData.visitCount === 'string' || finalSiteData.visitCount === null) {
-        finalSiteData.visitCount = finalSiteData.visitCount === null || finalSiteData.visitCount === "" 
-          ? 0 
+        finalSiteData.visitCount = finalSiteData.visitCount === null || finalSiteData.visitCount === ""
+          ? 0
           : Number(finalSiteData.visitCount);
       }
       if (typeof finalSiteData.likeCount === 'string' || finalSiteData.likeCount === null) {
-        finalSiteData.likeCount = finalSiteData.likeCount === null || finalSiteData.likeCount === "" 
-          ? 0 
+        finalSiteData.likeCount = finalSiteData.likeCount === null || finalSiteData.likeCount === ""
+          ? 0
           : Number(finalSiteData.likeCount);
       }
 
@@ -264,6 +265,8 @@ export default function SiteManagementPage() {
           name: finalSiteData.author?.name || '',
           avatar: finalSiteData.author?.avatar || '',
           bio: finalSiteData.author?.bio || '',
+          description: finalSiteData.author?.description || '',
+          education: finalSiteData.author?.education || []
         },
         seo: {
           keywords: Array.isArray(finalSiteData.seo?.keywords) ? finalSiteData.seo.keywords : [],
@@ -427,8 +430,8 @@ export default function SiteManagementPage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {message && (
         <div className={`mb-4 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700' : message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} sticky top-0 z-10`}>
-        {message.text}
-      </div>
+          {message.text}
+        </div>
       )}
 
       <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10">
@@ -613,6 +616,17 @@ export default function SiteManagementPage() {
             </div>
 
             <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">一句话描述</label>
+              <input
+                type="text"
+                value={editedSite.author.description}
+                onChange={(e) => handleInputChange("author.description", e.target.value)}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">作者简介</label>
               <textarea
                 value={editedSite.author.bio}
@@ -621,6 +635,157 @@ export default function SiteManagementPage() {
                 rows={4}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
               />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-gray-700">教育经历</label>
+                {isEditing && (
+                  <button
+                    onClick={() => {
+                      setEditedSite(prev => ({
+                        ...prev,
+                        author: {
+                          ...prev.author,
+                          education: [
+                            ...(prev.author.education || []),
+                            {
+                              school: "",
+                              major: "",
+                              degree: "",
+                              certifications: [],
+                              startDate: "",
+                              endDate: ""
+                            }
+                          ]
+                        }
+                      }));
+                    }}
+                    className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                  >
+                    添加教育经历
+                  </button>
+                )}
+              </div>
+
+              {editedSite.author.education?.map((edu, index) => (
+                <div key={index} className="p-4 border rounded-lg space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">教育经历 #{index + 1}</h3>
+                    {isEditing && (
+                      <button
+                        onClick={() => {
+                          setEditedSite(prev => ({
+                            ...prev,
+                            author: {
+                              ...prev.author,
+                              education: prev.author.education?.filter((_, i) => i !== index) || []
+                            }
+                          }));
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        删除
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">学校</label>
+                      <input
+                        type="text"
+                        value={edu.school}
+                        onChange={(e) => {
+                          const newEducation = [...(editedSite.author.education || [])];
+                          newEducation[index] = { ...edu, school: e.target.value };
+                          handleInputChange("author.education", newEducation);
+                        }}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">专业</label>
+                      <input
+                        type="text"
+                        value={edu.major}
+                        onChange={(e) => {
+                          const newEducation = [...(editedSite.author.education || [])];
+                          newEducation[index] = { ...edu, major: e.target.value };
+                          handleInputChange("author.education", newEducation);
+                        }}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">学位</label>
+                      <input
+                        type="text"
+                        value={edu.degree}
+                        onChange={(e) => {
+                          const newEducation = [...(editedSite.author.education || [])];
+                          newEducation[index] = { ...edu, degree: e.target.value };
+                          handleInputChange("author.education", newEducation);
+                        }}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">证书（用逗号分隔）</label>
+                      <input
+                        type="text"
+                        value={edu.certifications?.join(", ")}
+                        onChange={(e) => {
+                          const newEducation = [...(editedSite.author.education || [])];
+                          newEducation[index] = {
+                            ...edu,
+                            certifications: e.target.value.split(",").map(cert => cert.trim())
+                          };
+                          handleInputChange("author.education", newEducation);
+                        }}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">开始时间</label>
+                      <input
+                        type="date"
+                        value={edu.startDate?.split('T')[0]}
+                        onChange={(e) => {
+                          const newEducation = [...(editedSite.author.education || [])];
+                          newEducation[index] = { ...edu, startDate: e.target.value };
+                          handleInputChange("author.education", newEducation);
+                        }}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">结束时间</label>
+                      <input
+                        type="date"
+                        value={edu.endDate?.split('T')[0]}
+                        onChange={(e) => {
+                          const newEducation = [...(editedSite.author.education || [])];
+                          newEducation[index] = { ...edu, endDate: e.target.value };
+                          handleInputChange("author.education", newEducation);
+                        }}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
