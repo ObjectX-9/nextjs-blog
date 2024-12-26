@@ -8,7 +8,7 @@ export interface ISite {
   favicon: string;           // 网站图标链接
   qrcode: string;           // 二维码图片链接
   appreciationCode: string;  // 赞赏码图片链接
-  wechatGroup: string;      // 微信群图片链接
+  wechatGroup: string;      // 微信公众号图片链接
   title: string;            // 网站标题
   description: string;      // 网站描述
   backgroundImage: string;   // 首页背景图链接

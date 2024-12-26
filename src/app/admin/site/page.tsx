@@ -583,7 +583,7 @@ export default function SiteManagementPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {renderImageUpload("wechatGroup", "微信群图片", editedSite.wechatGroup)}
+              {renderImageUpload("wechatGroup", "微信公众号图片", editedSite.wechatGroup)}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">ICP备案号</label>
                 <input
