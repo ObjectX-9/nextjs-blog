@@ -10,6 +10,7 @@ import { Section } from "@/components/Section";
 import { SocialLinks } from "@/components/SocialLinks";
 import { WorkExperience } from "@/components/WorkExperience";
 import { Education } from "@/components/Education";
+import { WebRunInfo } from '@/components/WebRunInfo'
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);
@@ -83,10 +84,12 @@ export default async function Index() {
             <SocialLinks links={socialLinks} />
           </Section>
 
+          <Section title="网站信息">
+            <WebRunInfo />
+          </Section>
           <Section title="教育经历">
             <Education />
           </Section>
-
           <Section title="工作经历">
             <WorkExperience
               experiences={workExperiences}
