@@ -4,14 +4,30 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SiteProvider from "@/components/providers/SiteProvider";
+import { getDb } from "@/lib/mongodb";
 
 const inter = Inter({ subsets: ["latin"] });
 
+async function getSiteInfo() {
+  try {
+    const db = await getDb();
+    const siteInfo = await db.collection("sites").findOne();
+    return siteInfo;
+  } catch (error) {
+    console.error("Error fetching site info:", error);
+    return null;
+  }
+}
 
-export const metadata: Metadata = {
-  title: "ObjectX's blog",
-  description: "ObjectX's articles about programming and life",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const siteInfo = await getSiteInfo();
+
+  return {
+    title: siteInfo?.title || "ObjectX's blog",
+    description: siteInfo?.seo?.description || "ObjectX's articles about programming and life",
+    keywords: siteInfo?.seo?.keywords || [],
+  }
+}
 
 export default function RootLayout({
   children,
