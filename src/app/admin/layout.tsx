@@ -10,6 +10,7 @@ const navItems = [
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
   { name: "时间线管理", href: "/admin/timelines" },
+  { name: "灵感管理", href: "/admin/inspirations" },
   { name: "项目管理", href: "/admin/projects" },
   { name: "demo管理", href: "/admin/demos" },
   { name: "技术栈", href: "/admin/stacks" },

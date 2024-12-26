@@ -49,142 +49,70 @@ async function uploadWithRetry(
   attempt: number = 1
 ): Promise<OSS.PutObjectResult> {
   try {
-    return (await Promise.race([
-      client.put(filename, buffer),
-      new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error("Upload timeout")), 30000) // 30秒超时
-      ),
-    ])) as OSS.PutObjectResult;
-  } catch (error) {
-    const isRetryable = (error: any) => {
-      // 判断是否是可重试的错误
-      return (
-        error.code === "ConnectionTimeoutError" ||
-        error.code === "RequestTimeoutError" ||
-        error.message === "Upload timeout" ||
-        error.status === 504 ||
-        error.name === "ConnectionTimeoutError" ||
-        error.name === "RequestTimeoutError"
-      );
-    };
-
-    if (attempt < RETRY_CONFIG.maxRetries && isRetryable(error)) {
-      // 计算延迟时间（指数退避）
-      const delayTime = Math.min(
-        RETRY_CONFIG.initialDelay * Math.pow(2, attempt - 1),
-        RETRY_CONFIG.maxDelay
-      );
-
-      console.log(
-        `Upload attempt ${attempt} failed, retrying in ${delayTime}ms...`,
-        {
-          error,
-          attempt,
-        }
-      );
-
-      await delay(delayTime);
-      return uploadWithRetry(client, filename, buffer, attempt + 1);
+    return await client.put(filename, buffer);
+  } catch (err) {
+    if (attempt >= RETRY_CONFIG.maxRetries) {
+      throw err;
     }
 
-    throw error;
+    const delayTime = Math.min(
+      RETRY_CONFIG.initialDelay * Math.pow(2, attempt - 1),
+      RETRY_CONFIG.maxDelay
+    );
+    await delay(delayTime);
+
+    return uploadWithRetry(client, filename, buffer, attempt + 1);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    // Check if any environment variables are missing
-    if (missingEnvVars.length > 0) {
-      throw new Error(
-        `Missing required environment variables: ${missingEnvVars.join(", ")}`
-      );
-    }
-
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const type = formData.get("type") as string || "photos"; // 默认为 photos 目录
 
     if (!file) {
-      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
-    }
-
-    // 验证文件大小（最大10MB）
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
       return NextResponse.json(
-        { success: false, error: "File size exceeds 10MB limit" },
+        { error: "No file provided" },
         { status: 400 }
       );
     }
 
-    // 验证文件类型
+    // 检查文件类型
     if (!file.type.startsWith("image/")) {
       return NextResponse.json(
-        { success: false, error: "Only image files are allowed" },
+        { error: "Only image files are allowed" },
         { status: 400 }
       );
     }
 
-    // Log file details for debugging
-    console.log("File details:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
-
-    // Convert File to Buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    // Get directory path from form data or default to 'album'
-    const directory = (formData.get("directory") as string) || "album";
-
-    // Generate unique filename
-    const ext = file.name.split(".").pop();
-    const filename = `/images/${directory}/${uuidv4()}.${ext}`;
-
-    console.log("Attempting to upload file:", filename);
-
-    // Upload to OSS with retry mechanism
-    const result = await uploadWithRetry(client, filename, buffer);
-
-    console.log("Upload successful:", result.url);
-
-    return NextResponse.json({ success: true, url: result.url });
-  } catch (error: any) {
-    // 详细的错误日志记录
-    console.error("Upload error details:", {
-      message: error.message,
-      code: error.code,
-      name: error.name,
-      status: error.status,
-      stack: error.stack,
-      requestId: error.requestId, // OSS错误特有
-      hostname: error.hostname, // OSS错误特有
-    });
-
-    // 根据错误类型返回适当的状态码和消息
-    let statusCode = 500;
-    let errorMessage = "Failed to upload file";
-
-    if (error.status === 403) {
-      statusCode = 403;
-      errorMessage = "Permission denied to upload file";
-    } else if (error.code === "RequestTimeoutError" || error.status === 504) {
-      statusCode = 504;
-      errorMessage = "Upload request timed out";
-    } else if (error.code === "ConnectionTimeoutError") {
-      statusCode = 503;
-      errorMessage = "Connection timed out";
+    // 获取文件扩展名
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension) {
+      return NextResponse.json(
+        { error: "Invalid file extension" },
+        { status: 400 }
+      );
     }
 
+    // 生成文件名
+    const filename = `images/${type}/${uuidv4()}.${extension}`;
+
+    // 读取文件内容
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // 上传文件到OSS
+    const result = await uploadWithRetry(client, filename, buffer);
+
+    // 构建完整的URL
+    const url = `https://${requiredEnvVars.bucket}.${requiredEnvVars.region}.aliyuncs.com/${filename}`;
+
+    return NextResponse.json({ url });
+  } catch (error: any) {
+    console.error("Upload error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-        details: error.message,
-        requestId: error.requestId,
-      },
-      { status: statusCode }
+      { error: error.message || "Upload failed" },
+      { status: 500 }
     );
   }
 }
