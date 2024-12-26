@@ -68,45 +68,31 @@ export async function GET() {
   }
 }
 
-// Update visit count
+// 增加访问量和点赞
 export async function PATCH(request: Request) {
   try {
-    const { type } = await request.json();
+    const { type } = await request.json()
+    
     const db = await getDb();
     const collection = db.collection<ISite>("sites");
 
-    let updateField = {};
-    if (type === 'visit') {
-      updateField = { visitCount: { $inc: 1 } };
-    } else if (type === 'like') {
-      updateField = { likeCount: { $inc: 1 } };
-    } else {
-      return NextResponse.json(
-        { success: false, error: "Invalid update type" },
-        { status: 400 }
-      );
+    const site = await collection.findOne()
+    if (!site) {
+      return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
-    const result = await collection.findOneAndUpdate(
-      {},
-      { $inc: updateField },
-      { returnDocument: 'after' }
-    );
-
-    if (!result) {
-      return NextResponse.json(
-        { success: false, error: "Site not found" },
-        { status: 404 }
-      );
+    if (type === 'like') {
+      site.likeCount += 1
+    } else if (type === 'visit') {
+      site.visitCount += 1
     }
 
-    return NextResponse.json({ success: true, site: result });
+    await collection.updateOne({ _id: site._id }, { $set: site })
+
+    return NextResponse.json({ success: true, site })
   } catch (error) {
-    console.error("Error updating site stats:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to update site stats" },
-      { status: 500 }
-    );
+    console.error('Error updating site stats:', error)
+    return NextResponse.json({ error: "Failed to update site stats" }, { status: 500 })
   }
 }
 
