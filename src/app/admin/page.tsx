@@ -8,14 +8,14 @@ export default function AdminPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push("/admin/bookmarks");
+    router.push("/admin/site");
   }, [router]);
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">系统设置</h1>
       <div className="space-y-4">
-        <Link
+        {/* <Link
           href="/admin/bookmarks"
           className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
         >
@@ -32,7 +32,7 @@ export default function AdminPage() {
           className="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
         >
           工作空间管理
-        </Link>
+        </Link> */}
       </div>
     </div>
   );
