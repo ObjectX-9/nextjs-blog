@@ -110,7 +110,8 @@
     "tailwindcss-animate": "^1.0.7",
     "unified": "^11.0.5",
     "uuid": "^11.0.3",
-    "yet-another-react-lightbox": "^3.21.7"
+    "yet-another-react-lightbox": "^3.21.7",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@types/debug": "^4.1.12",

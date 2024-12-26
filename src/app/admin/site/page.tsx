@@ -25,6 +25,7 @@ const defaultSite: SiteWithId = {
   qrcode: "",
   appreciationCode: "",
   wechatGroup: "",
+  backgroundImage: "",
   title: "",
   description: "",
   author: {
@@ -184,7 +185,7 @@ export default function SiteManagementPage() {
 
     try {
       // 检查是否有未上传的图片
-      const imageFields = ['favicon', 'qrcode', 'appreciationCode', 'wechatGroup'];
+      const imageFields = ['favicon', 'qrcode', 'appreciationCode', 'wechatGroup', 'backgroundImage'];
       const authorImageFields = ['avatar'];
       let hasUploading = false;
 
@@ -274,6 +275,7 @@ export default function SiteManagementPage() {
         qrcode: finalSiteData.qrcode || '',
         appreciationCode: finalSiteData.appreciationCode || '',
         wechatGroup: finalSiteData.wechatGroup || '',
+        backgroundImage: finalSiteData.backgroundImage || '',
         icp: finalSiteData.icp || '',
       };
 
@@ -566,6 +568,10 @@ export default function SiteManagementPage() {
                 rows={4}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
               />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+              {renderImageUpload("backgroundImage", "首页背景图", editedSite.backgroundImage)}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

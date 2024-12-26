@@ -27,6 +27,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ISocialLink } from "@/app/model/social-link";
+import { useSiteStore } from "@/store/site";
 
 const navList = [
   {
@@ -96,6 +97,8 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { site } = useSiteStore();
+
 
   useEffect(() => {
     const fetchSocialLinks = async () => {
@@ -162,12 +165,12 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
     <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
       <div className="mb-4 p-2 flex flex-row flex-nowrap gap-2">
         <Avatar>
-          <AvatarImage src="/avatar.png" alt="vespser" />
+          <AvatarImage src={site?.author?.avatar || './avatar.png'} alt="vespser" />
           <AvatarFallback>ObjectX</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="font-semibold tracking-tight">ObjectX-不知名程序员</h1>
-          <p className="text-gray-600">👨🏻‍💻 前端工程师</p>
+          <h1 className="font-semibold tracking-tight">{site?.author?.name ?? 'ObjectX-不知名程序员'}</h1>
+          <p className="text-gray-600">{site?.author?.bio ?? '👨🏻‍💻 前端工程师'}</p>
         </div>
       </div>
       <nav className="flex flex-col gap-1">

@@ -10,6 +10,7 @@ export interface ISite {
   wechatGroup: string;      // 微信群图片链接
   title: string;            // 网站标题
   description: string;      // 网站描述
+  backgroundImage: string;   // 首页背景图链接
   author: {                 // 作者信息
     name: string;
     avatar: string;
@@ -32,6 +33,7 @@ const siteSchema = new Schema<ISite>({
   wechatGroup: { type: String, required: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
+  backgroundImage: { type: String, required: true },
   author: {
     name: { type: String, required: true },
     avatar: { type: String, required: true },

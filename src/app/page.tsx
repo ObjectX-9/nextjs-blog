@@ -1,5 +1,4 @@
 import { getDocsList } from "@/components/Markdown";
-import { Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { ISocialLink } from "@/app/model/social-link";
@@ -99,6 +98,7 @@ export default async function Index() {
           </div>
         </div>
       </div>
+
 
       <div className="w-full max-w-3xl my-0 mx-auto mt-24">
         <p className="text-gray-600 mt-4">
@@ -307,9 +307,9 @@ export default async function Index() {
                           </span>
                         </span>
                         <span className="col-span-1 md:col-span-2 flex items-center justify-end gap-4 text-gray-500 text-xs">
-                          <LikeButton 
-                            articleId={article._id?.toString() || ''} 
-                            initialLikes={article.likes} 
+                          <LikeButton
+                            articleId={article._id?.toString() || ''}
+                            initialLikes={article.likes}
                           />
                           <ViewCounter
                             articleId={article._id?.toString() || ''}

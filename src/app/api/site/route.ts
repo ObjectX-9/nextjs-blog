@@ -30,6 +30,7 @@ export async function GET() {
         wechatGroup: "",
         title: "我的博客",
         description: "这是一个博客网站",
+        backgroundImage: "/images/default-bg.jpg",
         author: {
           name: "作者",
           avatar: "",
@@ -146,6 +147,7 @@ export async function POST(request: Request) {
       qrcode: siteData.qrcode || '',
       appreciationCode: siteData.appreciationCode || '',
       wechatGroup: siteData.wechatGroup || '',
+      backgroundImage: siteData.backgroundImage || '/images/default-bg.jpg',
       icp: siteData.icp || ''
     };
 
