@@ -2,14 +2,47 @@
 
 import { useSiteStore } from '@/store/site'
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { Heart, Eye, Timer, QrCode } from "lucide-react"
+import { Heart, Eye, Timer, QrCode, X } from "lucide-react"
 import Image from 'next/image'
 
 const VISIT_KEY = 'site_visited_date'
 const LIKE_KEY = 'site_liked'
 
+// 图片预览组件
+const ImagePreview = ({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) => {
+  return (
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200]"
+      onClick={onClose}
+    >
+      <div className="relative max-w-[90vw] max-h-[90vh]">
+        <button
+          onClick={onClose}
+          className="absolute -top-10 right-0 text-white hover:text-gray-300"
+        >
+          <X className="w-6 h-6" />
+        </button>
+        <Image
+          src={src}
+          alt={alt}
+          width={500}
+          height={500}
+          className="max-w-full max-h-[90vh] object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    </div>
+  )
+}
+
 // Web端二维码展示组件
 const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) => {
+  const [previewImage, setPreviewImage] = useState<{src: string; alt: string} | null>(null)
+
+  const handleImageClick = (src: string, alt: string) => {
+    setPreviewImage({ src, alt })
+  }
+
   return (
     <div className="fixed md:absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-2xl z-[100]">
       <div className="relative p-4">
@@ -17,7 +50,10 @@ const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) =>
         <div className="flex gap-6">
           {site?.qrcode && (
             <div className="text-center" key="wechat">
-              <div className="relative w-20 h-20">
+              <div 
+                className="relative w-20 h-20 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(site.qrcode, '微信二维码')}
+              >
                 <Image
                   src={site.qrcode}
                   alt="二维码"
@@ -36,7 +72,10 @@ const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) =>
           )}
           {site?.appreciationCode && (
             <div className="text-center" key="appreciation">
-              <div className="relative w-20 h-20">
+              <div 
+                className="relative w-20 h-20 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(site.appreciationCode, '赞赏码')}
+              >
                 <Image
                   src={site.appreciationCode}
                   alt="赞赏码"
@@ -55,7 +94,10 @@ const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) =>
           )}
           {site?.wechatGroup && (
             <div className="text-center" key="group">
-              <div className="relative w-20 h-20">
+              <div 
+                className="relative w-20 h-20 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(site.wechatGroup, '微信公众号')}
+              >
                 <Image
                   src={site.wechatGroup}
                   alt="微信公众号"
@@ -74,12 +116,21 @@ const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) =>
           )}
         </div>
       </div>
+      {previewImage && (
+        <ImagePreview
+          src={previewImage.src}
+          alt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   )
 }
 
 // 移动端二维码展示组件
 const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
+  const [previewImage, setPreviewImage] = useState<{src: string; alt: string} | null>(null)
+
   const handleModalClick = (e: React.MouseEvent) => {
     // 点击背景时关闭
     if (e.target === e.currentTarget) {
@@ -90,6 +141,10 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
   const handleCloseClick = (e: React.MouseEvent) => {
     e.stopPropagation() // 阻止事件冒泡
     onClose()
+  }
+
+  const handleImageClick = (src: string, alt: string) => {
+    setPreviewImage({ src, alt })
   }
 
   return (
@@ -104,7 +159,10 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {site?.qrcode && (
             <div className="text-center" key="wechat">
-              <div className="relative w-28 h-28 mx-auto">
+              <div 
+                className="relative w-28 h-28 mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(site.qrcode, '微信二维码')}
+              >
                 <Image
                   src={site.qrcode}
                   alt="二维码"
@@ -123,7 +181,10 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
           )}
           {site?.appreciationCode && (
             <div className="text-center" key="appreciation">
-              <div className="relative w-28 h-28 mx-auto">
+              <div 
+                className="relative w-28 h-28 mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(site.appreciationCode, '赞赏码')}
+              >
                 <Image
                   src={site.appreciationCode}
                   alt="赞赏码"
@@ -142,7 +203,10 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
           )}
           {site?.wechatGroup && (
             <div className="text-center" key="group">
-              <div className="relative w-28 h-28 mx-auto">
+              <div 
+                className="relative w-28 h-28 mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(site.wechatGroup, '微信公众号')}
+              >
                 <Image
                   src={site.wechatGroup}
                   alt="微信公众号"
@@ -161,6 +225,13 @@ const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
           )}
         </div>
       </div>
+      {previewImage && (
+        <ImagePreview
+          src={previewImage.src}
+          alt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   )
 }
@@ -172,6 +243,8 @@ export const WebRunInfo = () => {
   const [hasLiked, setHasLiked] = useState(false)
   const [showQrcode, setShowQrcode] = useState(false)
   const qrcodeRef = useRef<HTMLDivElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const closeTimeoutRef = useRef<NodeJS.Timeout>()
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -180,7 +253,12 @@ export const WebRunInfo = () => {
     }
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -264,11 +342,34 @@ export const WebRunInfo = () => {
   }
 
   const handleMouseEnter = () => {
-    if (!isMobile) setShowQrcode(true)
+    if (!isMobile) {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+      }
+      setShowQrcode(true)
+    }
   }
 
-  const handleMouseLeave = () => {
-    if (!isMobile) setShowQrcode(false)
+  const handleMouseLeave = (e: React.MouseEvent) => {
+    if (!isMobile && !popoverRef.current?.contains(e.relatedTarget as Node)) {
+      closeTimeoutRef.current = setTimeout(() => {
+        setShowQrcode(false)
+      }, 2000)
+    }
+  }
+
+  const handlePopoverMouseLeave = (e: React.MouseEvent) => {
+    if (!isMobile && !qrcodeRef.current?.contains(e.relatedTarget as Node)) {
+      closeTimeoutRef.current = setTimeout(() => {
+        setShowQrcode(false)
+      }, 2000)
+    }
+  }
+
+  const handlePopoverMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current)
+    }
   }
 
   const handleQrcodeClick = (e: React.MouseEvent) => {
@@ -358,7 +459,13 @@ export const WebRunInfo = () => {
             isMobile ? (
               <QrcodeModal site={site} onClose={() => setShowQrcode(false)} />
             ) : (
-              <QrcodePopover site={site} onClose={() => setShowQrcode(false)} />
+              <div
+                ref={popoverRef}
+                onMouseLeave={handlePopoverMouseLeave}
+                onMouseEnter={handlePopoverMouseEnter}
+              >
+                <QrcodePopover site={site} onClose={() => setShowQrcode(false)} />
+              </div>
             )
           )}
         </div>
