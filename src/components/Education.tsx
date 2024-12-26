@@ -2,13 +2,25 @@
 
 import { useSiteStore } from "@/store/site";
 
+interface Education {
+  school: string;
+  major: string;
+  degree: string;
+  startDate: string;
+  endDate: string;
+  certifications?: string[];
+}
+
 export const Education = () => {
   const { site } = useSiteStore();
 
   return (
     <div className="space-y-4">
-      {site?.author?.education?.map((edu, index) => (
-        <div key={`${edu.school}-${index}`} className="group flex items-center space-x-2 py-2 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+      {site?.author?.education?.map((edu: Education, index: number) => (
+        <div
+          key={`${edu.school}-${index}`}
+          className="group flex items-center space-x-2 py-2 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+        >
           <div className="flex-1">
             <p className="text-gray-600 flex items-center flex-wrap gap-2">
               <span>{edu.school}</span>
@@ -29,7 +41,8 @@ export const Education = () => {
             </p>
           </div>
           <div className="text-gray-600 text-sm whitespace-nowrap">
-            {new Date(edu.startDate).getFullYear()} - {new Date(edu.endDate).getFullYear()}
+            {new Date(edu.startDate).getFullYear()} -{" "}
+            {new Date(edu.endDate).getFullYear()}
           </div>
         </div>
       ))}

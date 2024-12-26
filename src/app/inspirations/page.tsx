@@ -13,8 +13,12 @@ export default function InspirationPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [likedInspirations, setLikedInspirations] = useState<Set<string>>(new Set());
-  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(new Set());
+  const [likedInspirations, setLikedInspirations] = useState<Set<string>>(
+    new Set()
+  );
+  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(
+    new Set()
+  );
   const { site } = useSiteStore();
 
   const fetchInspirations = async (pageNum: number) => {
@@ -29,9 +33,10 @@ export default function InspirationPage() {
       setTotalPages(result.pagination.totalPages);
 
       // Retrieve liked and viewed inspirations from localStorage
-      const storedLikedInspirations = localStorage.getItem('likedInspirations');
-      const storedViewedInspirations = localStorage.getItem('viewedInspirations');
-      
+      const storedLikedInspirations = localStorage.getItem("likedInspirations");
+      const storedViewedInspirations =
+        localStorage.getItem("viewedInspirations");
+
       if (storedLikedInspirations) {
         setLikedInspirations(new Set(JSON.parse(storedLikedInspirations)));
       }
@@ -49,16 +54,105 @@ export default function InspirationPage() {
     fetchInspirations(page);
   }, [page]);
 
+  const handleLike = useCallback(
+    async (inspirationId: string) => {
+      if (likedInspirations.has(inspirationId)) return;
+
+      try {
+        const response = await fetch(
+          `/api/inspirations/${inspirationId}/stats`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ action: "like" }),
+          }
+        );
+
+        if (response.ok) {
+          const updatedLikedInspirations = new Set(likedInspirations).add(
+            inspirationId
+          );
+          setLikedInspirations(updatedLikedInspirations);
+
+          // Update localStorage
+          localStorage.setItem(
+            "likedInspirations",
+            JSON.stringify(Array.from(updatedLikedInspirations))
+          );
+
+          // Update the inspirations list with the new like count
+          setInspirations((prevInspirations) =>
+            prevInspirations.map((inspiration) =>
+              inspiration._id.toString() === inspirationId
+                ? { ...inspiration, likes: (inspiration.likes || 0) + 1 }
+                : inspiration
+            )
+          );
+        }
+      } catch (error) {
+        console.error("Failed to like inspiration:", error);
+      }
+    },
+    [likedInspirations]
+  );
+
+  const handleView = useCallback(
+    async (inspirationId: string) => {
+      if (viewedInspirations.has(inspirationId)) return;
+
+      try {
+        const response = await fetch(
+          `/api/inspirations/${inspirationId}/stats`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ action: "view" }),
+          }
+        );
+
+        if (response.ok) {
+          const updatedViewedInspirations = new Set(viewedInspirations).add(
+            inspirationId
+          );
+          setViewedInspirations(updatedViewedInspirations);
+
+          // Update localStorage
+          localStorage.setItem(
+            "viewedInspirations",
+            JSON.stringify(Array.from(updatedViewedInspirations))
+          );
+
+          // Update the inspirations list with the new view count
+          setInspirations((prevInspirations) =>
+            prevInspirations.map((inspiration) =>
+              inspiration._id.toString() === inspirationId
+                ? { ...inspiration, views: (inspiration.views || 0) + 1 }
+                : inspiration
+            )
+          );
+        }
+      } catch (error) {
+        console.error("Failed to record view:", error);
+      }
+    },
+    [viewedInspirations]
+  );
+
   useEffect(() => {
     // Automatically record view for each inspiration when it first appears
-    inspirations.forEach(inspiration => {
+    inspirations.forEach((inspiration) => {
       const inspirationId = inspiration._id.toString();
       // Check if the inspiration has not been viewed in the current session
       if (!viewedInspirations.has(inspirationId)) {
         // Attempt to get view tracking from localStorage to prevent multiple views
-        const viewedInspirationsInStorage = localStorage.getItem('viewedInspirations');
-        const storedViewedInspirations = viewedInspirationsInStorage 
-          ? new Set(JSON.parse(viewedInspirationsInStorage)) 
+        const viewedInspirationsInStorage =
+          localStorage.getItem("viewedInspirations");
+        const storedViewedInspirations = viewedInspirationsInStorage
+          ? new Set(JSON.parse(viewedInspirationsInStorage))
           : new Set();
 
         if (!storedViewedInspirations.has(inspirationId)) {
@@ -66,73 +160,7 @@ export default function InspirationPage() {
         }
       }
     });
-  }, [inspirations, viewedInspirations]);
-
-  const handleLike = useCallback(async (inspirationId: string) => {
-    if (likedInspirations.has(inspirationId)) return;
-
-    try {
-      const response = await fetch(`/api/inspirations/${inspirationId}/stats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'like' }),
-      });
-
-      if (response.ok) {
-        const updatedLikedInspirations = new Set(likedInspirations).add(inspirationId);
-        setLikedInspirations(updatedLikedInspirations);
-        
-        // Update localStorage
-        localStorage.setItem('likedInspirations', JSON.stringify(Array.from(updatedLikedInspirations)));
-
-        // Update the inspirations list with the new like count
-        setInspirations(prevInspirations => 
-          prevInspirations.map(inspiration => 
-            inspiration._id.toString() === inspirationId 
-              ? { ...inspiration, likes: (inspiration.likes || 0) + 1 } 
-              : inspiration
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Failed to like inspiration:", error);
-    }
-  }, [likedInspirations]);
-
-  const handleView = useCallback(async (inspirationId: string) => {
-    if (viewedInspirations.has(inspirationId)) return;
-
-    try {
-      const response = await fetch(`/api/inspirations/${inspirationId}/stats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'view' }),
-      });
-
-      if (response.ok) {
-        const updatedViewedInspirations = new Set(viewedInspirations).add(inspirationId);
-        setViewedInspirations(updatedViewedInspirations);
-        
-        // Update localStorage
-        localStorage.setItem('viewedInspirations', JSON.stringify(Array.from(updatedViewedInspirations)));
-
-        // Update the inspirations list with the new view count
-        setInspirations(prevInspirations => 
-          prevInspirations.map(inspiration => 
-            inspiration._id.toString() === inspirationId 
-              ? { ...inspiration, views: (inspiration.views || 0) + 1 } 
-              : inspiration
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Failed to record view:", error);
-    }
-  }, [viewedInspirations]);
+  }, [inspirations, viewedInspirations, handleView]);
 
   const handleNextPage = () => {
     if (page < totalPages) {
@@ -190,7 +218,7 @@ export default function InspirationPage() {
                       src={site?.author?.avatar}
                       alt={site?.author?.name}
                     />
-                    <AvatarFallback>{(site?.author?.name)[0]}</AvatarFallback>
+                    <AvatarFallback>{(site?.author?.name)![0]}</AvatarFallback>
                   </Avatar>
 
                   <div className="flex-1 space-y-2">
@@ -200,9 +228,12 @@ export default function InspirationPage() {
                           {site?.author?.name}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(inspiration.createdAt), {
-                            addSuffix: true,
-                          })}
+                          {formatDistanceToNow(
+                            new Date(inspiration.createdAt),
+                            {
+                              addSuffix: true,
+                            }
+                          )}
                         </span>
                       </div>
                     </div>
@@ -240,21 +271,28 @@ export default function InspirationPage() {
                     )}
 
                     <div className="flex space-x-4 text-gray-500 text-xs">
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleLike(inspiration._id.toString());
                         }}
                         className={`flex items-center space-x-1 transition-colors ${
-                          likedInspirations.has(inspiration._id.toString()) 
-                            ? 'text-red-500' 
-                            : 'hover:text-red-500'
+                          likedInspirations.has(inspiration._id.toString())
+                            ? "text-red-500"
+                            : "hover:text-red-500"
                         }`}
                       >
-                        <Heart size={14} fill={likedInspirations.has(inspiration._id.toString()) ? 'currentColor' : 'none'} />
+                        <Heart
+                          size={14}
+                          fill={
+                            likedInspirations.has(inspiration._id.toString())
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
                         <span>{inspiration.likes || 0}</span>
                       </button>
-                      <button 
+                      <button
                         className="flex items-center space-x-1 hover:text-green-500 transition-colors"
                         disabled
                       >
@@ -269,9 +307,7 @@ export default function InspirationPage() {
           </div>
 
           {inspirations.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              暂无灵感笔记
-            </div>
+            <div className="text-center text-gray-500 py-8">暂无灵感笔记</div>
           )}
 
           {totalPages > 1 && (
