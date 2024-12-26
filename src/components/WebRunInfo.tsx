@@ -1,21 +1,190 @@
 'use client'
 
 import { useSiteStore } from '@/store/site'
-import { useEffect, useState } from 'react'
-import { Heart, Eye, Timer } from "lucide-react"
+import { useEffect, useState, useRef, useMemo } from 'react'
+import { Heart, Eye, Timer, QrCode } from "lucide-react"
+import Image from 'next/image'
 
 const VISIT_KEY = 'site_visited_date'
 const LIKE_KEY = 'site_liked'
+
+// Web端二维码展示组件
+const QrcodePopover = ({ site, onClose }: { site: any, onClose: () => void }) => {
+  return (
+    <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-2xl z-50">
+      <div className="relative p-4">
+        <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white transform rotate-45" />
+        <div className="flex gap-6">
+          {site?.qrcode && (
+            <div className="text-center">
+              <div className="relative w-20 h-20">
+                <Image
+                  src={site.qrcode}
+                  alt="二维码"
+                  fill
+                  sizes="80px"
+                  className="object-contain rounded-lg"
+                  priority
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">微信</div>
+            </div>
+          )}
+          {site?.appreciationCode && (
+            <div className="text-center">
+              <div className="relative w-20 h-20">
+                <Image
+                  src={site.appreciationCode}
+                  alt="赞赏码"
+                  fill
+                  sizes="80px"
+                  className="object-contain rounded-lg"
+                  priority
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">赞赏</div>
+            </div>
+          )}
+          {site?.wechatGroup && (
+            <div className="text-center">
+              <div className="relative w-20 h-20">
+                <Image
+                  src={site.wechatGroup}
+                  alt="微信公众号"
+                  fill
+                  sizes="80px"
+                  className="object-contain rounded-lg"
+                  priority
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">公众号</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// 移动端二维码展示组件
+const QrcodeModal = ({ site, onClose }: { site: any, onClose: () => void }) => {
+  const handleModalClick = (e: React.MouseEvent) => {
+    // 点击背景时关闭
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const handleCloseClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // 阻止事件冒泡
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={handleModalClick}>
+      <div className="relative bg-white rounded-xl w-[90%] max-w-md p-6" onClick={e => e.stopPropagation()}>
+        <div 
+          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 cursor-pointer"
+          onClick={handleCloseClick}
+        >
+          <span className="text-gray-500 text-lg">&times;</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {site?.qrcode && (
+            <div className="text-center">
+              <div className="relative w-28 h-28 mx-auto">
+                <Image
+                  src={site.qrcode}
+                  alt="二维码"
+                  fill
+                  sizes="112px"
+                  className="object-contain rounded-lg"
+                  priority
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">微信</div>
+            </div>
+          )}
+          {site?.appreciationCode && (
+            <div className="text-center">
+              <div className="relative w-28 h-28 mx-auto">
+                <Image
+                  src={site.appreciationCode}
+                  alt="赞赏码"
+                  fill
+                  sizes="112px"
+                  className="object-contain rounded-lg"
+                  priority
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">赞赏</div>
+            </div>
+          )}
+          {site?.wechatGroup && (
+            <div className="text-center">
+              <div className="relative w-28 h-28 mx-auto">
+                <Image
+                  src={site.wechatGroup}
+                  alt="微信公众号"
+                  fill
+                  sizes="112px"
+                  className="object-contain rounded-lg"
+                  priority
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">公众号</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export const WebRunInfo = () => {
   const { site, updateVisitCount, updateLikeCount } = useSiteStore();
   const [runningTime, setRunningTime] = useState('')
   const [isLiking, setIsLiking] = useState(false)
   const [hasLiked, setHasLiked] = useState(false)
+  const [showQrcode, setShowQrcode] = useState(false)
+  const qrcodeRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     try {
-      // 从 localStorage 读取点赞状态
       const likedStatus = localStorage.getItem(LIKE_KEY) === 'true'
       setHasLiked(likedStatus)
     } catch (error) {
@@ -37,12 +206,10 @@ export const WebRunInfo = () => {
     }
 
     calculateRunningTime()
-    const timer = setInterval(calculateRunningTime, 60000) // 每分钟更新一次
-
+    const timer = setInterval(calculateRunningTime, 60000)
     return () => clearInterval(timer)
   }, [site?.createdAt])
 
-  // 记录访问量（每天只记录一次）
   useEffect(() => {
     const checkAndUpdateVisit = async () => {
       try {
@@ -52,18 +219,16 @@ export const WebRunInfo = () => {
         const currentTime = now.getTime()
 
         let shouldUpdate = false
-        
+
         if (!lastVisitData) {
           shouldUpdate = true
         } else {
           try {
             const { date, timestamp } = JSON.parse(lastVisitData)
-            // 如果是新的一天，或者距离上次访问超过12小时
             if (date !== today || (currentTime - timestamp) > 12 * 60 * 60 * 1000) {
               shouldUpdate = true
             }
           } catch {
-            // 如果解析失败，说明是旧格式的数据，直接更新
             shouldUpdate = true
           }
         }
@@ -80,11 +245,10 @@ export const WebRunInfo = () => {
       }
     }
 
-    const timeoutId = setTimeout(checkAndUpdateVisit, 1000) // 延迟1秒执行，避免立即加载时的并发请求
+    const timeoutId = setTimeout(checkAndUpdateVisit, 1000)
     return () => clearTimeout(timeoutId)
   }, [updateVisitCount])
 
-  // 处理点赞
   const handleLike = async () => {
     if (isLiking || hasLiked) return
     setIsLiking(true)
@@ -99,19 +263,49 @@ export const WebRunInfo = () => {
     }
   }
 
+  const handleMouseEnter = () => {
+    if (!isMobile) setShowQrcode(true)
+  }
+
+  const handleMouseLeave = () => {
+    if (!isMobile) setShowQrcode(false)
+  }
+
+  const handleQrcodeClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // 阻止事件冒泡
+    if (isMobile) setShowQrcode(true)
+  }
+
+  useEffect(() => {
+    if (!isMobile) {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (qrcodeRef.current && !qrcodeRef.current.contains(event.target as Node)) {
+          setShowQrcode(false)
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMobile])
+
+  const qrcodeCount = useMemo(() => {
+    return [site?.qrcode, site?.appreciationCode, site?.wechatGroup].filter(Boolean).length
+  }, [site?.qrcode, site?.appreciationCode, site?.wechatGroup])
+
+  const hasAnyQrcode = qrcodeCount > 0
+
   return (
     <div className="flex flex-wrap gap-2">
-      <div 
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 ${
-          hasLiked 
-            ? 'bg-gray-200 cursor-not-allowed' 
-            : 'bg-[#ff7e95]/20 cursor-pointer hover:bg-[#ff7e95]/30 hover:scale-105'
-        } transition-all duration-200`}
+      <div
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 ${hasLiked
+          ? 'bg-gray-200 cursor-not-allowed'
+          : 'bg-[#ff7e95]/20 cursor-pointer hover:bg-[#ff7e95]/30 hover:scale-105'
+          } transition-all duration-200`}
         onClick={handleLike}
         title={hasLiked ? "您已经点过赞啦" : "点赞支持一下"}
       >
-        <Heart 
-          className={`w-4 h-4 ${hasLiked ? 'fill-[#ff7e95] text-[#ff7e95]' : 'text-[#ff7e95]'}`} 
+        <Heart
+          className={`w-4 h-4 ${hasLiked ? 'fill-[#ff7e95] text-[#ff7e95]' : 'text-[#ff7e95]'}`}
         />
         <span className="text-sm">喜欢本站</span>
         <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
@@ -138,6 +332,36 @@ export const WebRunInfo = () => {
           {runningTime}
         </span>
       </div>
+
+      <span className="text-gray-300 flex items-center">|</span>
+
+      {hasAnyQrcode && (
+        <div
+          className="relative"
+          ref={qrcodeRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onClick={handleQrcodeClick}
+        >
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-purple-500/20 cursor-pointer hover:bg-purple-500/30 hover:scale-105 transition-all duration-200"
+          >
+            <QrCode className="w-4 h-4 text-purple-500" />
+            <span className="text-sm">关注我</span>
+            <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
+              {qrcodeCount}
+            </span>
+          </div>
+
+          {showQrcode && (
+            isMobile ? (
+              <QrcodeModal site={site} onClose={() => setShowQrcode(false)} />
+            ) : (
+              <QrcodePopover site={site} onClose={() => setShowQrcode(false)} />
+            )
+          )}
+        </div>
+      )}
     </div>
   )
 }
