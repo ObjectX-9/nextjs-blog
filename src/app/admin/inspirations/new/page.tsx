@@ -9,7 +9,7 @@ export default function NewInspiration() {
   const router = useRouter();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [bilibiliInfo, setBilibiliInfo] = useState<{bvid: string; page?: number} | null>(null);
+  const [bilibiliInfo, setBilibiliInfo] = useState<{ bvid: string; page?: number } | null>(null);
   const [bilibiliError, setBilibiliError] = useState<string>('');
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,11 +129,10 @@ export default function NewInspiration() {
                 </label>
                 <div className="mb-4">
                   <label
-                    className={`flex justify-center items-center w-full h-32 px-4 transition bg-white border-2 ${
-                      bilibiliInfo 
-                        ? 'border-gray-200 cursor-not-allowed' 
+                    className={`flex justify-center items-center w-full h-32 px-4 transition bg-white border-2 ${bilibiliInfo
+                        ? 'border-gray-200 cursor-not-allowed'
                         : 'border-gray-300 border-dashed cursor-pointer hover:border-blue-400'
-                    } rounded-md appearance-none focus:outline-none`}>
+                      } rounded-md appearance-none focus:outline-none`}>
                     <div className="flex flex-col items-center space-y-2">
                       <svg className={`w-6 h-6 ${bilibiliInfo ? 'text-gray-300' : 'text-gray-400'}`} stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -218,11 +217,10 @@ export default function NewInspiration() {
                     type="text"
                     onChange={handleBilibiliUrlChange}
                     placeholder="输入B站视频链接，将自动解析BV号"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      images.length > 0 
-                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${images.length > 0
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                         : 'border-gray-300'
-                    }`}
+                      }`}
                     disabled={images.length > 0}
                   />
                   {images.length > 0 && (
@@ -232,21 +230,9 @@ export default function NewInspiration() {
                     <p className="text-red-500 text-sm">{bilibiliError}</p>
                   )}
                   {bilibiliInfo && (
-                    <>
-                      <div className="text-sm text-green-600 mb-2">
-                        已成功解析BV号: {bilibiliInfo.bvid}
-                      </div>
-                      <div className="relative aspect-video w-full mb-2">
-                        <iframe 
-                          src={`//player.bilibili.com/player.html?bvid=${bilibiliInfo.bvid}&page=${bilibiliInfo.page || 1}`}
-                          scrolling="no" 
-                          style={{ border: 'none' }}
-                          frameBorder="no" 
-                          allowFullScreen={true}
-                          className="absolute inset-0 w-full h-full rounded-lg"
-                        />
-                      </div>
-                    </>
+                    <div className="text-sm text-green-600">
+                      已成功解析BV号: {bilibiliInfo.bvid}
+                    </div>
                   )}
                 </div>
               </div>

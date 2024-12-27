@@ -9,13 +9,13 @@ import { formatDistanceToNow } from "date-fns";
 import { useSiteStore } from "@/store/site";
 
 // Web端灵感笔记组件
-const WebInspiration = ({ 
-  inspiration, 
-  onLike, 
-  onView, 
+const WebInspiration = ({
+  inspiration,
+  onLike,
+  onView,
   hasLiked,
-  site 
-}: { 
+  site
+}: {
   inspiration: InspirationDocument;
   onLike: (id: string) => void;
   onView: (id: string) => void;
@@ -51,36 +51,45 @@ const WebInspiration = ({
               {inspiration.content}
             </p>
             {inspiration.bilibili && (
-              <div className="aspect-video w-full mb-3">
-                <iframe 
-                  src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}`}
-                  scrolling="no" 
-                  style={{ border: 'none' }}
-                  frameBorder="no" 
-                  allowFullScreen={true}
-                  className="w-full h-full"
-                />
+              <div className="w-full max-w-full sm:max-w-5xl mx-auto mb-4">
+                <div className="relative w-full aspect-video min-h-[240px] sm:min-h-[480px]">
+                  <iframe 
+                    src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}&autoplay=0&quality=80`}
+                    scrolling="no" 
+                    style={{ border: 'none' }}
+                    frameBorder="no" 
+                    allowFullScreen={true}
+                    className="absolute inset-0 w-full h-full rounded-lg shadow-lg"
+                  />
+                </div>
+                <div className="flex items-center space-x-2 mt-2 text-xs sm:text-sm text-gray-500 px-2 sm:px-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M306.005333 117.632L444.330667 256h135.296l138.368-138.325333a42.666667 42.666667 0 0 1 60.373333 60.373333L700.330667 256H789.333333A149.333333 149.333333 0 0 1 938.666667 405.333333v341.333334a149.333333 149.333333 0 0 1-149.333334 149.333333h-554.666666A149.333333 149.333333 0 0 1 85.333333 746.666667v-341.333334A149.333333 149.333333 0 0 1 234.666667 256h88.96L245.632 177.962667a42.666667 42.666667 0 0 1 60.373333-60.373334zM789.333333 341.333333h-554.666666a64 64 0 0 0-63.701334 57.856L170.666667 405.333333v341.333334a64 64 0 0 0 57.856 63.701333L234.666667 810.666667h554.666666a64 64 0 0 0 63.701334-57.856L853.333333 746.666667v-341.333334A64 64 0 0 0 789.333333 341.333333zM341.333333 469.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666666-42.666667z m341.333334 0a42.666667 42.666667 0 0 1 42.666666 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#00AEEC"/>
+                  </svg>
+                  <span>BV号: {inspiration.bilibili.bvid}</span>
+                  {inspiration.bilibili.title && (
+                    <span className="truncate">标题: {inspiration.bilibili.title}</span>
+                  )}
+                </div>
               </div>
             )}
             {inspiration.images && inspiration.images.length > 0 && (
-              <div className={`grid gap-2 mb-3 ${
-                inspiration.images?.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' :
-                inspiration.images?.length === 2 ? 'grid-cols-2 max-w-2xl mx-auto' :
-                'grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto'
-              }`}>
+              <div className={`grid gap-2 mb-3 ${inspiration.images?.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' :
+                  inspiration.images?.length === 2 ? 'grid-cols-2 max-w-2xl mx-auto' :
+                    'grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto'
+                }`}>
                 {inspiration.images?.slice(0, 4).map((img, index) => (
-                  <div key={index} className={`relative aspect-square w-full h-full ${
-                    inspiration.images?.length === 1 
-                      ? 'min-h-[280px] sm:min-h-[320px] max-h-[400px]' 
+                  <div key={index} className={`relative aspect-square w-full h-full ${inspiration.images?.length === 1
+                      ? 'min-h-[280px] sm:min-h-[320px] max-h-[400px]'
                       : 'min-h-[160px] sm:min-h-[200px] max-h-[280px]'
-                  }`}>
+                    }`}>
                     <Image
                       src={img}
                       alt={`Inspiration image ${index + 1}`}
                       fill
                       className="rounded-lg object-cover"
-                      sizes={inspiration.images?.length === 1 
-                        ? '(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 800px' 
+                      sizes={inspiration.images?.length === 1
+                        ? '(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 800px'
                         : '(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 400px'}
                     />
                   </div>
@@ -107,11 +116,10 @@ const WebInspiration = ({
                   e.stopPropagation();
                   onLike(inspiration._id.toString());
                 }}
-                className={`flex items-center space-x-1 transition-colors ${
-                  hasLiked
+                className={`flex items-center space-x-1 transition-colors ${hasLiked
                     ? "text-red-500"
                     : "hover:text-red-500"
-                }`}
+                  }`}
               >
                 <Heart
                   size={14}
@@ -135,13 +143,13 @@ const WebInspiration = ({
 };
 
 // 移动端灵感笔记组件
-const MobileInspiration = ({ 
-  inspiration, 
-  onLike, 
-  onView, 
+const MobileInspiration = ({
+  inspiration,
+  onLike,
+  onView,
   hasLiked,
-  site 
-}: { 
+  site
+}: {
   inspiration: InspirationDocument;
   onLike: (id: string) => void;
   onView: (id: string) => void;
@@ -177,35 +185,44 @@ const MobileInspiration = ({
               {inspiration.content}
             </p>
             {inspiration.bilibili && (
-              <div className="aspect-video w-full mb-2">
-                <iframe 
-                  src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}`}
-                  scrolling="no" 
-                  style={{ border: 'none' }}
-                  frameBorder="no" 
-                  allowFullScreen={true}
-                  className="w-full h-full"
-                />
+              <div className="w-full max-w-full sm:max-w-5xl mx-auto mb-4">
+                <div className="relative w-full aspect-video">
+                  <iframe 
+                    src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}&autoplay=0&quality=80`}
+                    scrolling="no" 
+                    style={{ border: 'none' }}
+                    frameBorder="no" 
+                    allowFullScreen={true}
+                    className="absolute inset-0 w-full h-full rounded-lg shadow-lg"
+                  />
+                </div>
+                <div className="flex items-center space-x-2 mt-2 text-xs sm:text-sm text-gray-500 px-2 sm:px-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M306.005333 117.632L444.330667 256h135.296l138.368-138.325333a42.666667 42.666667 0 0 1 60.373333 60.373333L700.330667 256H789.333333A149.333333 149.333333 0 0 1 938.666667 405.333333v341.333334a149.333333 149.333333 0 0 1-149.333334 149.333333h-554.666666A149.333333 149.333333 0 0 1 85.333333 746.666667v-341.333334A149.333333 149.333333 0 0 1 234.666667 256h88.96L245.632 177.962667a42.666667 42.666667 0 0 1 60.373333-60.373334zM789.333333 341.333333h-554.666666a64 64 0 0 0-63.701334 57.856L170.666667 405.333333v341.333334a64 64 0 0 0 57.856 63.701333L234.666667 810.666667h554.666666a64 64 0 0 0 63.701334-57.856L853.333333 746.666667v-341.333334A64 64 0 0 0 789.333333 341.333333zM341.333333 469.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666666-42.666667z m341.333334 0a42.666667 42.666667 0 0 1 42.666666 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#00AEEC"/>
+                  </svg>
+                  <span>BV号: {inspiration.bilibili.bvid}</span>
+                  {inspiration.bilibili.title && (
+                    <span className="truncate">标题: {inspiration.bilibili.title}</span>
+                  )}
+                </div>
               </div>
             )}
             {inspiration.images && inspiration.images.length > 0 && (
-              <div className={`grid gap-1.5 mb-2 ${
-                inspiration.images?.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' :
-                'grid-cols-2 max-w-md mx-auto'
-              }`}>
+              <div className={`grid gap-1.5 mb-2 ${inspiration.images?.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' :
+                  'grid-cols-2 max-w-md mx-auto'
+                }`}>
                 {inspiration.images?.slice(0, 4).map((img, index) => (
-                  <div key={index} className={`relative aspect-square w-full h-full ${
-                    inspiration.images?.length === 1 
-                      ? 'min-h-[200px] max-h-[300px]' 
+                  <div key={index} className={`relative aspect-square w-full h-full ${inspiration.images?.length === 1
+                      ? 'min-h-[200px] max-h-[300px]'
                       : 'min-h-[140px] max-h-[200px]'
-                  }`}>
+                    }`}>
                     <Image
                       src={img}
                       alt={`Inspiration image ${index + 1}`}
                       fill
                       className="rounded-lg object-cover"
-                      sizes={inspiration.images?.length === 1 
-                        ? '(max-width: 640px) 85vw, 500px' 
+                      sizes={inspiration.images?.length === 1
+                        ? '(max-width: 640px) 85vw, 500px'
                         : '(max-width: 640px) 42vw, 250px'}
                     />
                   </div>
@@ -232,11 +249,10 @@ const MobileInspiration = ({
                   e.stopPropagation();
                   onLike(inspiration._id.toString());
                 }}
-                className={`flex items-center space-x-1 transition-colors ${
-                  hasLiked
+                className={`flex items-center space-x-1 transition-colors ${hasLiked
                     ? "text-red-500"
                     : "hover:text-red-500"
-                }`}
+                  }`}
               >
                 <Heart
                   size={12}
@@ -273,7 +289,7 @@ export default function InspirationPage() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
