@@ -8,18 +8,254 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { useSiteStore } from "@/store/site";
 
+// Web端灵感笔记组件
+const WebInspiration = ({ 
+  inspiration, 
+  onLike, 
+  onView, 
+  hasLiked,
+  site 
+}: { 
+  inspiration: InspirationDocument;
+  onLike: (id: string) => void;
+  onView: (id: string) => void;
+  hasLiked: boolean;
+  site: any;
+}) => {
+  return (
+    <div
+      className="flex flex-col space-y-2 mb-8"
+      onClick={() => onView(inspiration._id.toString())}
+    >
+      <div className="flex items-start space-x-3">
+        <Avatar className="w-10 h-10 flex-shrink-0">
+          <AvatarImage
+            src={site?.author?.avatar}
+            alt={site?.author?.name}
+          />
+          <AvatarFallback>{(site?.author?.name)![0]}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex items-baseline space-x-2 mb-1">
+            <span className="font-medium text-gray-900 text-sm">
+              {site?.author?.name}
+            </span>
+            <span className="text-xs text-gray-500">
+              {formatDistanceToNow(new Date(inspiration.createdAt), {
+                addSuffix: true,
+              })}
+            </span>
+          </div>
+          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-4 inline-block max-w-full">
+            <p className="text-gray-800 text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">
+              {inspiration.content}
+            </p>
+
+            {inspiration.images && inspiration.images.length > 0 && (
+              <div className={`grid gap-2 mb-3 ${
+                inspiration.images?.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' :
+                inspiration.images?.length === 2 ? 'grid-cols-2 max-w-2xl mx-auto' :
+                'grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto'
+              }`}>
+                {inspiration.images?.slice(0, 4).map((img, index) => (
+                  <div key={index} className={`relative aspect-square w-full h-full ${
+                    inspiration.images?.length === 1 
+                      ? 'min-h-[280px] sm:min-h-[320px] max-h-[400px]' 
+                      : 'min-h-[160px] sm:min-h-[200px] max-h-[280px]'
+                  }`}>
+                    <Image
+                      src={img}
+                      alt={`Inspiration image ${index + 1}`}
+                      fill
+                      className="rounded-lg object-cover"
+                      sizes={inspiration.images?.length === 1 
+                        ? '(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 800px' 
+                        : '(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 400px'}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {inspiration.tags && inspiration.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {inspiration.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex space-x-4 text-gray-500 text-xs">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLike(inspiration._id.toString());
+                }}
+                className={`flex items-center space-x-1 transition-colors ${
+                  hasLiked
+                    ? "text-red-500"
+                    : "hover:text-red-500"
+                }`}
+              >
+                <Heart
+                  size={14}
+                  fill={hasLiked ? "currentColor" : "none"}
+                />
+                <span>{inspiration.likes || 0}</span>
+              </button>
+              <button
+                className="flex items-center space-x-1 hover:text-green-500 transition-colors"
+                disabled
+              >
+                <Eye size={14} />
+                <span>{inspiration.views || 0}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 移动端灵感笔记组件
+const MobileInspiration = ({ 
+  inspiration, 
+  onLike, 
+  onView, 
+  hasLiked,
+  site 
+}: { 
+  inspiration: InspirationDocument;
+  onLike: (id: string) => void;
+  onView: (id: string) => void;
+  hasLiked: boolean;
+  site: any;
+}) => {
+  return (
+    <div
+      className="flex flex-col space-y-2 mb-4"
+      onClick={() => onView(inspiration._id.toString())}
+    >
+      <div className="flex items-start space-x-2">
+        <Avatar className="w-8 h-8 flex-shrink-0">
+          <AvatarImage
+            src={site?.author?.avatar}
+            alt={site?.author?.name}
+          />
+          <AvatarFallback>{(site?.author?.name)![0]}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline space-x-2 mb-1">
+            <span className="font-medium text-gray-900 text-sm truncate">
+              {site?.author?.name}
+            </span>
+            <span className="text-xs text-gray-500 flex-shrink-0">
+              {formatDistanceToNow(new Date(inspiration.createdAt), {
+                addSuffix: true,
+              })}
+            </span>
+          </div>
+          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-3 inline-block max-w-full">
+            <p className="text-sm leading-relaxed mb-2 whitespace-pre-wrap break-words">
+              {inspiration.content}
+            </p>
+
+            {inspiration.images && inspiration.images.length > 0 && (
+              <div className={`grid gap-1.5 mb-2 ${
+                inspiration.images?.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' :
+                'grid-cols-2 max-w-md mx-auto'
+              }`}>
+                {inspiration.images?.slice(0, 4).map((img, index) => (
+                  <div key={index} className={`relative aspect-square w-full h-full ${
+                    inspiration.images?.length === 1 
+                      ? 'min-h-[200px] max-h-[300px]' 
+                      : 'min-h-[140px] max-h-[200px]'
+                  }`}>
+                    <Image
+                      src={img}
+                      alt={`Inspiration image ${index + 1}`}
+                      fill
+                      className="rounded-lg object-cover"
+                      sizes={inspiration.images?.length === 1 
+                        ? '(max-width: 640px) 85vw, 500px' 
+                        : '(max-width: 640px) 42vw, 250px'}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {inspiration.tags && inspiration.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {inspiration.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full text-xs"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex space-x-4 text-gray-500 text-xs">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLike(inspiration._id.toString());
+                }}
+                className={`flex items-center space-x-1 transition-colors ${
+                  hasLiked
+                    ? "text-red-500"
+                    : "hover:text-red-500"
+                }`}
+              >
+                <Heart
+                  size={12}
+                  fill={hasLiked ? "currentColor" : "none"}
+                />
+                <span>{inspiration.likes || 0}</span>
+              </button>
+              <button
+                className="flex items-center space-x-1 hover:text-green-500 transition-colors"
+                disabled
+              >
+                <Eye size={12} />
+                <span>{inspiration.views || 0}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function InspirationPage() {
   const [inspirations, setInspirations] = useState<InspirationDocument[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [likedInspirations, setLikedInspirations] = useState<Set<string>>(
-    new Set()
-  );
-  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(
-    new Set()
-  );
+  const [likedInspirations, setLikedInspirations] = useState<Set<string>>(new Set());
+  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(new Set());
+  const [isMobile, setIsMobile] = useState(false);
   const { site } = useSiteStore();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchInspirations = async (pageNum: number) => {
     setIsLoading(true);
@@ -177,7 +413,7 @@ export default function InspirationPage() {
   if (isLoading) {
     return (
       <main className="flex-1 h-screen overflow-hidden">
-        <div className="h-full overflow-y-auto px-4 sm:px-4 py-8 sm:py-16">
+        <div className="h-full overflow-y-auto px-4 sm:px-4 py-4 sm:py-16">
           <div className="w-full max-w-3xl mx-auto">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
@@ -196,113 +432,36 @@ export default function InspirationPage() {
 
   return (
     <main className="flex-1 h-screen overflow-hidden">
-      <div className="h-full overflow-y-auto px-4 sm:px-4 py-8 sm:py-16">
+      <div className="h-full overflow-y-auto px-4 py-4 sm:py-16">
         <div className="w-full max-w-3xl mx-auto">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-6">
             灵感笔记
           </h1>
           <div className="mb-4 sm:mb-6 last:mb-0 text-sm sm:text-base">
             记录生活中的灵感和想法
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {inspirations.map((inspiration) => (
-              <div
-                key={inspiration._id.toString()}
-                className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all duration-200"
-                onClick={() => handleView(inspiration._id.toString())}
-              >
-                <div className="flex items-start space-x-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage
-                      src={site?.author?.avatar}
-                      alt={site?.author?.name}
-                    />
-                    <AvatarFallback>{(site?.author?.name)![0]}</AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-900 text-sm">
-                          {site?.author?.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(
-                            new Date(inspiration.createdAt),
-                            {
-                              addSuffix: true,
-                            }
-                          )}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-gray-800 text-sm leading-relaxed">
-                      {inspiration.content}
-                    </p>
-
-                    {inspiration.images && inspiration.images.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {inspiration.images.slice(0, 4).map((img, index) => (
-                          <Image
-                            key={index}
-                            src={img}
-                            alt={`Inspiration image ${index + 1}`}
-                            width={200}
-                            height={200}
-                            className="rounded-lg object-cover aspect-square"
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {inspiration.tags && inspiration.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {inspiration.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex space-x-4 text-gray-500 text-xs">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLike(inspiration._id.toString());
-                        }}
-                        className={`flex items-center space-x-1 transition-colors ${
-                          likedInspirations.has(inspiration._id.toString())
-                            ? "text-red-500"
-                            : "hover:text-red-500"
-                        }`}
-                      >
-                        <Heart
-                          size={14}
-                          fill={
-                            likedInspirations.has(inspiration._id.toString())
-                              ? "currentColor"
-                              : "none"
-                          }
-                        />
-                        <span>{inspiration.likes || 0}</span>
-                      </button>
-                      <button
-                        className="flex items-center space-x-1 hover:text-green-500 transition-colors"
-                        disabled
-                      >
-                        <Eye size={14} />
-                        <span>{inspiration.views || 0}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              isMobile ? (
+                <MobileInspiration
+                  key={inspiration._id.toString()}
+                  inspiration={inspiration}
+                  onLike={handleLike}
+                  onView={handleView}
+                  hasLiked={likedInspirations.has(inspiration._id.toString())}
+                  site={site}
+                />
+              ) : (
+                <WebInspiration
+                  key={inspiration._id.toString()}
+                  inspiration={inspiration}
+                  onLike={handleLike}
+                  onView={handleView}
+                  hasLiked={likedInspirations.has(inspiration._id.toString())}
+                  site={site}
+                />
+              )
             ))}
           </div>
 
