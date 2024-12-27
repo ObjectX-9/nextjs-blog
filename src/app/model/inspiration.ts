@@ -9,6 +9,12 @@ export interface IInspiration {
   updatedAt: Date;
   likes: number;
   views: number;
+  bilibili?: {
+    bvid: string;      // B站视频的BV号
+    title?: string;    // 视频标题
+    cover?: string;    // 视频封面图片URL
+    page?: number;     // 视频分P号，默认为1
+  };
   links?: {
     title: string;
     url: string;

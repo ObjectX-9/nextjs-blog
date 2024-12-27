@@ -50,7 +50,18 @@ const WebInspiration = ({
             <p className="text-gray-800 text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">
               {inspiration.content}
             </p>
-
+            {inspiration.bilibili && (
+              <div className="aspect-video w-full mb-3">
+                <iframe 
+                  src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}`}
+                  scrolling="no" 
+                  style={{ border: 'none' }}
+                  frameBorder="no" 
+                  allowFullScreen={true}
+                  className="w-full h-full"
+                />
+              </div>
+            )}
             {inspiration.images && inspiration.images.length > 0 && (
               <div className={`grid gap-2 mb-3 ${
                 inspiration.images?.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' :
@@ -165,7 +176,18 @@ const MobileInspiration = ({
             <p className="text-sm leading-relaxed mb-2 whitespace-pre-wrap break-words">
               {inspiration.content}
             </p>
-
+            {inspiration.bilibili && (
+              <div className="aspect-video w-full mb-2">
+                <iframe 
+                  src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}`}
+                  scrolling="no" 
+                  style={{ border: 'none' }}
+                  frameBorder="no" 
+                  allowFullScreen={true}
+                  className="w-full h-full"
+                />
+              </div>
+            )}
             {inspiration.images && inspiration.images.length > 0 && (
               <div className={`grid gap-1.5 mb-2 ${
                 inspiration.images?.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' :

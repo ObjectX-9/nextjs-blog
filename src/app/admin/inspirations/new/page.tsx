@@ -3,14 +3,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { extractBilibiliInfo } from '@/app/utils/bilibili';
 
 export default function NewInspiration() {
   const router = useRouter();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [bilibiliInfo, setBilibiliInfo] = useState<{bvid: string; page?: number} | null>(null);
+  const [bilibiliError, setBilibiliError] = useState<string>('');
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
+
+    if (bilibiliInfo) {
+      alert('已添加视频，不能同时上传图片');
+      return;
+    }
 
     setUploading(true);
     const file = e.target.files[0];
@@ -37,6 +45,29 @@ export default function NewInspiration() {
     }
   };
 
+  const handleBilibiliUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    if (!url) {
+      setBilibiliInfo(null);
+      setBilibiliError('');
+      return;
+    }
+
+    if (images.length > 0) {
+      alert('已上传图片，不能同时添加视频');
+      return;
+    }
+
+    try {
+      const info = extractBilibiliInfo(url);
+      setBilibiliInfo(info);
+      setBilibiliError('');
+    } catch (error) {
+      setBilibiliInfo(null);
+      setBilibiliError((error as Error).message);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -47,6 +78,7 @@ export default function NewInspiration() {
       status: formData.get('status'),
       tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()).filter(Boolean) || [],
       images: images,
+      bilibili: bilibiliInfo
     };
 
     try {
@@ -97,14 +129,24 @@ export default function NewInspiration() {
                 </label>
                 <div className="mb-4">
                   <label
-                    className="flex justify-center items-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-blue-400 focus:outline-none">
+                    className={`flex justify-center items-center w-full h-32 px-4 transition bg-white border-2 ${
+                      bilibiliInfo 
+                        ? 'border-gray-200 cursor-not-allowed' 
+                        : 'border-gray-300 border-dashed cursor-pointer hover:border-blue-400'
+                    } rounded-md appearance-none focus:outline-none`}>
                     <div className="flex flex-col items-center space-y-2">
-                      <svg className="w-6 h-6 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                      <svg className={`w-6 h-6 ${bilibiliInfo ? 'text-gray-300' : 'text-gray-400'}`} stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       <div className="text-sm text-gray-600">
-                        <span className="font-medium text-blue-600 hover:underline">选择图片</span>
-                        <span className="text-gray-500"> 或拖拽文件到这里</span>
+                        {bilibiliInfo ? (
+                          <span className="text-gray-400">已添加视频，不能上传图片</span>
+                        ) : (
+                          <>
+                            <span className="font-medium text-blue-600 hover:underline">选择图片</span>
+                            <span className="text-gray-500"> 或拖拽文件到这里</span>
+                          </>
+                        )}
                       </div>
                       <p className="text-xs text-gray-500">支持 PNG, JPG, GIF 格式</p>
                     </div>
@@ -113,7 +155,7 @@ export default function NewInspiration() {
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
-                      disabled={uploading}
+                      disabled={uploading || !!bilibiliInfo}
                     />
                   </label>
                 </div>
@@ -154,17 +196,47 @@ export default function NewInspiration() {
                 )}
               </div>
 
-              <div>
+              <div className="mb-4">
                 <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
                   内容
                 </label>
                 <textarea
                   id="content"
                   name="content"
-                  rows={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  B站视频链接
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    onChange={handleBilibiliUrlChange}
+                    placeholder="输入B站视频链接，将自动解析BV号"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      images.length > 0 
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
+                        : 'border-gray-300'
+                    }`}
+                    disabled={images.length > 0}
+                  />
+                  {images.length > 0 && (
+                    <p className="text-gray-500 text-sm">已上传图片，不能添加视频</p>
+                  )}
+                  {bilibiliError && (
+                    <p className="text-red-500 text-sm">{bilibiliError}</p>
+                  )}
+                  {bilibiliInfo && (
+                    <div className="text-sm text-green-600">
+                      已成功解析BV号: {bilibiliInfo.bvid}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
