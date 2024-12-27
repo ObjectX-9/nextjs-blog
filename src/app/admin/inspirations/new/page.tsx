@@ -232,9 +232,21 @@ export default function NewInspiration() {
                     <p className="text-red-500 text-sm">{bilibiliError}</p>
                   )}
                   {bilibiliInfo && (
-                    <div className="text-sm text-green-600">
-                      已成功解析BV号: {bilibiliInfo.bvid}
-                    </div>
+                    <>
+                      <div className="text-sm text-green-600 mb-2">
+                        已成功解析BV号: {bilibiliInfo.bvid}
+                      </div>
+                      <div className="relative aspect-video w-full mb-2">
+                        <iframe 
+                          src={`//player.bilibili.com/player.html?bvid=${bilibiliInfo.bvid}&page=${bilibiliInfo.page || 1}`}
+                          scrolling="no" 
+                          style={{ border: 'none' }}
+                          frameBorder="no" 
+                          allowFullScreen={true}
+                          className="absolute inset-0 w-full h-full rounded-lg"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

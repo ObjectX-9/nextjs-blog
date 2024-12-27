@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IInspiration } from '@/app/model/inspiration';
 import Image from 'next/image';
+import { extractBilibiliInfo } from '@/app/utils/bilibili';
 
 export default function EditInspiration({ params }: { params: { id: string } }) {
   const [inspiration, setInspiration] = useState<IInspiration | null>(null);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [bilibiliInfo, setBilibiliInfo] = useState<{bvid: string; page?: number} | null>(null);
+  const [bilibiliError, setBilibiliError] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
@@ -20,6 +23,9 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
         setInspiration(data);
         if (data.images) {
           setImages(data.images);
+        }
+        if (data.bilibili) {
+          setBilibiliInfo(data.bilibili);
         }
       } catch (error) {
         console.error('Error fetching inspiration:', error);
@@ -33,6 +39,11 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
+
+    if (bilibiliInfo) {
+      alert('已添加视频，不能同时上传图片');
+      return;
+    }
 
     setUploading(true);
     const file = e.target.files[0];
@@ -59,6 +70,29 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
     }
   };
 
+  const handleBilibiliUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    if (!url) {
+      setBilibiliInfo(null);
+      setBilibiliError('');
+      return;
+    }
+
+    if (images.length > 0) {
+      alert('已上传图片，不能同时添加视频');
+      return;
+    }
+
+    try {
+      const info = extractBilibiliInfo(url);
+      setBilibiliInfo(info);
+      setBilibiliError('');
+    } catch (error) {
+      setBilibiliInfo(null);
+      setBilibiliError((error as Error).message);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -69,6 +103,7 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
       status: formData.get('status'),
       tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()).filter(Boolean) || [],
       images: images,
+      bilibili: bilibiliInfo
     };
 
     try {
@@ -148,7 +183,7 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
-                      disabled={uploading}
+                      disabled={uploading || bilibiliInfo !== null}
                     />
                   </label>
                 </div>
@@ -187,6 +222,49 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
                     <span>正在上传...</span>
                   </div>
                 )}
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  B站视频链接
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    onChange={handleBilibiliUrlChange}
+                    defaultValue={inspiration?.bilibili?.bvid ? `https://www.bilibili.com/video/${inspiration.bilibili.bvid}` : ''}
+                    placeholder="输入B站视频链接，将自动解析BV号"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      images.length > 0 
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
+                        : 'border-gray-300'
+                    }`}
+                    disabled={images.length > 0}
+                  />
+                  {images.length > 0 && (
+                    <p className="text-gray-500 text-sm">已上传图片，不能添加视频</p>
+                  )}
+                  {bilibiliError && (
+                    <p className="text-red-500 text-sm">{bilibiliError}</p>
+                  )}
+                  {bilibiliInfo && (
+                    <>
+                      <div className="text-sm text-green-600 mb-2">
+                        已成功解析BV号: {bilibiliInfo.bvid}
+                      </div>
+                      <div className="relative aspect-video w-full mb-2">
+                        <iframe 
+                          src={`//player.bilibili.com/player.html?bvid=${bilibiliInfo.bvid}&page=${bilibiliInfo.page || 1}`}
+                          scrolling="no" 
+                          style={{ border: 'none' }}
+                          frameBorder="no" 
+                          allowFullScreen={true}
+                          className="absolute inset-0 w-full h-full rounded-lg"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div>
