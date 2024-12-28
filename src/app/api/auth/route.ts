@@ -1,16 +1,42 @@
 import { NextResponse } from "next/server";
 import { cookies } from 'next/headers';
+import { verifyToken, generateToken } from '@/utils/auth';
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+  throw new Error('ADMIN_USERNAME and ADMIN_PASSWORD must be set in environment variables');
+}
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+export async function GET() {
+  const token = cookies().get('admin_token')?.value;
+  
+  if (!token) {
+    return NextResponse.json({ isAuthenticated: false });
+  }
+
+  const isValid = await verifyToken(token);
+  return NextResponse.json({ 
+    isAuthenticated: isValid,
+    user: isValid ? {
+      username: ADMIN_USERNAME,
+      role: 'admin'
+    } : null
+  });
+}
 
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      // In a real application, you should use a proper JWT token
-      const token = Buffer.from(`${username}:${new Date().getTime()}`).toString('base64');
+    // 防止时序攻击
+    const usernameMatch = username === ADMIN_USERNAME;
+    const passwordMatch = password === ADMIN_PASSWORD;
+    
+    if (usernameMatch && passwordMatch) {
+      // 生成 JWT token
+      const token = await generateToken(ADMIN_USERNAME);
       
       cookies().set('admin_token', token, {
         httpOnly: true,
@@ -23,8 +49,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // 固定的响应时间，防止时序攻击
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     return NextResponse.json(
-      { error: "Invalid credentials" },
+      { error: "用户名或密码错误" },
       { status: 401 }
     );
   } catch (error) {
