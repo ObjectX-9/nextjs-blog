@@ -59,8 +59,10 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.success) {
-        router.push("/admin/bookmarks");
-        router.refresh();
+        // 添加延时以确保 cookie 被正确设置
+        setTimeout(() => {
+          router.push("/admin/bookmarks");
+        }, 100);
       } else {
         setLoginAttempts(prev => prev + 1);
         setError(data.error || "用户名或密码错误");
