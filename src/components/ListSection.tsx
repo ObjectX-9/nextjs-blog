@@ -49,7 +49,7 @@ export const ListSection = ({ title, titleLink, items, isArticle = false }: List
             return (
               <Link
                 key={isArticle ? item._id : item.name}
-                href={isArticle ? item.url! : `/writing/${item.name}`}
+                href={isArticle ? (item.url || '#') : `/writing/${item.name}`}
                 {...(isArticle ? { target: "_blank" } : {})}
                 className="col-span-6 md:col-span-6 hover:text-gray-700"
               >
