@@ -42,7 +42,7 @@ export const MarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
   };
 
   return (
-    <div className="markdown-content relative">
+    <div className="markdown-content relative max-w-[calc(100%-18rem)] pr-4">
       <TableOfContents content={content} />
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}

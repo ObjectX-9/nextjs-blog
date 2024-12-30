@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface TocItem {
   id: string;
@@ -12,7 +12,7 @@ interface TableOfContentsProps {
 
 export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => {
   const [toc, setToc] = useState<TocItem[]>([]);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeId, setActiveId] = useState<string>('');
 
   useEffect(() => {
     const headings = content.split('\n')
@@ -20,49 +20,75 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
       .map(line => {
         const level = line.match(/^#+/)?.[0].length || 0;
         const text = line.replace(/^#+\s+/, '');
-        const id = text.toLowerCase().replace(/\s+/g, '-');
+        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         return { id, text, level };
       });
     
     setToc(headings);
   }, [content]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        });
+      },
+      {
+        rootMargin: '-20% 0px -80% 0px'
+      }
+    );
+
+    toc.forEach(({ id }) => {
+      const element = document.getElementById(id);
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [toc]);
+
+  const handleClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
+
+  if (toc.length === 0) return null;
+
   return (
-    <div className="fixed top-20 right-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-lg font-semibold">目录</h3>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-          >
-            <span className={`block w-4 h-4 transform transition-transform ${
-              isCollapsed ? 'rotate-180' : ''
-            }`}>
-              {/* 使用 Unicode 字符创建箭头 */}
-              <span className="block text-lg leading-none">▲</span>
-            </span>
-          </button>
-        </div>
-        
-        {!isCollapsed && (
-          <nav className="mt-2 space-y-1 max-h-[60vh] overflow-y-auto">
-            {toc.map((item, index) => (
-              <a
-                key={index}
-                href={`#${item.id}`}
-                className={`
-                  block text-sm hover:text-blue-500 transition-colors duration-200
-                  ${item.level === 1 ? 'font-semibold' : 'font-normal'}
-                `}
-                style={{ marginLeft: `${(item.level - 1) * 0.75}rem` }}
-              >
-                {item.text}
-              </a>
-            ))}
-          </nav>
-        )}
+    <nav className="fixed top-20 right-8 w-64 notion-scrollbar overflow-y-auto max-h-[calc(100vh-6rem)] z-10">
+      <div className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
+        目录
       </div>
-    </div>
+      <div className="space-y-1">
+        {toc.map((item, index) => (
+          <a
+            key={index}
+            href={`#${item.id}`}
+            onClick={(e) => handleClick(e, item.id)}
+            className={`
+              block text-sm transition-colors duration-200 rounded-sm
+              ${item.id === activeId 
+                ? 'text-blue-600 dark:text-blue-400' 
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}
+            `}
+            style={{ 
+              paddingLeft: `${(item.level - 1) * 1}rem`,
+              lineHeight: '1.75rem',
+              fontSize: item.level === 1 ? '0.9rem' : '0.875rem',
+              fontWeight: item.level === 1 ? 500 : 400
+            }}
+          >
+            {item.text}
+          </a>
+        ))}
+      </div>
+    </nav>
   );
 };
