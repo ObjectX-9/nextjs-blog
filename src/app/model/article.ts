@@ -4,40 +4,52 @@ export interface Article {
 
   // 文章标题
   title: string;
-  
-  // 文章链接
-  url: string;
-  
+
+  // 文章链接(slug)
+  url?: string;
+
   // 文章分类
-  category: string;
-  
+  category?: string;
+
   // 文章分类ID
-  categoryId: string; 
-  
+  categoryId?: string;
+
   // 文章标签（可以有多个）
-  tags: string[];
-  
+  tags?: string[];
+
+  // 文章内容(Markdown格式)
+  content: string;
+
+  // OSS存储路径
+  ossPath: string;
+
+  // 文章状态(draft-草稿/published-已发布)
+  status: ArticleStatus;
+
+  // 文章摘要
+  summary?: string;
+
+  // 封面图片URL
+  coverImage?: string;
+
   // 点赞数
-  likes: number;
-  
+  likes?: number;
+
   // 阅读数
-  views: number;
-  
+  views?: number;
+
   // 创建时间
   createdAt: string;
-  
+
   // 更新时间（可选）
-  updatedAt: string;
+  updatedAt?: string;
 }
 
-// 文章分类枚举
-// export enum ArticleCategory {
-//   TECH = 'tech',
-//   LIFE = 'life',
-//   THOUGHTS = 'thoughts',
-//   TUTORIAL = 'tutorial',
-//   OTHER = 'other',
-// }
+// 文章状态枚举
+export enum ArticleStatus {
+  DRAFT = 'draft',
+  PUBLISHED = 'published'
+}
 
 // 文章分类接口
 export interface ArticleCategory {

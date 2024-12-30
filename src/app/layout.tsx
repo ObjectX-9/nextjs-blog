@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
+import { ClientInit } from "@/components/ClientInit";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,6 +39,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
+          <ClientInit />
           <div className="min-h-screen bg-white lg:flex">
             <Sidepanel></Sidepanel>
             <div className="flex flex-1">{children}</div>

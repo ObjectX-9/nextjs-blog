@@ -25,23 +25,11 @@ function toDBArticle(article: Article): Omit<IArticleDB, '_id'> {
 // 创建新文章
 export async function POST(request: Request) {
   try {
-    const { article } = await request.json();
+    const article = await request.json();
     const db = await getDb();
 
-    // 验证分类是否存在
-    const category = await db.collection("articleCategories").findOne({
-      _id: new ObjectId(article.categoryId)
-    });
-
-    if (!category) {
-      return NextResponse.json(
-        { error: "Invalid category" },
-        { status: 400 }
-      );
-    }
-
     const articleToInsert: IArticleDB = {
-      ...toDBArticle(article),
+      ...article,
       likes: 0,
       views: 0,
       createdAt: new Date().toISOString(),
@@ -50,55 +38,60 @@ export async function POST(request: Request) {
 
     const result = await db.collection<IArticleDB>("articles").insertOne(articleToInsert);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        article: toArticle({ ...articleToInsert, _id: result.insertedId }),
-      });
-    }
-
-    throw new Error("Failed to insert article");
-  } catch (error) {
+    return NextResponse.json({
+      _id: result.insertedId.toString(),
+      ...article,
+    });
+  } catch (error: any) {
     console.error("Error creating article:", error);
     return NextResponse.json(
-      { error: "Failed to create article" },
+      { error: error.message || "Failed to create article" },
       { status: 500 }
     );
   }
 }
 
-// 获取所有文章
+// 获取文章列表或单篇文章
 export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const id = searchParams.get("id");
     const db = await getDb();
+
+    // 如果有 ID，获取单篇文章
+    if (id) {
+      const article = await db.collection<IArticleDB>("articles").findOne({
+        _id: new ObjectId(id),
+      });
+
+      if (!article) {
+        return NextResponse.json(
+          { error: "Article not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(toArticle(article));
+    }
+
+    // 否则获取文章列表
+    const query: any = {};
+    if (status) {
+      query.status = status;
+    }
+
     const articles = await db
       .collection<IArticleDB>("articles")
-      .find()
-      .sort({ createdAt: -1 })
+      .find(query)
+      .sort({ updatedAt: -1 })
       .toArray();
 
-    // 获取所有分类信息
-    const categories = await db
-      .collection("articleCategories")
-      .find()
-      .toArray();
-
-    // 创建分类映射
-    const categoryMap = new Map(
-      categories.map(category => [category._id.toString(), category.name])
-    );
-
-    // 为每个文章添加分类名称
-    const articlesWithCategories = articles.map(article => ({
-      ...toArticle(article),
-      category: categoryMap.get(article.categoryId) || "未分类"
-    }));
-
-    return NextResponse.json({ success: true, articles: articlesWithCategories });
-  } catch (error) {
+    return NextResponse.json(articles.map(toArticle));
+  } catch (error: any) {
     console.error("Error fetching articles:", error);
     return NextResponse.json(
-      { error: "Failed to fetch articles" },
+      { error: error.message || "Failed to fetch articles" },
       { status: 500 }
     );
   }
@@ -107,32 +100,26 @@ export async function GET(request: Request) {
 // 更新文章
 export async function PUT(request: Request) {
   try {
-    const { id, updates } = await request.json();
-    const db = await getDb();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const article = await request.json();
 
-    // 验证分类是否存在
-    if (updates.categoryId) {
-      const category = await db.collection("articleCategories").findOne({
-        _id: new ObjectId(updates.categoryId)
-      });
-
-      if (!category) {
-        return NextResponse.json(
-          { error: "Invalid category" },
-          { status: 400 }
-        );
-      }
+    if (!id) {
+      return NextResponse.json(
+        { error: "Article ID is required" },
+        { status: 400 }
+      );
     }
 
-    // 确保更新时间被设置
-    const updatedArticle = {
-      ...toDBArticle(updates),
+    const db = await getDb();
+    const articleToUpdate = {
+      ...toDBArticle(article),
       updatedAt: new Date().toISOString(),
     };
 
     const result = await db.collection<IArticleDB>("articles").updateOne(
       { _id: new ObjectId(id) },
-      { $set: updatedArticle }
+      { $set: articleToUpdate }
     );
 
     if (result.matchedCount === 0) {
@@ -142,21 +129,14 @@ export async function PUT(request: Request) {
       );
     }
 
-    if (result.modifiedCount === 0) {
-      return NextResponse.json(
-        { error: "No changes made to the article" },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json({
-      success: true,
-      message: "Article updated successfully",
+      _id: id,
+      ...article,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating article:", error);
     return NextResponse.json(
-      { error: "Failed to update article" },
+      { error: error.message || "Failed to update article" },
       { status: 500 }
     );
   }
@@ -165,12 +145,20 @@ export async function PUT(request: Request) {
 // 删除文章
 export async function DELETE(request: Request) {
   try {
-    const { id } = await request.json();
-    const db = await getDb();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
 
-    const result = await db
-      .collection<IArticleDB>("articles")
-      .deleteOne({ _id: new ObjectId(id) });
+    if (!id) {
+      return NextResponse.json(
+        { error: "Article ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDb();
+    const result = await db.collection<IArticleDB>("articles").deleteOne({
+      _id: new ObjectId(id),
+    });
 
     if (result.deletedCount === 0) {
       return NextResponse.json(
@@ -179,14 +167,11 @@ export async function DELETE(request: Request) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Article deleted successfully",
-    });
-  } catch (error) {
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
     console.error("Error deleting article:", error);
     return NextResponse.json(
-      { error: "Failed to delete article" },
+      { error: error.message || "Failed to delete article" },
       { status: 500 }
     );
   }

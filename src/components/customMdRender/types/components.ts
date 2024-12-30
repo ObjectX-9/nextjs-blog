@@ -1,4 +1,3 @@
-
 // 组件配置
 export interface ComponentConfig<Type extends string = string, Props = any> {
   type: Type;
@@ -14,5 +13,5 @@ export interface ComponentRegistry {
 // Markdown 组件属性
 export interface MarkdownComponentProps {
   content: string;
-  components: ComponentRegistry;
+  components?: ComponentRegistry;  // 改为可选
 }

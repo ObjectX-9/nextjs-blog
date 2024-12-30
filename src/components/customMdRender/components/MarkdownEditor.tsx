@@ -1,15 +1,17 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MarkdownRenderer } from '../core/MarkdownRenderer';
 import './MarkdownEditor.css';
 import { componentRegistry } from '../ComponentRegistry';
 
 interface MarkdownEditorProps {
   initialContent?: string;
+  onChange?: (content: string) => void;
 }
 
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialContent = '',
+  onChange,
 }) => {
   const [content, setContent] = useState(initialContent);
   const [showComponentList, setShowComponentList] = useState(false);
@@ -18,7 +20,13 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const registeredComponents = componentRegistry.getAll();
   const componentList = Object.entries(registeredComponents);
 
+  useEffect(() => {
+    console.log('Registered components:', registeredComponents);
+    console.log('Component list:', componentList);
+  }, [registeredComponents, componentList]);
+
   const handleInsertComponent = (componentId: string) => {
+    console.log('Inserting component:', componentId);
     const componentTag = `<div data-component="${componentId}"></div>`;
     const newContent =
       content.slice(0, cursorPosition) +
@@ -26,12 +34,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       content.slice(cursorPosition);
 
     setContent(newContent);
+    onChange?.(newContent);
     setShowComponentList(false);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    const newContent = e.target.value;
+    setContent(newContent);
     setCursorPosition(e.target.selectionStart);
+    onChange?.(newContent);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -42,6 +53,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         '  ' +
         content.slice(cursorPosition);
       setContent(newContent);
+      onChange?.(newContent);
       setCursorPosition(cursorPosition + 2);
     }
   };
@@ -51,21 +63,28 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       <div className="editor-toolbar">
         <button
           className="insert-component-btn"
-          onClick={() => setShowComponentList(!showComponentList)}
+          onClick={() => {
+            console.log('Toggle component list, current:', !showComponentList);
+            setShowComponentList(!showComponentList);
+          }}
         >
           插入组件
         </button>
         {showComponentList && (
           <div className="component-list">
-            {componentList.map(([id, config]) => (
-              <div
-                key={id}
-                className="component-item"
-                onClick={() => handleInsertComponent(id)}
-              >
-                {config.type}
-              </div>
-            ))}
+            {componentList.length === 0 ? (
+              <div className="component-item">暂无可用组件</div>
+            ) : (
+              componentList.map(([id, config]) => (
+                <div
+                  key={id}
+                  className="component-item"
+                  onClick={() => handleInsertComponent(id)}
+                >
+                  {config.type}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -82,7 +101,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         <div className="preview-pane">
           <MarkdownRenderer
             content={content}
-            components={registeredComponents}
           />
         </div>
       </div>
