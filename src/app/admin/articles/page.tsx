@@ -17,13 +17,19 @@ const ArticlesPage = () => {
   const [editingCategory, setEditingCategory] = useState<ArticleCategory | null>(null);
 
   // 获取文章列表
-  const fetchArticles = async () => {
+  const fetchArticles = async (category?: string) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/articles');
+      const url = new URL('/api/articles', window.location.origin);
+      if (category) {
+        url.searchParams.set('categoryId', category);
+      }
+      const response = await fetch(url);
       const data = await response.json();
-      setArticles(Array.isArray(data) ? data : []);
+      console.log('API Response:', data);
+      setArticles(data.articles || []);
     } catch (error) {
+      console.error('获取文章列表失败:', error);
       showToast('获取文章列表失败', 'error');
       setArticles([]);
     } finally {
@@ -50,7 +56,7 @@ const ArticlesPage = () => {
         throw new Error('删除失败');
       }
       showToast('删除成功', 'success');
-      fetchArticles();
+      fetchArticles(categoryFilter);
     } catch (error) {
       showToast('删除失败', 'error');
     }
@@ -116,14 +122,16 @@ const ArticlesPage = () => {
     const matchesSearch = article.title.toLowerCase().includes(searchText.toLowerCase()) ||
       article.content.toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = !statusFilter || article.status === statusFilter;
-    const matchesCategory = !categoryFilter || article.categoryId === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesStatus;
   });
 
   useEffect(() => {
-    fetchArticles();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    fetchArticles(categoryFilter);
+  }, [categoryFilter]);
 
   // 分类管理模态框
   const CategoryModal = () => (

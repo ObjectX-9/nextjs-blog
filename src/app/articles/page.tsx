@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
+import { Article, ArticleCategory } from '@/app/model/article';
 import { MarkdownRenderer } from '@/components/customMdRender/core/MarkdownRenderer';
+import '@/styles/markdown.css';
 
 export default function ArticlesPage() {
-  const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<ArticleCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,9 +135,8 @@ export default function ArticlesPage() {
 
       {/* 侧边栏 */}
       <div
-        className={`${
-          showSidebar ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 fixed lg:relative lg:translate-x-0 z-40 flex h-screen bg-white`}
+        className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'
+          } transition-transform duration-300 fixed lg:relative lg:translate-x-0 z-40 flex h-screen bg-white`}
       >
         {/* 分类列表 */}
         <div className="w-64 border-r bg-white">
@@ -149,16 +147,15 @@ export default function ArticlesPage() {
                 <button
                   key={category._id}
                   onClick={() => {
-                    setSelectedCategory(category._id);
+                    setSelectedCategory(category._id!);
                     if (isMobileView) {
                       setShowSidebar(false);
                     }
                   }}
-                  className={`w-full text-left p-2 rounded-lg mb-2 ${
-                    selectedCategory === category._id
-                      ? "bg-black text-white"
-                      : "hover:bg-gray-100"
-                  }`}
+                  className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id
+                    ? "bg-black text-white"
+                    : "hover:bg-gray-100"
+                    }`}
                 >
                   <span>{category.name}</span>
                 </button>
@@ -183,11 +180,10 @@ export default function ArticlesPage() {
                   <button
                     key={article._id}
                     onClick={() => handleArticleClick(article)}
-                    className={`w-full text-left p-2 rounded-lg mb-2 ${
-                      selectedArticle?._id === article._id
-                        ? "bg-black text-white"
-                        : "hover:bg-gray-100"
-                    }`}
+                    className={`w-full text-left p-2 rounded-lg mb-2 ${selectedArticle?._id === article._id
+                      ? "bg-black text-white"
+                      : "hover:bg-gray-100"
+                      }`}
                   >
                     <div className="flex flex-col">
                       <span className="font-medium truncate">{article.title}</span>
@@ -210,7 +206,7 @@ export default function ArticlesPage() {
             <h1 className="text-2xl lg:text-3xl font-bold mb-4 lg:mb-8">
               {selectedArticle.title}
             </h1>
-            <div className="prose max-w-none">
+            <div className="prose max-w-none markdown-content">
               <MarkdownRenderer content={selectedArticle.content} />
             </div>
           </div>

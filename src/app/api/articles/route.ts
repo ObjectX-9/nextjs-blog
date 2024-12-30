@@ -57,6 +57,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const id = searchParams.get("id");
+    const categoryId = searchParams.get("categoryId");
     const db = await getDb();
 
     // 如果有 ID，获取单篇文章
@@ -80,6 +81,9 @@ export async function GET(request: Request) {
     if (status) {
       query.status = status;
     }
+    if (categoryId) {
+      query.categoryId = categoryId;
+    }
 
     const articles = await db
       .collection<IArticleDB>("articles")
@@ -87,7 +91,7 @@ export async function GET(request: Request) {
       .sort({ updatedAt: -1 })
       .toArray();
 
-    return NextResponse.json(articles.map(toArticle));
+    return NextResponse.json({ articles: articles.map(toArticle) });
   } catch (error: any) {
     console.error("Error fetching articles:", error);
     return NextResponse.json(

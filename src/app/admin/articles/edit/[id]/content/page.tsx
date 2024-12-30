@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Article } from '@/app/model/article';
 import { MarkdownEditor } from '@/components/customMdRender/components/MarkdownEditor';
+import '@/styles/markdown.css';
 
 const EditArticleContent = ({ params }: { params: { id: string } }) => {
   const router = useRouter();
@@ -77,9 +77,8 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
   // Toast 提示
   const showToast = (message: string, type: 'success' | 'error') => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } transition-opacity duration-500`;
+    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      } transition-opacity duration-500`;
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {

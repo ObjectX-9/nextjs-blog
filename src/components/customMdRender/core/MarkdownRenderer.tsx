@@ -6,7 +6,7 @@ import type { Components } from 'react-markdown';
 import type { HTMLAttributes, DetailedHTMLProps } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
 
-export const MarkdownRenderer = ({ content }: MarkdownComponentProps) => {
+export const MarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
   const renderComponent = (id: string) => {
     const componentConfig = componentRegistry.get(id);
     if (!componentConfig) {
@@ -35,8 +35,24 @@ export const MarkdownRenderer = ({ content }: MarkdownComponentProps) => {
       }
 
       return <div {...rest}>{props.children}</div>;
+    },
+    p: ({ children, ...props }) => {
+      if (!children) return <p {...props}></p>;
+      
+      // 如果内容是纯数字或以 # 开头，直接显示原始文本
+      const rawText = String(children).trim();
+      if (/^\d+$/.test(rawText) || rawText.startsWith('#')) {
+        return <div className="raw-text">{children}</div>;
+      }
+      return <p {...props}>{children}</p>;
     }
   };
+
+  // 如果内容是纯数字或以 # 开头，直接显示原始文本
+  const trimmedContent = String(content || '').trim();
+  if (/^\d+$/.test(trimmedContent) || trimmedContent.startsWith('#')) {
+    return <div className="raw-text">{content}</div>;
+  }
 
   return (
     <div className="markdown-content">
