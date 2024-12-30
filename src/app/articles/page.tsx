@@ -200,9 +200,9 @@ export default function ArticlesPage() {
       </div>
 
       {/* 文章内容 */}
-      <div className="flex-1 min-h-screen bg-white overflow-auto">
+      <div className="flex-1 min-h-screen bg-white overflow-hidden">
         {selectedArticle ? (
-          <div className="p-4 lg:p-8 pt-16 lg:pt-8">
+          <div className="h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 p-4 lg:p-8 pt-16 lg:pt-8">
             <h1 className="text-2xl lg:text-3xl font-bold mb-4 lg:mb-8">
               {selectedArticle.title}
             </h1>
