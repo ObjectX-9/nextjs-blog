@@ -1,6 +1,8 @@
 'use client';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { MarkdownComponentProps } from '../types/components';
 import type { Components } from 'react-markdown';
 import type { HTMLAttributes, DetailedHTMLProps } from 'react';
@@ -35,32 +37,17 @@ export const MarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
       }
 
       return <div {...rest}>{props.children}</div>;
-    },
-    p: ({ children, ...props }) => {
-      if (!children) return <p {...props}></p>;
-      
-      // 如果内容是纯数字或以 # 开头，直接显示原始文本
-      const rawText = String(children).trim();
-      if (/^\d+$/.test(rawText) || rawText.startsWith('#')) {
-        return <div className="raw-text">{children}</div>;
-      }
-      return <p {...props}>{children}</p>;
     }
   };
-
-  // 如果内容是纯数字或以 # 开头，直接显示原始文本
-  const trimmedContent = String(content || '').trim();
-  if (/^\d+$/.test(trimmedContent) || trimmedContent.startsWith('#')) {
-    return <div className="raw-text">{content}</div>;
-  }
 
   return (
     <div className="markdown-content">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeRaw]}
         components={customComponents}
       >
-        {content}
+        {content || ''}
       </ReactMarkdown>
     </div>
   );

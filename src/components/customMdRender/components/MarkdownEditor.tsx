@@ -86,7 +86,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             preview="edit"
             hideToolbar={false}
             visibleDragbar={false}
-            className="custom-md-editor"
             commands={customCommands}
           />
         </div>
