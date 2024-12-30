@@ -69,6 +69,7 @@
     "@udecode/plate-table": "^31.3.3",
     "@udecode/plate-toggle": "^31.1.0",
     "@udecode/plate-trailing-block": "^31.0.0",
+    "@uiw/react-md-editor": "^4.0.5",
     "acorn": "^8.14.0",
     "ali-oss": "^6.21.0",
     "browser-image-compression": "^2.0.2",

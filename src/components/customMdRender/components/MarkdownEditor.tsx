@@ -1,8 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import MDEditor, { commands } from '@uiw/react-md-editor';
 import { MarkdownRenderer } from '../core/MarkdownRenderer';
-import './MarkdownEditor.css';
 import { componentRegistry } from '../ComponentRegistry';
+import './MarkdownEditor.css';
 
 interface MarkdownEditorProps {
   initialContent?: string;
@@ -15,70 +16,58 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 }) => {
   const [content, setContent] = useState(initialContent);
   const [showComponentList, setShowComponentList] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState(0);
 
   const registeredComponents = componentRegistry.getAll();
   const componentList = Object.entries(registeredComponents);
 
-  useEffect(() => {
-    console.log('Registered components:', registeredComponents);
-    console.log('Component list:', componentList);
-  }, [registeredComponents, componentList]);
-
   const handleInsertComponent = (componentId: string) => {
-    console.log('Inserting component:', componentId);
     const componentTag = `<div data-component="${componentId}"></div>`;
-    const newContent =
-      content.slice(0, cursorPosition) +
-      componentTag +
-      content.slice(cursorPosition);
-
+    const newContent = content.slice(0, content.length) + componentTag;
     setContent(newContent);
     onChange?.(newContent);
     setShowComponentList(false);
   };
 
-  const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value;
+  const handleEditorChange = (value?: string) => {
+    const newContent = value || '';
     setContent(newContent);
-    setCursorPosition(e.target.selectionStart);
     onChange?.(newContent);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const newContent =
-        content.slice(0, cursorPosition) +
-        '  ' +
-        content.slice(cursorPosition);
-      setContent(newContent);
-      onChange?.(newContent);
-      setCursorPosition(cursorPosition + 2);
-    }
-  };
+  // 自定义命令列表
+  const customCommands = [
+    ...commands.getCommands(),
+    {
+      name: 'insertComponent',
+      keyCommand: 'insertComponent',
+      buttonProps: { 'aria-label': 'Insert Component' },
+      icon: (
+        <span>🧩</span>
+      ),
+      execute: () => {
+        setShowComponentList(true);
+      },
+    },
+  ];
 
   return (
-    <div className="markdown-editor">
-      <div className="editor-toolbar">
+    <div className="markdown-editor h-full" data-color-mode="light">
+      <div className="editor-toolbar border-b p-2 bg-white">
         <button
-          className="insert-component-btn"
-          onClick={() => {
-            console.log('Toggle component list, current:', !showComponentList);
-            setShowComponentList(!showComponentList);
-          }}
+          className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          onClick={() => setShowComponentList(!showComponentList)}
         >
           插入组件
         </button>
         {showComponentList && (
-          <div className="component-list">
+          <div className="component-list absolute z-10 mt-1 bg-white border rounded-lg shadow-lg">
             {componentList.length === 0 ? (
-              <div className="component-item">暂无可用组件</div>
+              <div className="p-3 text-gray-500">暂无可用组件</div>
             ) : (
               componentList.map(([id, config]) => (
                 <div
                   key={id}
-                  className="component-item"
+                  className="p-3 hover:bg-gray-100 cursor-pointer"
                   onClick={() => handleInsertComponent(id)}
                 >
                   {config.type}
@@ -88,20 +77,23 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           </div>
         )}
       </div>
-      <div className="editor-container">
-        <div className="editor-pane">
-          <textarea
+      <div className="editor-container h-[calc(100%-48px)] flex">
+        <div className="w-1/2 h-full border-r">
+          <MDEditor
             value={content}
             onChange={handleEditorChange}
-            onKeyDown={handleKeyDown}
-            onClick={(e) => setCursorPosition((e.target as HTMLTextAreaElement).selectionStart)}
-            placeholder="在这里输入 Markdown 内容..."
+            height="100%"
+            preview="edit"
+            hideToolbar={false}
+            visibleDragbar={false}
+            className="custom-md-editor"
+            commands={customCommands}
           />
         </div>
-        <div className="preview-pane">
-          <MarkdownRenderer
-            content={content}
-          />
+        <div className="w-1/2 h-full overflow-auto p-4 bg-white">
+          <div className="prose max-w-none">
+            <MarkdownRenderer content={content} />
+          </div>
         </div>
       </div>
     </div>
