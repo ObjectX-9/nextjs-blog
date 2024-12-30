@@ -12,7 +12,6 @@ import { WorkExperience } from "@/components/WorkExperience";
 import { Education } from "@/components/Education";
 import { WebRunInfo } from '@/components/WebRunInfo'
 import { ClientInit } from "@/components/ClientInit";
-import { MarkdownEditor } from "@/components/customMdRender/components/MarkdownEditor";
 
 const calculateDuration = (startDate: string, endDate: string | null) => {
   const start = new Date(startDate);
@@ -74,22 +73,7 @@ export default async function Index() {
   const socialLinks = await getSocialLinks();
   const workExperiences = await getWorkExperiences();
   const articles = await getArticles();
-  const initialContent = `
-# 交互式 Markdown 组件示例
 
-这是一个展示如何在 Markdown 中嵌入交互式组件的示例。
-
-## 使用方法
-
-1. 点击"插入组件"按钮选择要插入的组件
-2. 在编辑器中编写 Markdown 内容
-3. 右侧实时预览效果
-
-## 示例组件
-
-在下面尝试插入一些组件：
-
-`
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
       <ClientInit />
@@ -128,9 +112,6 @@ export default async function Index() {
         items={articles}
         isArticle={true}
       />
-      {/* */}
-
-      <MarkdownEditor initialContent={initialContent} />
     </main>
   );
 }
