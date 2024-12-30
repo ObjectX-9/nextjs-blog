@@ -7,6 +7,7 @@ import { MarkdownComponentProps } from '../types/components';
 import type { Components } from 'react-markdown';
 import type { HTMLAttributes, DetailedHTMLProps } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
+import { TableOfContents } from '../components/TableOfContents';
 
 export const MarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
   const renderComponent = (id: string) => {
@@ -41,7 +42,8 @@ export const MarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
   };
 
   return (
-    <div className="markdown-content">
+    <div className="markdown-content relative">
+      <TableOfContents content={content} />
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeRaw]}
