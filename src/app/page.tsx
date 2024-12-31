@@ -90,11 +90,6 @@ export default async function Index() {
         </div>
       </div>
       <ListSection
-        title="📒 时间笔记"
-        titleLink="/writing"
-        items={docsList}
-      />
-      <ListSection
         title="📚 技术文章"
         titleLink="/articles"
         items={articles}

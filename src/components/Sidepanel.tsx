@@ -37,7 +37,6 @@ const navList = [
     prefix: <Home size={16} />,
   },
   { title: "技术栈", href: "/stack", prefix: <Slack size={16} /> },
-  { title: "时间笔记", href: "/writing", prefix: <PencilLine size={16} /> },
   {
     title: "灵感笔记",
     href: "/inspirations",
