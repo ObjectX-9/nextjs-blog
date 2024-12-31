@@ -17,10 +17,9 @@ interface ListSectionProps {
   title: string;
   titleLink: string;
   items: ListItem[];
-  isArticle?: boolean;
 }
 
-export const ListSection = ({ title, titleLink, items, isArticle = false }: ListSectionProps) => {
+export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
   return (
     <div className="w-full max-w-3xl my-0 mx-auto mt-10">
       <Link
@@ -31,67 +30,50 @@ export const ListSection = ({ title, titleLink, items, isArticle = false }: List
       </Link>
       <div className="text-sm">
         <div className="grid grid-cols-6 py-2 mt-4 mb-1 font-medium text-gray-500 border-b border-gray-200">
-          <span className="col-span-1 text-left md:grid">年份</span>
-          <span className="col-span-5 md:col-span-5">
-            <span className="grid grid-cols-4 items-center md:grid-cols-8">
-              <span className="col-span-1 text-left">日期</span>
-              <span className="col-span-3 md:col-span-6">标题</span>
-            </span>
-          </span>
+          <div className="col-span-1 text-left">年份</div>
+          <div className="col-span-5">
+            <div className="grid grid-cols-4 md:grid-cols-8">
+              <div className="col-span-1 text-left">日期</div>
+              <div className="col-span-3 md:col-span-6">标题</div>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-6 transition-colors text-gray-700 duration-500 hover:text-gray-200">
+        <div className="grid grid-cols-6 text-gray-700 transition-colors duration-500 hover:text-gray-200">
           {items.map((item, idx) => {
-            const date = isArticle ? new Date(item.createdAt!) : item.lastModified!;
-            const isSameYear = isArticle
-              ? idx === 0 || date.getFullYear() !== new Date(items[idx - 1].createdAt!).getFullYear()
-              : date.getFullYear() !== items[idx - 1]?.lastModified?.getFullYear();
+            const date = new Date(item.createdAt!);
+            const isSameYear = idx === 0 || date.getFullYear() !== new Date(items[idx - 1].createdAt!).getFullYear();
 
             return (
               <Link
-                key={isArticle ? item._id : item.name}
-                href={isArticle ? (item.url || '#') : `/writing/${item.name}`}
-                {...(isArticle ? { target: "_blank" } : {})}
-                className="col-span-6 md:col-span-6 hover:text-gray-700"
+                key={item._id}
+                href={`/writing/${item.name}`}
+                className="col-span-6 hover:text-gray-700"
               >
-                <span className="grid grid-cols-6 items-center">
-                  <span
-                    className={`col-span-1 text-left py-4${!isSameYear ? "" : " border-b border-gray-200"
-                      }`}
+                <div className="grid grid-cols-6">
+                  <div
+                    className={`col-span-1 text-left py-4${!isSameYear ? "" : " border-b border-gray-200"}`}
                   >
                     {isSameYear && date.getFullYear()}
-                  </span>
-                  <span
-                    className={`col-span-5 md:col-span-5 py-4 border-b border-gray-200${idx + 1 === items.length ? " border-b-0" : ""
-                      }`}
+                  </div>
+                  <div
+                    className={`col-span-5 py-4 border-b border-gray-200${idx + 1 === items.length ? " border-b-0" : ""}`}
                   >
-                    <span className="grid grid-cols-4 items-center md:grid-cols-8">
-                      <span className="col-span-1 text-left">
-                        {isArticle
-                          ? `${date.getMonth() + 1}/${date.getDate().toString().padStart(2, "0")}`
-                          : `${date.getDate().toString().padStart(2, "0")}/${(
-                            date.getMonth() + 1
-                          ).toString().padStart(2, "0")}`}
-                      </span>
-                      <span className={`col-span-2 md:col-span-${isArticle ? "5" : "6"} flex items-center`}>
-                        <span className={isArticle ? "truncate block max-w-[200px] md:max-w-[500px]" : ""}>
-                          {isArticle ? item.title : item.name}
-                        </span>
-                      </span>
-                      {isArticle && (
-                        <span className="col-span-1 md:col-span-2 flex items-center justify-end gap-4 text-gray-500 text-xs">
-                          <LikeButton
-                            articleId={item._id?.toString() || ""}
-                            initialLikes={item.likes!}
-                          />
-                          <ViewCounter
-                            articleId={item._id?.toString() || ""}
-                            initialViews={item.views!}
-                          />
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                </span>
+                    <div className="grid grid-cols-12 text-sm">
+                      <div className="col-span-10 flex items-center gap-4">
+                        <div className="text-left">{`${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}`}</div>
+                        <div className="truncate">{item.title}</div>
+                      </div>
+                      <div className="col-span-2 flex items-baseline justify-around text-gray-500 text-xs">
+                        <div className="w-4 h-4 flex items-center justify-start">
+                          <LikeButton articleId={item._id?.toString() || ""} initialLikes={item.likes!} />
+                        </div>
+                        <div className="w-4 h-4 flex items-center justify-start">
+                          <ViewCounter articleId={item._id?.toString() || ""} initialViews={item.views!} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </Link>
             );
           })}

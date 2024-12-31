@@ -1,4 +1,3 @@
-import { getDocsList } from "@/components/Markdown";
 import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
@@ -59,7 +58,6 @@ async function getArticles() {
 }
 
 export default async function Index() {
-  const docsList = getDocsList();
   const socialLinks = await getSocialLinks();
   const workExperiences = await getWorkExperiences();
   const articles = await getArticles();
@@ -93,7 +91,6 @@ export default async function Index() {
         title="📚 技术文章"
         titleLink="/articles"
         items={articles}
-        isArticle={true}
       />
     </main>
   );
