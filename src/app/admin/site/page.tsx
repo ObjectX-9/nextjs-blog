@@ -153,7 +153,7 @@ export default function SiteManagementPage() {
         throw new Error(data.error || `上传失败: ${response.status}`);
       }
 
-      if (!data.success || !data.url) {
+      if (!data.url) {
         throw new Error(data.error || "上传失败：未获取到URL");
       }
 
