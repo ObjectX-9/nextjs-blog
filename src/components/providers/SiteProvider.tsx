@@ -2,6 +2,7 @@
 
 import { useSiteStore } from '@/store/site'
 import { useEffect } from 'react'
+import { registerComponents } from '../customMdRender/registerComponents'
 
 export default function SiteProvider({
   children,
@@ -12,6 +13,7 @@ export default function SiteProvider({
 
   useEffect(() => {
     fetchSite()
+    registerComponents();
   }, [fetchSite])
 
   return <>{children}</>

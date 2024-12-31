@@ -11,19 +11,9 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { WorkExperience } from "@/components/WorkExperience";
 import { Education } from "@/components/Education";
 import { WebRunInfo } from '@/components/WebRunInfo'
-import { ClientInit } from "@/components/ClientInit";
+import { calculateDuration } from "@/utils/time";
 
-const calculateDuration = (startDate: string, endDate: string | null) => {
-  const start = new Date(startDate);
-  const end = endDate ? new Date(endDate) : new Date();
-  const diffInMonths =
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth());
-  const years = Math.floor(diffInMonths / 12);
-  const months = diffInMonths % 12;
-  return { years, months };
-};
-
+// 服务端组件
 async function getSocialLinks() {
   try {
     const db = await getDb();
@@ -76,7 +66,6 @@ export default async function Index() {
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
-      <ClientInit />
       <HomeHeader />
 
       <div className="w-full max-w-3xl my-0 mx-auto mt-24">
@@ -100,7 +89,6 @@ export default async function Index() {
           </Section>
         </div>
       </div>
-
       <ListSection
         title="📒 时间笔记"
         titleLink="/writing"
