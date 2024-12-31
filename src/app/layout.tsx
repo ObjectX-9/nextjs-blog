@@ -1,4 +1,3 @@
-import SidePanel from "@/components/SidePanel";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -6,6 +5,7 @@ import "./globals.css";
 import '@/styles/notion-scrollbar.css'
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
+import SidePanel from "@/components/SidePanel";
 
 const inter = Inter({ subsets: ["latin"] });
 
