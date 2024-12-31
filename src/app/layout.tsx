@@ -1,4 +1,4 @@
-import Sidepanel from "@/components/Sidepanel";
+import SidePanel from "@/components/SidePanel";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -40,7 +40,7 @@ export default function RootLayout({
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
           <div className="min-h-screen bg-white lg:flex">
-            <Sidepanel></Sidepanel>
+            <SidePanel></SidePanel>
             <div className="flex flex-1">{children}</div>
           </div>
         </SiteProvider>
