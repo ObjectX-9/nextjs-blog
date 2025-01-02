@@ -38,12 +38,18 @@ export const MarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
       }
 
       return <div {...rest}>{props.children}</div>;
-    }
+    },
+    h1: ({ node, ...props }) => <h1 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h2: ({ node, ...props }) => <h2 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h3: ({ node, ...props }) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />
   };
 
   return (
-    <div className="markdown-content relative max-w-[calc(100%-18rem)] pr-4">
-      <TableOfContents content={content} />
+    <div className="markdown-content relative lg:max-w-[calc(100%-18rem)] w-full pr-4">
+      <TableOfContents content={content} className="hidden lg:block" />
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeRaw]}

@@ -8,9 +8,10 @@ interface TocItem {
 
 interface TableOfContentsProps {
   content: string;
+  className?: string;
 }
 
-export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => {
+export const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className = '' }) => {
   const [toc, setToc] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string>('');
 
@@ -62,7 +63,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
   if (toc.length === 0) return null;
 
   return (
-    <nav className="fixed top-20 right-8 w-64 notion-scrollbar overflow-y-auto max-h-[calc(100vh-6rem)] z-10">
+    <nav className={`fixed top-20 right-8 w-64 notion-scrollbar overflow-y-auto max-h-[calc(100vh-6rem)] z-10 ${className}`}>
       <div className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
         目录
       </div>
