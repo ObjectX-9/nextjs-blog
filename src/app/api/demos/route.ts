@@ -7,6 +7,7 @@ interface DemoInput {
   name: string;
   completed: boolean;
   gifUrl: string;
+  url?: string;
   description: string;
   tags: string[];
   categoryId: string;
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
       likes: 0,
       views: 0,
       gifUrl: data.gifUrl,
+      url: data.url,
       description: data.description,
       tags: data.tags,
       categoryId: new ObjectId(data.categoryId),
@@ -104,6 +106,7 @@ export async function PUT(request: Request) {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.completed !== undefined) updateData.completed = data.completed;
     if (data.gifUrl !== undefined) updateData.gifUrl = data.gifUrl;
+    if (data.url !== undefined) updateData.url = data.url;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.categoryId !== undefined) updateData.categoryId = new ObjectId(data.categoryId);

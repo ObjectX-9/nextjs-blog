@@ -31,6 +31,7 @@ export default function DemosManagementPage() {
     name: "",
     description: "",
     gifUrl: "",
+    url: "",
     tags: [],
     completed: false,
   });
@@ -226,6 +227,7 @@ export default function DemosManagementPage() {
           name: "",
           description: "",
           gifUrl: "",
+          url: "",
           tags: [],
           completed: false,
         });
@@ -469,6 +471,16 @@ export default function DemosManagementPage() {
               />
             </div>
             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">URL</label>
+              <input
+                type="url"
+                value={newDemo.url}
+                onChange={(e) => setNewDemo({ ...newDemo, url: e.target.value })}
+                className="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm sm:text-base placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+                placeholder="输入Demo的URL地址"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 上传图片
               </label>
@@ -638,6 +650,21 @@ export default function DemosManagementPage() {
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">{demo.name}</h3>
                       <p className="text-gray-600 mb-3 leading-relaxed">{demo.description}</p>
+                      {demo.url && (
+                        <div className="mb-3">
+                          <a 
+                            href={demo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            访问Demo
+                          </a>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 mb-3">
                         {demo.tags?.map((tag) => (
                           <span
@@ -762,6 +789,21 @@ export default function DemosManagementPage() {
                     })
                   }
                   className="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm sm:text-base placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">URL</label>
+                <input
+                  type="url"
+                  value={editingDemo.demo.url}
+                  onChange={(e) =>
+                    setEditingDemo({
+                      ...editingDemo,
+                      demo: { ...editingDemo.demo, url: e.target.value },
+                    })
+                  }
+                  className="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm sm:text-base placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+                  placeholder="输入Demo的URL地址"
                 />
               </div>
               <div>

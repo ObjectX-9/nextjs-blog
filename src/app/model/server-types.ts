@@ -10,6 +10,7 @@ export interface IServerDemo {
   likes: number;
   views: number;
   gifUrl: string;
+  url?: string;
   description: string;
   tags: string[];
   categoryId: ObjectId;
