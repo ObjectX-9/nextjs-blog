@@ -65,7 +65,7 @@ const MobileCard = ({ friend }: { friend: FriendWithId }) => (
     </div>
     <div className="flex-grow min-w-0">
       <h3 className="font-medium text-base mb-0.5 truncate">{friend.name}</h3>
-      <p className="text-gray-600 text-sm mb-1 truncate">{friend.title}</p>
+      <p className="text-gray-600 text-sm mb-1 truncate">{friend.title} | {friend.description}</p>
       {friend.location && (
         <p className="text-gray-500 text-xs mb-1 truncate">
           {" "}
