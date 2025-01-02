@@ -114,9 +114,8 @@ const DesktopView = ({
             src={friend.avatar}
             alt={friend.name}
             fill
-            className={`object-cover transition-transform duration-300 ${
-              hoveredName === friend.name ? "scale-125 brightness-75" : ""
-            }`}
+            className={`object-cover transition-transform duration-300 ${hoveredName === friend.name ? "scale-125 brightness-75" : ""
+              }`}
             style={
               {
                 "--is": `--${friend.name
@@ -148,9 +147,8 @@ const DesktopView = ({
             key={`link-${friend.name}-${index}`}
             href={friend.link}
             target="_blank"
-            className={`transition-colors duration-300 ${
-              hoveredName === friend.name ? "active" : ""
-            }`}
+            className={`transition-colors duration-300 ${hoveredName === friend.name ? "active" : ""
+              }`}
             style={
               {
                 "--is": `--${friend.name
@@ -162,7 +160,7 @@ const DesktopView = ({
             {friend.name}
           </Link>
           <span key={`span-${friend.name}-${index}`} className="text-gray-700">
-            : {friend.title}
+            : {friend.title} | {friend.description}
           </span>
         </li>
       ))}
