@@ -80,10 +80,10 @@ const DesktopArticlesPage = ({
       </div>
 
       {/* 文章内容 */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 p-8 overflow-y-auto">
         {selectedArticle ? (
           <div>
-            <h1 className="text-2xl font-bold mb-4">{selectedArticle.title}</h1>
+            <h1 className="text-4xl font-bold mb-8">{selectedArticle.title}</h1>
             <div className="prose max-w-none">
               <MarkdownRenderer content={selectedArticle.content} />
             </div>

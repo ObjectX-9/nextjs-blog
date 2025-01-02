@@ -24,7 +24,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className })
 
   const renderTocItems = (items: TocItem[]) => {
     return items.map((item, index) => (
-      <NavigationMenu.Item key={index}>
+      <NavigationMenu.Item key={index} className="list-none">
         <NavigationMenu.Link
           className={cn(
             'block select-none rounded-[4px] px-3 py-1.5 text-sm',
@@ -44,20 +44,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className })
   };
 
   return (
-    <NavigationMenu.Root
-      className={cn(
-        'sticky top-4 p-4 ml-4',
-        'max-h-[calc(100vh-2rem)] overflow-y-auto',
-        'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg shadow-lg',
-        'border border-slate-200 dark:border-slate-700',
-        className
-      )}
-    >
-      <div className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
-        目录
-      </div>
+    <NavigationMenu.Root title='目录'>
       <NavigationMenu.List
-        className="flex flex-col gap-[2px] list-none"
       >
         {renderTocItems(headings)}
       </NavigationMenu.List>
