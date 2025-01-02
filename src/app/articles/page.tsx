@@ -319,6 +319,11 @@ export default function ArticlesPage() {
       setIsMobileView(isMobile);
       if (isMobile) {
         setCurrentView('categories');
+        // 添加 viewport meta 标签
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
+        }
       }
     };
     checkMobileView();

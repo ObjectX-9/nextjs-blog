@@ -8,6 +8,7 @@ import type { Components } from 'react-markdown';
 import type { HTMLAttributes, DetailedHTMLProps } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
 import TableOfContents from '../components/TableOfContents';
+import { cn } from '@/lib/utils';
 
 // 桌面端渲染组件
 const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
@@ -67,7 +68,7 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
 };
 
 // 移动端渲染组件
-const MobileMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
+const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentProps & { isMobile?: boolean }) => {
   const renderComponent = (id: string) => {
     const componentConfig = componentRegistry.get(id);
     if (!componentConfig) {
@@ -111,7 +112,10 @@ const MobileMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeRaw]}
         components={customComponents}
-        className="prose prose-sm max-w-none [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_h4]:text-sm [&_p]:text-sm [&_ul]:text-sm [&_ol]:text-sm [&_li]:text-sm [&_pre]:text-xs"
+        className={cn(
+          "prose max-w-none",
+          isMobile && "prose-sm [&_h1]:!text-lg [&_h2]:!text-base [&_h3]:!text-sm [&_h4]:!text-xs [&_p]:!text-xs [&_ul]:!text-xs [&_ol]:!text-xs [&_li]:!text-xs [&_pre]:!text-xs [&_code]:!text-xs [&_blockquote]:!text-xs [&_table]:!text-xs [&_img]:!w-full [&_img]:!max-w-full [&_pre]:!overflow-x-auto [&_pre]:!whitespace-pre-wrap [&_pre]:!break-words [&]:!text-[12px] [&]:!leading-[1.5]"
+        )}
       >
         {content || ''}
       </ReactMarkdown>
@@ -122,7 +126,7 @@ const MobileMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
 // 主导出组件
 export const MarkdownRenderer = ({ content = '', isMobile = false }: MarkdownComponentProps & { isMobile?: boolean }) => {
   return isMobile ? (
-    <MobileMarkdownRenderer content={content} />
+    <MobileMarkdownRenderer content={content} isMobile={isMobile} />
   ) : (
     <DesktopMarkdownRenderer content={content} />
   );
