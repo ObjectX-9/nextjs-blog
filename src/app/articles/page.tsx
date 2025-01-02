@@ -290,7 +290,7 @@ const MobileArticlesPage = ({
             {/* 文章内容 */}
             <div className="p-4 mt-[127px]">
               <div className="prose max-w-none">
-                <MarkdownRenderer content={selectedArticle.content} />
+                <MarkdownRenderer content={selectedArticle.content} isMobile={true} />
               </div>
             </div>
           </>

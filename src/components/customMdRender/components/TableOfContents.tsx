@@ -1,95 +1,68 @@
-import React, { useState, useEffect, useCallback } from 'react';
-
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
+import * as NavigationMenu from '@radix-ui/react-navigation-menu';
+import { cn } from '@/lib/utils';
 
 interface TableOfContentsProps {
   content: string;
   className?: string;
 }
 
-export const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className = '' }) => {
-  const [toc, setToc] = useState<TocItem[]>([]);
-  const [activeId, setActiveId] = useState<string>('');
+interface TocItem {
+  level: number;
+  text: string;
+  id: string;
+}
 
-  useEffect(() => {
-    const headings = content.split('\n')
-      .filter(line => line.startsWith('#'))
-      .map(line => {
-        const level = line.match(/^#+/)?.[0].length || 0;
-        const text = line.replace(/^#+\s+/, '');
-        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        return { id, text, level };
-      });
-    
-    setToc(headings);
-  }, [content]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
-        });
-      },
-      {
-        rootMargin: '-20% 0px -80% 0px'
-      }
-    );
-
-    toc.forEach(({ id }) => {
-      const element = document.getElementById(id);
-      if (element) {
-        observer.observe(element);
-      }
+const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className }) => {
+  const headings = content.split('\n')
+    .filter(line => line.startsWith('#'))
+    .map(line => {
+      const level = line.match(/^#+/)?.[0].length || 0;
+      const text = line.replace(/^#+\s+/, '');
+      const id = text.toLowerCase().replace(/\s+/g, '-');
+      return { level, text, id };
     });
 
-    return () => observer.disconnect();
-  }, [toc]);
-
-  const handleClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    e.preventDefault();
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, []);
-
-  if (toc.length === 0) return null;
+  const renderTocItems = (items: TocItem[]) => {
+    return items.map((item, index) => (
+      <NavigationMenu.Item key={index}>
+        <NavigationMenu.Link
+          className={cn(
+            'block select-none rounded-[4px] px-3 py-1.5 text-sm',
+            'text-gray-600 dark:text-gray-400',
+            'hover:bg-slate-100 dark:hover:bg-slate-800',
+            'hover:text-gray-900 dark:hover:text-gray-200',
+            'transition-colors duration-200'
+          )}
+          href={`#${item.id}`}
+        >
+          <span style={{ marginLeft: `${(item.level - 1) * 16}px` }}>
+            {item.text}
+          </span>
+        </NavigationMenu.Link>
+      </NavigationMenu.Item>
+    ));
+  };
 
   return (
-    <nav className={`fixed top-20 right-8 w-64 notion-scrollbar overflow-y-auto max-h-[calc(100vh-6rem)] z-10 ${className}`}>
+    <NavigationMenu.Root
+      className={cn(
+        'sticky top-4 p-4 ml-4',
+        'max-h-[calc(100vh-2rem)] overflow-y-auto',
+        'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg shadow-lg',
+        'border border-slate-200 dark:border-slate-700',
+        className
+      )}
+    >
       <div className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
         目录
       </div>
-      <div className="space-y-1">
-        {toc.map((item, index) => (
-          <a
-            key={index}
-            href={`#${item.id}`}
-            onClick={(e) => handleClick(e, item.id)}
-            className={`
-              block text-sm transition-colors duration-200 rounded-sm
-              ${item.id === activeId 
-                ? 'text-blue-600 dark:text-blue-400' 
-                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}
-            `}
-            style={{ 
-              paddingLeft: `${(item.level - 1) * 1}rem`,
-              lineHeight: '1.75rem',
-              fontSize: item.level === 1 ? '0.9rem' : '0.875rem',
-              fontWeight: item.level === 1 ? 500 : 400
-            }}
-          >
-            {item.text}
-          </a>
-        ))}
-      </div>
-    </nav>
+      <NavigationMenu.List
+        className="flex flex-col gap-[2px] list-none"
+      >
+        {renderTocItems(headings)}
+      </NavigationMenu.List>
+    </NavigationMenu.Root>
   );
 };
+
+export default TableOfContents;
