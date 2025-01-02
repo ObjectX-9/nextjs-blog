@@ -4,6 +4,7 @@ import MDEditor, { commands } from '@uiw/react-md-editor';
 import { MarkdownRenderer } from '../core/MarkdownRenderer';
 import { componentRegistry } from '../ComponentRegistry';
 import './MarkdownEditor.css';
+import imageCompression from 'browser-image-compression';
 
 interface MarkdownEditorProps {
   initialContent?: string;
@@ -35,27 +36,102 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     onChange?.(newContent);
   };
 
+  // 压缩图片
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 1.9, // 设置为1.9MB以确保在2MB以下
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: file.type as string,
+      initialQuality: 0.8,
+      onProgress: (progress: number) => {
+        console.log('压缩进度：', progress);
+      }
+    };
+
+    try {
+      let compressedFile = await imageCompression(file, options);
+
+      // 如果第一次压缩后仍然大于1.9MB，继续压缩
+      let quality = 0.8;
+      while (compressedFile.size > 1.9 * 1024 * 1024 && quality > 0.1) {
+        quality -= 0.1;
+        options.initialQuality = quality;
+        console.log(`尝试使用质量 ${quality.toFixed(2)} 重新压缩`);
+        compressedFile = await imageCompression(file, options);
+      }
+
+      // 创建新的File对象，保持原始文件名和类型
+      const resultFile = new File(
+        [compressedFile],
+        file.name,
+        { type: file.type }
+      );
+
+      console.log("原始文件大小:", (file.size / 1024 / 1024).toFixed(2), "MB");
+      console.log("压缩后文件大小:", (resultFile.size / 1024 / 1024).toFixed(2), "MB");
+      console.log("最终压缩质量:", quality.toFixed(2));
+
+      if (resultFile.size > 2 * 1024 * 1024) {
+        throw new Error("无法将图片压缩到2MB以下，请选择较小的图片");
+      }
+
+      return resultFile;
+    } catch (error: any) {
+      console.error("压缩图片时出错:", error);
+      throw new Error(error.message || "图片压缩失败");
+    }
+  };
+
   // 处理图片上传
   const handleImageUpload = async (file: File) => {
     try {
       setUploading(true);
+      
+      // 检查文件类型
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('不支持的图片格式');
+      }
+
+      // 压缩图片
+      const compressedFile = await compressImage(file);
+
+      // 创建表单数据
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressedFile);
       formData.append('type', 'docs'); // 上传到 images/docs 目录
 
+      // 发送上传请求
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('上传失败');
+        const errorText = await response.text();
+        throw new Error(errorText || '上传失败');
       }
 
       const data = await response.json();
       return data.url;
     } catch (error) {
-      console.error('上传错误:', error);
+      console.error('图片上传错误:', error);
+      
+      // 根据错误类型提供更具体的用户反馈
+      if (error instanceof Error) {
+        switch (error.message) {
+          case '不支持的图片格式':
+            alert('仅支持 JPEG、PNG、WebP 和 GIF 格式的图片');
+            break;
+          case '无法将图片压缩到2MB以下，请选择较小的图片':
+            alert('图片文件过大，请选择小于 2MB 的图片');
+            break;
+          default:
+            alert('图片上传失败，请重试');
+        }
+      }
+      
       throw error;
     } finally {
       setUploading(false);

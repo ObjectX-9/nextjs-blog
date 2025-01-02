@@ -9,9 +9,17 @@ import type { HTMLAttributes, DetailedHTMLProps } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
 import TableOfContents from '../components/TableOfContents';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/styles.css";
+import Image from 'next/image';
 
 // 桌面端渲染组件
 const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImage, setCurrentImage] = useState('');
+
   const renderComponent = (id: string) => {
     const componentConfig = componentRegistry.get(id);
     if (!componentConfig) {
@@ -46,7 +54,34 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
     h3: ({ node, ...props }) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />
+    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    img: (props) => {
+      const { src, alt, ...restProps } = props;
+      return (
+        <>
+          <Image
+            src={src || ''}
+            alt={alt || ''}
+            {...restProps}
+            width={500}  
+            height={300} 
+            onClick={() => {
+              setCurrentImage(src || '');
+              setLightboxOpen(true);
+            }}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          />
+          {lightboxOpen && currentImage === src && (
+            <Lightbox
+              open={lightboxOpen}
+              close={() => setLightboxOpen(false)}
+              slides={[{ src: currentImage }]}
+              plugins={[Zoom]}
+            />
+          )}
+        </>
+      );
+    }
   };
 
   return (
@@ -69,6 +104,9 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
 
 // 移动端渲染组件
 const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentProps & { isMobile?: boolean }) => {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImage, setCurrentImage] = useState('');
+
   const renderComponent = (id: string) => {
     const componentConfig = componentRegistry.get(id);
     if (!componentConfig) {
@@ -103,7 +141,34 @@ const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentPro
     h3: ({ node, ...props }) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />
+    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    img: (props) => {
+      const { src, alt, ...restProps } = props;
+      return (
+        <>
+          <Image
+            src={src || ''}
+            alt={alt || ''}
+            {...restProps}
+            width={500}  
+            height={300} 
+            onClick={() => {
+              setCurrentImage(src || '');
+              setLightboxOpen(true);
+            }}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          />
+          {lightboxOpen && currentImage === src && (
+            <Lightbox
+              open={lightboxOpen}
+              close={() => setLightboxOpen(false)}
+              slides={[{ src: currentImage }]}
+              plugins={[Zoom]}
+            />
+          )}
+        </>
+      );
+    }
   };
 
   return (
