@@ -90,8 +90,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           />
         </div>
         <div className="w-1/2 h-full overflow-auto p-4 bg-white">
-          <div className="prose max-w-none">
-            <MarkdownRenderer content={content} />
+          <div className="prose max-w-none [&_h1]:!text-lg [&_h2]:!text-base [&_h3]:!text-sm [&_h4]:!text-xs [&_p]:!text-xs [&_ul]:!text-xs [&_ol]:!text-xs [&_li]:!text-xs [&_pre]:!text-xs [&_code]:!text-xs [&_blockquote]:!text-xs [&_table]:!text-xs [&_img]:!w-full [&_img]:!max-w-full [&_pre]:!overflow-x-auto [&_pre]:!whitespace-pre-wrap [&_pre]:!break-words !text-[12px] !leading-[1.5]">
+            <MarkdownRenderer content={content} isMobile={true} />
           </div>
         </div>
       </div>
