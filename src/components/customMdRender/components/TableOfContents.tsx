@@ -31,11 +31,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className })
             'text-gray-600 dark:text-gray-400',
             'hover:bg-slate-100 dark:hover:bg-slate-800',
             'hover:text-gray-900 dark:hover:text-gray-200',
-            'transition-colors duration-200'
+            'transition-colors duration-200',
+            'w-full'
           )}
           href={`#${item.id}`}
         >
-          <span style={{ marginLeft: `${(item.level - 1) * 16}px` }}>
+          <span 
+            style={{ marginLeft: `${(item.level - 1) * 16}px` }}
+            className="block truncate w-full"
+            title={item.text}
+          >
             {item.text}
           </span>
         </NavigationMenu.Link>
@@ -44,8 +49,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className })
   };
 
   return (
-    <NavigationMenu.Root title='目录'>
+    <NavigationMenu.Root title='目录' className="relative">
       <NavigationMenu.List
+        className={cn(
+          'max-h-[calc(100vh-6rem)] overflow-y-auto',
+          'scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent',
+          'sticky top-24 z-10',
+          'max-w-[240px]',
+          className
+        )}
       >
         {renderTocItems(headings)}
       </NavigationMenu.List>
