@@ -62,8 +62,12 @@ export default function FriendsManagementPage() {
 
   const uploadImageFromUrl = async (imageUrl: string) => {
     try {
-      // 下载图片
-      const response = await fetch(imageUrl);
+      // 通过代理API下载图片
+      const response = await fetch(`/api/proxy-image?url=${encodeURIComponent(imageUrl)}`);
+      if (!response.ok) {
+        throw new Error("Failed to download image");
+      }
+      
       const blob = await response.blob();
 
       // 从URL中获取文件名和扩展名
@@ -236,8 +240,8 @@ export default function FriendsManagementPage() {
         // Upload new image if selected
         if (editingFile) {
           avatarUrl = await uploadImage(editingFile);
-        } else if (avatarUrl && !isOssUrl(avatarUrl)) {
-          // 如果有头像URL但不是OSS的链接，则转存到OSS
+        } else if (avatarUrl && !isOssUrl(avatarUrl) && editingFriend.friend.isApproved) {
+          // 如果有头像URL但不是OSS的链接，且状态为已审核，则转存到OSS
           avatarUrl = await uploadImageFromUrl(avatarUrl);
         }
 
