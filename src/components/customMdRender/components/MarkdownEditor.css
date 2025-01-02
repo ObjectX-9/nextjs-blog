@@ -3,52 +3,6 @@
   border: none !important;
 }
 
-.custom-md-editor .w-md-editor-content {
-  height: 100% !important;
-}
-
-/* 重置编辑器文本区域的样式 */
-.custom-md-editor .w-md-editor-text {
-  -webkit-text-fill-color: inherit !important;
-  height: 100% !important;
-}
-
-.custom-md-editor .w-md-editor-text-pre,
-.custom-md-editor .w-md-editor-text-input {
-  font-family: Menlo, Consolas, Monaco, 'Liberation Mono', 'Courier New', monospace !important;
-  font-size: 14px !important;
-  line-height: 21px !important;
-  padding: 16px !important;
-  white-space: pre !important;
-  word-wrap: break-word !important;
-  word-break: keep-all !important;
-  overflow-wrap: break-word !important;
-  tab-size: 2 !important;
-  -moz-tab-size: 2 !important;
-}
-
-.custom-md-editor .w-md-editor-text-pre > code,
-.custom-md-editor .w-md-editor-text-input {
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  word-spacing: normal !important;
-  letter-spacing: normal !important;
-}
-
-.custom-md-editor .w-md-editor-text-input {
-  caret-color: #000 !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  color: inherit !important;
-  background: none !important;
-  border: none !important;
-  outline: none !important;
-}
-
 /* 隐藏内置预览 */
 .custom-md-editor .w-md-editor-preview {
   display: none !important;
@@ -56,14 +10,14 @@
 
 /* 工具栏样式 */
 .custom-md-editor .w-md-editor-toolbar {
+  display: flex !important;
+  align-items: center !important;
   border-bottom: 1px solid #e5e7eb !important;
-  background: #fff !important;
-  padding: 8px !important;
 }
 
 .custom-md-editor .w-md-editor-toolbar ul {
   display: flex !important;
-  gap: 4px !important;
+  align-items: center !important;
 }
 
 .custom-md-editor .w-md-editor-toolbar li > button {
@@ -148,7 +102,8 @@
   background-color: #f6f6f6;
   padding: 0 0.2em;
   border-radius: 3px;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier,
+    monospace;
   font-size: 0.9em;
   color: #476582;
 }
@@ -241,7 +196,7 @@
 }
 
 .preview-pane .token.namespace {
-  opacity: .7;
+  opacity: 0.7;
 }
 
 .preview-pane .token.string,
@@ -251,7 +206,7 @@
 
 .preview-pane .token.punctuation,
 .preview-pane .token.operator {
-  color: #393A34;
+  color: #393a34;
 }
 
 .preview-pane .token.entity,
@@ -300,7 +255,8 @@
   flex-direction: column;
   height: 100%;
   background-color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+    "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .editor-toolbar {
@@ -335,7 +291,7 @@
 }
 
 .insert-component-btn::before {
-  content: '+';
+  content: "+";
   font-size: 14px;
 }
 
