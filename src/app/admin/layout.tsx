@@ -75,8 +75,11 @@ export default function AdminLayout({
       </button>
 
       {/* 侧边栏 */}
-      <aside className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}>
+      <aside
+        className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
+      >
         <div className="p-4 border-b flex justify-between items-center">
           <h1 className="text-xl font-bold">后台管理</h1>
           <button
@@ -95,10 +98,11 @@ export default function AdminLayout({
                   <Link
                     href={item.href}
                     onClick={() => setIsDrawerOpen(false)}
-                    className={`block px-4 py-2 rounded-md ${isActive
-                      ? "bg-gray-200 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
+                    className={`block px-4 py-2 rounded-md ${
+                      isActive
+                        ? "bg-gray-200 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
                   >
                     {item.name}
                   </Link>
@@ -110,10 +114,8 @@ export default function AdminLayout({
       </aside>
 
       {/* 主内容区 */}
-      <main className="flex-1 bg-white lg:ml-0 p-4 lg:p-6">
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
+      <main className="flex-1 bg-white lg:ml-0 p-4 lg:p-6 h-[100vh] overflow-y-auto">
+        <div className="max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
   );
