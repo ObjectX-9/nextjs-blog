@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
 import Link from 'next/link';
 
@@ -17,7 +17,7 @@ const ArticlesPage = () => {
   const [editingCategory, setEditingCategory] = useState<ArticleCategory | null>(null);
 
   // 获取文章列表
-  const fetchArticles = async (category?: string) => {
+  const fetchArticles = useCallback(async (category?: string) => {
     try {
       setLoading(true);
       const url = new URL('/api/articles', window.location.origin);
@@ -35,10 +35,10 @@ const ArticlesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // 获取分类列表
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await fetch('/api/articles/categories');
       const data = await response.json();
@@ -46,7 +46,7 @@ const ArticlesPage = () => {
     } catch (error) {
       showToast('获取分类列表失败', 'error');
     }
-  };
+  }, []);
 
   // 删除文章
   const handleDelete = async (id: string) => {
@@ -127,11 +127,11 @@ const ArticlesPage = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
 
   useEffect(() => {
     fetchArticles(categoryFilter);
-  }, [categoryFilter]);
+  }, [categoryFilter, fetchArticles]);
 
   // 分类管理模态框
   const CategoryModal = () => (

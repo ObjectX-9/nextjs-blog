@@ -46,7 +46,7 @@ export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
             return (
               <Link
                 key={item._id}
-                href={`/writing/${item.name}`}
+                href={`/articles/${item._id?.toString() || ""}`}
                 className="col-span-6 hover:text-gray-700"
               >
                 <div className="grid grid-cols-6">

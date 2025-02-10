@@ -7,7 +7,6 @@ import { MarkdownComponentProps } from '../types/components';
 import type { Components } from 'react-markdown';
 import type { HTMLAttributes, DetailedHTMLProps } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
-import TableOfContents from '../components/TableOfContents';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import Lightbox from "yet-another-react-lightbox";
@@ -63,8 +62,8 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
             src={src || ''}
             alt={alt || ''}
             {...restProps}
-            width={500}  
-            height={300} 
+            width={500}
+            height={300}
             onClick={() => {
               setCurrentImage(src || '');
               setLightboxOpen(true);
@@ -85,18 +84,15 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
   };
 
   return (
-    <div className="markdown-content w-full mx-auto relative">
-      <div className="lg:flex">
-        <div className="w-full lg:flex-1 overflow-y-auto h-[calc(100vh-4rem)] px-4 max-w-3xl mx-auto lg:mx-0">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkBreaks]}
-            rehypePlugins={[rehypeRaw]}
-            components={customComponents}
-          >
-            {content || ''}
-          </ReactMarkdown>
-        </div>
-        <TableOfContents content={content} className="hidden lg:block w-64 shrink-0" />
+    <div className="markdown-content w-full h-full">
+      <div className="w-full h-full">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkBreaks]}
+          rehypePlugins={[rehypeRaw]}
+          components={customComponents}
+        >
+          {content || ''}
+        </ReactMarkdown>
       </div>
     </div>
   );
@@ -150,8 +146,8 @@ const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentPro
             src={src || ''}
             alt={alt || ''}
             {...restProps}
-            width={500}  
-            height={300} 
+            width={500}
+            height={300}
             onClick={() => {
               setCurrentImage(src || '');
               setLightboxOpen(true);

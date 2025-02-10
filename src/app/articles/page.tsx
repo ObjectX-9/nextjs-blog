@@ -1,316 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Article, ArticleCategory } from '@/app/model/article';
-import { MarkdownRenderer } from '@/components/customMdRender/core/MarkdownRenderer';
-import '@/styles/markdown.css';
 
-const DesktopArticlesPage = ({
-  categories,
-  selectedCategory,
-  articles,
-  loading,
-  selectedArticle,
-  handleCategorySelect,
-  handleArticleClick
-}: {
-  categories: ArticleCategory[];
-  selectedCategory: string | null;
-  articles: Article[];
-  loading: boolean;
-  selectedArticle: Article | null;
-  handleCategorySelect: (categoryId: string) => void;
-  handleArticleClick: (article: Article) => void;
-}) => {
-  return (
-    <div className="flex w-full">
-      {/* 分类列表 */}
-      <div className="w-64 border-r bg-white">
-        <div className="sticky top-0 h-screen overflow-y-auto">
-          <nav className="p-4">
-            <h2 className="text-lg font-bold mb-4">技术文档</h2>
-            {categories.map((category) => (
-              <button
-                key={category._id}
-                onClick={() => handleCategorySelect(category._id!)}
-                className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id
-                  ? "bg-black text-white"
-                  : "hover:bg-gray-100"
-                  }`}
-              >
-                <span>{category.name}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* 文章列表 */}
-      <div className="w-64 border-r bg-white">
-        <div className="sticky top-0 h-screen overflow-y-auto">
-          <nav className="p-4">
-            <h2 className="text-lg font-bold mb-4">
-              {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
-            </h2>
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              articles.map((article) => (
-                <button
-                  key={article._id}
-                  onClick={() => handleArticleClick(article)}
-                  className={`w-full text-left p-2 rounded-lg mb-2 ${selectedArticle?._id === article._id
-                    ? "bg-black text-white"
-                    : "hover:bg-gray-100"
-                    }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium truncate">{article.title}</span>
-                    <span className="text-sm opacity-60">
-                      {new Date(article.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </button>
-              ))
-            )}
-          </nav>
-        </div>
-      </div>
-
-      {/* 文章内容 */}
-      <div className="flex-1 p-8 overflow-y-auto">
-        {selectedArticle ? (
-          <div>
-            <h1 className="text-4xl font-bold mb-8">{selectedArticle.title}</h1>
-            <div className="prose max-w-none">
-              <MarkdownRenderer content={selectedArticle.content} />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            请选择一篇文章
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const MobileArticlesPage = ({
-  categories,
-  selectedCategory,
-  articles,
-  loading,
-  selectedArticle,
-  currentView,
-  showToc,
-  isHeaderVisible,
-  handleCategorySelect,
-  handleArticleClick,
-  handleBack,
-  setShowToc
-}: {
-  categories: ArticleCategory[];
-  selectedCategory: string | null;
-  articles: Article[];
-  loading: boolean;
-  selectedArticle: Article | null;
-  currentView: 'categories' | 'articles' | 'detail';
-  showToc: boolean;
-  isHeaderVisible: boolean;
-  handleCategorySelect: (categoryId: string) => void;
-  handleArticleClick: (article: Article) => void;
-  handleBack: () => void;
-  setShowToc: (show: boolean) => void;
-}) => {
-  return (
-    <div className="w-full">
-      {/* 分类视图 */}
-      <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'
-          }`}
-      >
-        <div className="p-4">
-          <h2 className="text-lg font-bold mb-4">技术文档分类</h2>
-          {categories.map((category) => (
-            <button
-              key={category._id}
-              onClick={() => handleCategorySelect(category._id!)}
-              className="w-full text-left p-3 border-b last:border-b-0"
-            >
-              <span>{category.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 文章列表视图 */}
-      <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'articles' ? 'translate-x-0' : 'translate-x-full'
-          }`}
-      >
-        {/* 返回按钮 */}
-        <button
-          onClick={handleBack}
-          className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-
-        <div className="p-4 pt-16">
-          <h2 className="text-lg font-bold mb-4">
-            {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
-          </h2>
-          {loading ? (
-            <div className="flex justify-center py-4">
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            articles.map((article) => (
-              <button
-                key={article._id}
-                onClick={() => handleArticleClick(article)}
-                className="w-full text-left p-3 border-b last:border-b-0"
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium">{article.title}</span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(article.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* 文章详情视图 */}
-      <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'detail' ? 'translate-x-0' : 'translate-x-full'
-          } overflow-y-auto`}
-      >
-        {selectedArticle && (
-          <>
-            {/* 移动端返回按钮 */}
-            <button
-              onClick={handleBack}
-              className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
-            {/* 固定在顶部的标题和目录 */}
-            <div
-              className={`fixed top-0 left-0 right-0 bg-white z-10 mt-4 transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-                }`}
-            >
-              <div className="p-4 border-b">
-                <h1 className="text-xl font-bold mb-4 text-center">{selectedArticle.title}</h1>
-
-                {/* 目录切换按钮 */}
-                <button
-                  onClick={() => setShowToc(!showToc)}
-                  className="flex items-center text-gray-600 hover:text-black mb-2"
-                >
-                  <svg
-                    className={`w-4 h-4 mr-2 transition-transform ${showToc ? 'rotate-0' : '-rotate-90'}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                  目录
-                </button>
-
-                {/* 文章目录 */}
-                <div
-                  className={`bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 ${showToc ? 'max-h-64' : 'max-h-0'
-                    }`}
-                >
-                  <div className="p-4">
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {selectedArticle?.content?.split('\n')
-                        .filter(line => line.startsWith('#'))
-                        .map((heading, index) => {
-                          const level = heading.match(/^#+/)?.[0].length || 1;
-                          const text = heading.replace(/^#+\s+/, '');
-                          return (
-                            <div
-                              key={index}
-                              className={`text-gray-700 hover:text-black cursor-pointer`}
-                              style={{ paddingLeft: `${(level - 1) * 1}rem` }}
-                              onClick={() => {
-                                const element = document.getElementById(text.toLowerCase().replace(/\s+/g, '-'));
-                                element?.scrollIntoView({ behavior: 'smooth' });
-                                setShowToc(false);
-                              }}
-                            >
-                              {text}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 文章内容 */}
-            <div className="p-4 mt-[127px]">
-              <div className="prose max-w-none">
-                <MarkdownRenderer content={selectedArticle.content} isMobile={true} />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
 
 export default function ArticlesPage() {
+  const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<ArticleCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [currentView, setCurrentView] = useState<'categories' | 'articles' | 'detail'>('categories');
-  const [showToc, setShowToc] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [currentView, setCurrentView] = useState<'categories' | 'articles'>('categories');
 
   // 检测移动端视图
   useEffect(() => {
@@ -319,11 +21,6 @@ export default function ArticlesPage() {
       setIsMobileView(isMobile);
       if (isMobile) {
         setCurrentView('categories');
-        // 添加 viewport meta 标签
-        const viewport = document.querySelector('meta[name="viewport"]');
-        if (viewport) {
-          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
-        }
       }
     };
     checkMobileView();
@@ -332,7 +29,22 @@ export default function ArticlesPage() {
   }, []);
 
   useEffect(() => {
-    fetchCategories();
+    const init = async () => {
+      await fetchCategories();
+      // 从 URL 参数获取分类
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryFromUrl = urlParams.get('category');
+      if (categoryFromUrl) {
+        setSelectedCategory(categoryFromUrl);
+      } else {
+        // 如果 URL 没有分类参数，从 localStorage 获取
+        const lastCategory = localStorage.getItem('lastCategory');
+        if (lastCategory) {
+          setSelectedCategory(lastCategory);
+        }
+      }
+    };
+    init();
   }, []);
 
   useEffect(() => {
@@ -340,27 +52,6 @@ export default function ArticlesPage() {
       fetchArticles(selectedCategory);
     }
   }, [selectedCategory]);
-
-  // 检测滚动方向和距离
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY < 100) {
-        setIsHeaderVisible(true);
-        return;
-      }
-
-      if (currentScrollY > lastScrollY) {
-        setIsHeaderVisible(false); // 向下滚动，隐藏
-      } else {
-        setIsHeaderVisible(true);  // 向上滚动，显示
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   const fetchCategories = async () => {
     try {
@@ -387,7 +78,6 @@ export default function ArticlesPage() {
       }
       const data = await response.json();
       setArticles(data.articles || []);
-      setSelectedArticle(null);
     } catch (error) {
       console.error('获取文章列表失败:', error);
       setArticles([]);
@@ -398,30 +88,24 @@ export default function ArticlesPage() {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    // 保存选中的分类
+    localStorage.setItem('lastCategory', categoryId);
     if (isMobileView) {
       setCurrentView('articles');
     }
   };
 
-  const handleArticleClick = async (article: Article) => {
-    try {
-      setSelectedArticle(article);
-      if (isMobileView) {
-        setCurrentView('detail');
-      }
-      // 增加浏览量
-      await fetch(`/api/articles/${article._id}/view`, {
-        method: 'POST',
-      });
-    } catch (error) {
-      console.error('更新浏览量失败:', error);
+  const handleArticleClick = (article: Article) => {
+    if (isMobileView) {
+      // 移动端使用 window.location.href 进行跳转，以支持浏览器返回
+      window.location.href = `/articles/${article._id}`;
+    } else {
+      router.push(`/articles/${article._id}`);
     }
   };
 
   const handleBack = () => {
-    if (currentView === 'detail') {
-      setCurrentView('articles');
-    } else if (currentView === 'articles') {
+    if (currentView === 'articles') {
       setCurrentView('categories');
     }
   };
@@ -440,30 +124,152 @@ export default function ArticlesPage() {
   return (
     <div className="min-h-screen w-full flex relative">
       {isMobileView ? (
-        <MobileArticlesPage
-          categories={categories}
-          selectedCategory={selectedCategory}
-          articles={articles}
-          loading={loading}
-          selectedArticle={selectedArticle}
-          currentView={currentView}
-          showToc={showToc}
-          isHeaderVisible={isHeaderVisible}
-          handleCategorySelect={handleCategorySelect}
-          handleArticleClick={handleArticleClick}
-          handleBack={handleBack}
-          setShowToc={setShowToc}
-        />
+        <div className="w-full">
+          {/* 分类视图 */}
+          <div
+            className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'
+              }`}
+          >
+            <div className="flex flex-col h-full">
+              <div className="p-4 border-b">
+                <h2 className="text-lg font-bold">技术文档分类</h2>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pt-0">
+                  {categories.map((category) => (
+                    <button
+                      key={category._id}
+                      onClick={() => handleCategorySelect(category._id!)}
+                      className="w-full text-left p-3 border-b last:border-b-0"
+                    >
+                      <span className="truncate block">{category.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 文章列表视图 */}
+          <div
+            className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'articles' ? 'translate-x-0' : 'translate-x-full'
+              }`}
+          >
+            <button
+              onClick={handleBack}
+              className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <div className="p-4 pt-16">
+              <h2 className="text-lg font-bold mb-4">
+                {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
+              </h2>
+              {loading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : articles.length > 0 ? (
+                articles.map((article) => (
+                  <button
+                    key={article._id}
+                    onClick={() => handleArticleClick(article)}
+                    className="w-full text-left p-3 border-b last:border-b-0"
+                  >
+                    <div className="flex flex-col">
+                      <div className="font-medium truncate">{article.title}</div>
+                      <span className="text-sm text-gray-500">
+                        {new Date(article.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 py-8">
+                  暂无文章
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       ) : (
-        <DesktopArticlesPage
-          categories={categories}
-          selectedCategory={selectedCategory}
-          articles={articles}
-          loading={loading}
-          selectedArticle={selectedArticle}
-          handleCategorySelect={handleCategorySelect}
-          handleArticleClick={handleArticleClick}
-        />
+        <div className="flex w-full">
+          {/* 分类列表 */}
+          <div className="w-64 border-r bg-white">
+            <div className="sticky top-0 h-screen overflow-y-auto">
+              <nav className="p-4">
+                <h2 className="text-lg font-bold mb-4">技术文档</h2>
+                {categories.map((category) => (
+                  <button
+                    key={category._id}
+                    onClick={() => handleCategorySelect(category._id!)}
+                    className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id
+                      ? "bg-black text-white"
+                      : "hover:bg-gray-100"
+                      }`}
+                  >
+                    <span>{category.name}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          {/* 文章列表 */}
+          <div className="w-64 border-r bg-white">
+            <div className="sticky top-0 h-screen overflow-y-auto">
+              <nav className="p-4">
+                <h2 className="text-lg font-bold mb-4">
+                  {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
+                </h2>
+                {loading ? (
+                  <div className="flex justify-center py-4">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : articles.length > 0 ? (
+                  articles.map((article) => (
+                    <button
+                      key={article._id}
+                      onClick={() => handleArticleClick(article)}
+                      className="w-full text-left p-2 rounded-lg mb-2 hover:bg-gray-100"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium truncate">{article.title}</span>
+                        <span className="text-sm opacity-60">
+                          {new Date(article.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-32 text-gray-500">
+                    暂无文章
+                  </div>
+                )}
+              </nav>
+            </div>
+          </div>
+
+          {/* 右侧空白区域 */}
+          <div className="flex-1 p-8 flex items-center justify-center">
+            <div className="text-gray-500">
+              请选择一篇文章
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
