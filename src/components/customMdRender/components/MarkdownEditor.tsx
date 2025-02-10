@@ -84,7 +84,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   };
 
   // 处理图片上传
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File): Promise<string> => {
     try {
       setUploading(true);
       
@@ -150,10 +150,20 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         if (file) {
           try {
             const imageUrl = await handleImageUpload(file);
-            const imageMarkdown = `![](${imageUrl})`;
-            const newContent = content.slice(0, content.length) + imageMarkdown;
-            setContent(newContent);
-            onChange?.(newContent);
+            const imageMarkdown = `\n![](${imageUrl})\n`;
+            const textarea = document.querySelector('.w-md-editor-text-input') as HTMLTextAreaElement;
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+              setContent(newContent);
+              onChange?.(newContent);
+              // 设置光标位置
+              setTimeout(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+                textarea.focus();
+              }, 0);
+            }
           } catch (error) {
             alert('图片上传失败');
           }
@@ -175,10 +185,20 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     try {
       const imageUrl = await handleImageUpload(file);
-      const imageMarkdown = `![](${imageUrl})`;
-      const newContent = content.slice(0, content.length) + imageMarkdown;
-      setContent(newContent);
-      onChange?.(newContent);
+      const imageMarkdown = `\n![](${imageUrl})\n`;
+      const textarea = document.querySelector('.w-md-editor-text-input') as HTMLTextAreaElement;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+        setContent(newContent);
+        onChange?.(newContent);
+        // 设置光标位置
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+          textarea.focus();
+        }, 0);
+      }
     } catch (error) {
       alert('图片上传失败');
     }
