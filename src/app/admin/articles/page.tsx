@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
 import Link from 'next/link';
+import CategoryModal from '@/components/admin/CategoryModal';
 
 const ArticlesPage = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -11,10 +12,11 @@ const ArticlesPage = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState<string>('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<ArticleCategory | null>(null);
+  const handleCategoriesChange = () => {
+    // 刷新分类列表
+    fetchCategories();
+  };
 
   // 获取文章列表
   const fetchArticles = useCallback(async (category?: string) => {
@@ -62,53 +64,11 @@ const ArticlesPage = () => {
     }
   };
 
-  // 保存分类
-  const handleSaveCategory = async (category: Partial<ArticleCategory>) => {
-    try {
-      const method = category._id ? 'PUT' : 'POST';
-      const response = await fetch('/api/articles/categories', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(category),
-      });
-      
-      if (!response.ok) {
-        throw new Error('保存分类失败');
-      }
-      
-      showToast('保存成功', 'success');
-      fetchCategories();
-      setShowCategoryModal(false);
-      setEditingCategory(null);
-    } catch (error) {
-      showToast('保存分类失败', 'error');
-    }
-  };
-
-  // 删除分类
-  const handleDeleteCategory = async (id: string) => {
-    try {
-      const response = await fetch(`/api/articles/categories?id=${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('删除分类失败');
-      }
-      
-      showToast('删除成功', 'success');
-      fetchCategories();
-    } catch (error) {
-      showToast('删除分类失败', 'error');
-    }
-  };
-
   // 简单的 Toast 组件
   const showToast = (message: string, type: 'success' | 'error') => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } transition-opacity duration-500`;
+    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      } transition-opacity duration-500`;
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {
@@ -133,64 +93,6 @@ const ArticlesPage = () => {
     fetchArticles(categoryFilter);
   }, [categoryFilter, fetchArticles]);
 
-  // 分类管理模态框
-  const CategoryModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[500px]">
-        <h2 className="text-xl font-bold mb-4">
-          {editingCategory ? '编辑分类' : '新建分类'}
-        </h2>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          handleSaveCategory({
-            _id: editingCategory?._id,
-            name: formData.get('name') as string,
-            description: formData.get('description') as string,
-          });
-        }}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">分类名称</label>
-            <input
-              type="text"
-              name="name"
-              defaultValue={editingCategory?.name}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">描述</label>
-            <textarea
-              name="description"
-              defaultValue={editingCategory?.description}
-              className="w-full px-3 py-2 border rounded-lg"
-              rows={3}
-            />
-          </div>
-          <div className="flex justify-end space-x-2">
-            <button
-              type="button"
-              onClick={() => {
-                setShowCategoryModal(false);
-                setEditingCategory(null);
-              }}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
-              保存
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-
   return (
     <div className="p-6">
       {/* 头部 */}
@@ -203,7 +105,14 @@ const ArticlesPage = () => {
           >
             管理分类
           </button>
-          <Link 
+
+          {/* 分类管理模态框 */}
+          <CategoryModal
+            isOpen={showCategoryModal}
+            onClose={() => setShowCategoryModal(false)}
+            onCategoriesChange={handleCategoriesChange}
+          />
+          <Link
             href="/admin/articles/new"
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
@@ -294,11 +203,10 @@ const ArticlesPage = () => {
                     {categories.find(c => c._id === article.categoryId)?.name || '-'}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      article.status === ArticleStatus.PUBLISHED
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
+                    <span className={`px-2 py-1 text-xs rounded-full ${article.status === ArticleStatus.PUBLISHED
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-orange-100 text-orange-800'
+                      }`}>
                       {article.status === ArticleStatus.PUBLISHED ? '已发布' : '草稿'}
                     </span>
                   </td>
@@ -327,7 +235,7 @@ const ArticlesPage = () => {
       </div>
 
       {/* 分类管理模态框 */}
-      {showCategoryModal && <CategoryModal />}
+      {showCategoryModal && <CategoryModal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} onCategoriesChange={handleCategoriesChange} />}
     </div>
   );
 };

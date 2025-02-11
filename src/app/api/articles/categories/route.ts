@@ -80,7 +80,27 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, name, description } = await request.json();
+
+    if (!name || name.trim().length === 0) {
+      return NextResponse.json(
+        { error: "分类名称不能为空" },
+        { status: 400 }
+      );
+    }
+
     const db = await getDb();
+
+    // 检查分类是否存在
+    const category = await db
+      .collection<IArticleCategory>("articleCategories")
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!category) {
+      return NextResponse.json(
+        { error: "分类不存在" },
+        { status: 404 }
+      );
+    }
 
     // 检查是否存在同名分类（排除当前分类）
     const existingCategory = await db
@@ -89,7 +109,7 @@ export async function PUT(request: Request) {
 
     if (existingCategory) {
       return NextResponse.json(
-        { error: "Category name already exists" },
+        { error: "分类名称已存在" },
         { status: 400 }
       );
     }
@@ -128,17 +148,38 @@ export async function PUT(request: Request) {
 // 删除分类
 export async function DELETE(request: Request) {
   try {
-    const { id } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "分类 ID 不能为空" },
+        { status: 400 }
+      );
+    }
+
     const db = await getDb();
 
-    // 检查是否有文章使用此分类
-    const articlesUsingCategory = await db
-      .collection("articles")
-      .findOne({ categoryId: new ObjectId(id) });
+    // 检查分类是否存在
+    const category = await db
+      .collection<IArticleCategory>("articleCategories")
+      .findOne({ _id: new ObjectId(id) });
 
-    if (articlesUsingCategory) {
+    if (!category) {
       return NextResponse.json(
-        { error: "Cannot delete category that is being used by articles" },
+        { error: "分类不存在" },
+        { status: 404 }
+      );
+    }
+
+    // 检查是否有文章使用该分类
+    const articlesCount = await db
+      .collection("articles")
+      .countDocuments({ categoryId: new ObjectId(id) });
+
+    if (articlesCount > 0) {
+      return NextResponse.json(
+        { error: "该分类下还有文章，无法删除" },
         { status: 400 }
       );
     }
@@ -149,19 +190,16 @@ export async function DELETE(request: Request) {
 
     if (result.deletedCount === 0) {
       return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
+        { error: "删除分类失败" },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Category deleted successfully",
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting article category:", error);
+    console.error("删除分类出错:", error);
     return NextResponse.json(
-      { error: "Failed to delete article category" },
+      { error: "删除分类失败" },
       { status: 500 }
     );
   }
