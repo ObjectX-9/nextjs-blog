@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Article, ArticleStatus } from '@/app/model/article';
+import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
 import { MarkdownEditor } from '@/components/customMdRender/components/MarkdownEditor';
 
 const initialContent = `# 开始编写你的技术文档...`;
@@ -18,6 +18,35 @@ export default function NewArticlePage() {
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [categories, setCategories] = useState<ArticleCategory[]>([]);
+  const [articleSettings, setArticleSettings] = useState({
+    title: '',
+    categoryId: '',
+    status: ArticleStatus.DRAFT
+  });
+
+  // 加载分类列表
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/articles/categories');
+        if (!response.ok) throw new Error('获取分类失败');
+        const data = await response.json();
+        setCategories(data.categories);
+      } catch (error) {
+        console.error('获取分类失败:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // 打开设置对话框
+  const handleSave = useCallback(() => {
+    const title = extractTitle(content);
+    setArticleSettings(prev => ({ ...prev, title }));
+    setShowSettingsDialog(true);
+  }, [content]);
 
   // 保存文章
   const saveArticle = async () => {
@@ -43,17 +72,17 @@ export default function NewArticlePage() {
       const { url: ossPath } = await uploadResponse.json();
 
       // 2. 保存文章信息
-      const title = extractTitle(content);
       const response = await fetch('/api/articles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title,
+          title: articleSettings.title,
           content,
           ossPath,
-          status: ArticleStatus.DRAFT,
+          categoryId: articleSettings.categoryId,
+          status: articleSettings.status,
           createdAt: new Date().toISOString(),
         }),
       });
@@ -95,7 +124,7 @@ export default function NewArticlePage() {
             取消
           </button>
           <button
-            onClick={saveArticle}
+            onClick={handleSave}
             disabled={loading}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
           >
@@ -103,6 +132,69 @@ export default function NewArticlePage() {
           </button>
         </div>
       </div>
+
+      {/* 设置对话框 */}
+      {showSettingsDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] max-w-[90vw]">
+            <h2 className="text-xl font-semibold mb-4">文章设置</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">文章标题</label>
+                <input
+                  type="text"
+                  value={articleSettings.title}
+                  onChange={(e) => setArticleSettings(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">文章分类</label>
+                <select
+                  value={articleSettings.categoryId}
+                  onChange={(e) => setArticleSettings(prev => ({ ...prev, categoryId: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">请选择分类</option>
+                  {categories.map(category => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">文章状态</label>
+                <select
+                  value={articleSettings.status}
+                  onChange={(e) => setArticleSettings(prev => ({ ...prev, status: e.target.value as ArticleStatus }))}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={ArticleStatus.DRAFT}>草稿</option>
+                  <option value={ArticleStatus.PUBLISHED}>发布</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowSettingsDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  setShowSettingsDialog(false);
+                  saveArticle();
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                确认并保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 h-[calc(100vh-57px)]">
 
         <MarkdownEditor
