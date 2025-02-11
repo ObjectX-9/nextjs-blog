@@ -50,7 +50,7 @@ const publicPaths = [
 
 export async function middleware(request: NextRequest) {
   // 本地开发环境跳过验证
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     return NextResponse.next();
   }
 
@@ -103,7 +103,7 @@ export async function middleware(request: NextRequest) {
       const ip = request.ip || "unknown";
       const now = Date.now();
       const windowMs = 60 * 1000; // 1分钟窗口
-      const maxRequests = 60; // 每分钟最大请求数
+      const maxRequests = 300; // 每分钟最大请求数
 
       const current = rateLimit.get(ip) || { count: 0, timestamp: now };
 

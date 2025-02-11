@@ -75,7 +75,9 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
       setLoading(true);
 
       // 1. 上传 Markdown 内容到 OSS
-      const markdownBlob = new Blob([content], { type: 'text/markdown' });
+      const markdownBlob = new Blob([content], { 
+        type: 'text/markdown; charset=UTF-8'  
+      });
       const formData = new FormData();
       formData.append('file', markdownBlob, `${Date.now()}.md`);
       formData.append('type', 'tech'); // 指定文章类型
@@ -87,7 +89,12 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
 
       if (!uploadResponse.ok) {
         const error = await uploadResponse.json();
-        throw new Error(error.error || '上传文件失败');
+        console.error('上传失败详情:', {
+          status: uploadResponse.status,
+          statusText: uploadResponse.statusText,
+          error: error
+        });
+        throw new Error(error.error || `上传文件失败: ${uploadResponse.status} ${uploadResponse.statusText}`);
       }
 
       const { url: ossPath } = await uploadResponse.json();
