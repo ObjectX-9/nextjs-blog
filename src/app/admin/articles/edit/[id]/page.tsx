@@ -100,9 +100,8 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
   // Toast 提示
   const showToast = (message: string, type: 'success' | 'error') => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } transition-opacity duration-500`;
+    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      } transition-opacity duration-500`;
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {

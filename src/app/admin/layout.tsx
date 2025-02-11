@@ -29,8 +29,8 @@ export default function AdminLayout({
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
-  // 检查是否是新建文章页面
-  const isNewArticlePage = pathname === '/admin/articles/new';
+  // 检查是否是新建或编辑文章页面
+  const isArticleEditPage = pathname === '/admin/articles/new' || pathname.includes('/admin/articles/edit/');
 
   const handleLogout = async () => {
     try {
@@ -49,7 +49,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen flex-1">
-      {!isNewArticlePage && (
+      {!isArticleEditPage && (
         <>
           {/* 移动端遮罩层 */}
           {isDrawerOpen && (
@@ -82,7 +82,7 @@ export default function AdminLayout({
       )}
 
       {/* 侧边栏 */}
-      {!isNewArticlePage && (
+      {!isArticleEditPage && (
         <aside className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
           } lg:translate-x-0`}>
         <div className="p-4 border-b flex justify-between items-center">
