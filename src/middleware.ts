@@ -49,6 +49,11 @@ const publicPaths = [
 ];
 
 export async function middleware(request: NextRequest) {
+  // 本地开发环境跳过验证
+  if (process.env.NODE_ENV === 'development') {
+    return NextResponse.next();
+  }
+
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
   const isApiRoute = request.nextUrl.pathname.startsWith("/api");
   const isLoginPage = request.nextUrl.pathname === "/login";

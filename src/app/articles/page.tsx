@@ -13,6 +13,7 @@ export default function ArticlesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [currentView, setCurrentView] = useState<'categories' | 'articles'>('categories');
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
   // 检测移动端视图
   useEffect(() => {
@@ -61,6 +62,20 @@ export default function ArticlesPage() {
       }
       const data = await response.json();
       setCategories(data.categories);
+
+      // 获取所有分类的文章数量
+      const counts: Record<string, number> = {};
+      await Promise.all(
+        data.categories.map(async (category: ArticleCategory) => {
+          const articlesResponse = await fetch(`/api/articles?categoryId=${category._id}`);
+          if (articlesResponse.ok) {
+            const articlesData = await articlesResponse.json();
+            counts[category._id!] = articlesData.articles?.length || 0;
+          }
+        })
+      );
+      setCategoryCounts(counts);
+
       if (data.categories.length > 0) {
         setSelectedCategory(data.categories[0]._id);
       }
@@ -78,6 +93,11 @@ export default function ArticlesPage() {
       }
       const data = await response.json();
       setArticles(data.articles || []);
+      // 更新当前分类的文章计数
+      setCategoryCounts(prev => ({
+        ...prev,
+        [categoryId]: data.articles?.length || 0
+      }));
     } catch (error) {
       console.error('获取文章列表失败:', error);
       setArticles([]);
@@ -274,7 +294,10 @@ export default function ArticlesPage() {
                   : "hover:bg-gray-100"
                   }`}
               >
-                <span>{category.name}</span>
+                <div className="flex items-center justify-between w-full">
+                  <span className="truncate flex-1 mr-2">{category.name}</span>
+                  <span className="text-sm opacity-60 flex-shrink-0">{categoryCounts[category._id!] || 0} 篇</span>
+                </div>
               </button>
             ))}
           </nav>
