@@ -84,10 +84,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   };
 
   // 处理图片上传
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File): Promise<string> => {
     try {
       setUploading(true);
-      
+
       // 检查文件类型
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
@@ -117,7 +117,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       return data.url;
     } catch (error) {
       console.error('图片上传错误:', error);
-      
+
       // 根据错误类型提供更具体的用户反馈
       if (error instanceof Error) {
         switch (error.message) {
@@ -131,7 +131,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             alert('图片上传失败，请重试');
         }
       }
-      
+
       throw error;
     } finally {
       setUploading(false);
@@ -150,10 +150,20 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         if (file) {
           try {
             const imageUrl = await handleImageUpload(file);
-            const imageMarkdown = `![](${imageUrl})`;
-            const newContent = content.slice(0, content.length) + imageMarkdown;
-            setContent(newContent);
-            onChange?.(newContent);
+            const imageMarkdown = `\n![](${imageUrl})\n`;
+            const textarea = document.querySelector('.w-md-editor-text-input') as HTMLTextAreaElement;
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+              setContent(newContent);
+              onChange?.(newContent);
+              // 设置光标位置
+              setTimeout(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+                textarea.focus();
+              }, 0);
+            }
           } catch (error) {
             alert('图片上传失败');
           }
@@ -175,10 +185,20 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     try {
       const imageUrl = await handleImageUpload(file);
-      const imageMarkdown = `![](${imageUrl})`;
-      const newContent = content.slice(0, content.length) + imageMarkdown;
-      setContent(newContent);
-      onChange?.(newContent);
+      const imageMarkdown = `\n![](${imageUrl})\n`;
+      const textarea = document.querySelector('.w-md-editor-text-input') as HTMLTextAreaElement;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+        setContent(newContent);
+        onChange?.(newContent);
+        // 设置光标位置
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+          textarea.focus();
+        }, 0);
+      }
     } catch (error) {
       alert('图片上传失败');
     }
@@ -230,7 +250,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
   return (
     <div className="markdown-editor h-full" data-color-mode="light">
-      <div className="editor-toolbar border-b p-2 bg-white">
+      <div className="editor-toolbar bg-white">
         {showComponentList && (
           <div className="component-list absolute z-10 mt-1 bg-white border rounded-lg shadow-lg">
             {componentList.length === 0 ? (
@@ -255,11 +275,11 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             value={content}
             onChange={handleEditorChange}
             height="100%"
-            preview="edit"
             hideToolbar={false}
             visibleDragbar={false}
             commands={customCommands}
             className="custom-md-editor"
+            extraCommands={[]}
           />
         </div>
         <div className="w-1/2 h-full overflow-auto p-4 bg-white">

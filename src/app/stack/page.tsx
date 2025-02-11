@@ -7,7 +7,7 @@ import { IStack } from "@/app/model/stack";
 // Utility function to truncate text
 function truncateText(text: string, maxLength: number = 50) {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
+  return text.slice(0, maxLength) + "...";
 }
 
 async function getStacks() {

@@ -3,6 +3,10 @@
   border: none !important;
 }
 
+.custom-md-editor .w-md-editor-input {
+  width: 100% !important;
+}
+
 /* 隐藏内置预览 */
 .custom-md-editor .w-md-editor-preview {
   display: none !important;
@@ -263,9 +267,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 8px 16px;
   background-color: #fff;
-  border-bottom: 1px solid #ddd;
   display: flex;
   align-items: center;
   gap: 8px;
