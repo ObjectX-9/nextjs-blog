@@ -87,7 +87,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const handleImageUpload = async (file: File): Promise<string> => {
     try {
       setUploading(true);
-      
+
       // 检查文件类型
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
@@ -117,7 +117,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       return data.url;
     } catch (error) {
       console.error('图片上传错误:', error);
-      
+
       // 根据错误类型提供更具体的用户反馈
       if (error instanceof Error) {
         switch (error.message) {
@@ -131,7 +131,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             alert('图片上传失败，请重试');
         }
       }
-      
+
       throw error;
     } finally {
       setUploading(false);
@@ -250,7 +250,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
   return (
     <div className="markdown-editor h-full" data-color-mode="light">
-      <div className="editor-toolbar border-b p-2 bg-white">
+      <div className="editor-toolbar bg-white">
         {showComponentList && (
           <div className="component-list absolute z-10 mt-1 bg-white border rounded-lg shadow-lg">
             {componentList.length === 0 ? (
@@ -275,11 +275,11 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             value={content}
             onChange={handleEditorChange}
             height="100%"
-            preview="edit"
             hideToolbar={false}
             visibleDragbar={false}
             commands={customCommands}
             className="custom-md-editor"
+            extraCommands={[]}
           />
         </div>
         <div className="w-1/2 h-full overflow-auto p-4 bg-white">

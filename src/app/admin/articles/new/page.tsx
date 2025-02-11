@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Article, ArticleStatus } from '@/app/model/article';
 import { MarkdownEditor } from '@/components/customMdRender/components/MarkdownEditor';
@@ -17,6 +17,7 @@ export default function NewArticlePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState(initialContent);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   // 保存文章
   const saveArticle = async () => {
@@ -73,10 +74,19 @@ export default function NewArticlePage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center p-4 border-b">
+    <div className="flex flex-col h-screen">
+      <div className="flex justify-between items-center px-6 py-3 border-b bg-white shadow-sm">
         <h1 className="text-xl font-semibold">新建文章</h1>
-        <div className="space-x-4">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="p-2 text-gray-600 hover:text-gray-800"
+            title={showSidebar ? '隐藏目录' : '显示目录'}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <button
             onClick={() => router.push('/admin/articles')}
             className="px-4 py-2 text-gray-600 hover:text-gray-800"
@@ -93,11 +103,57 @@ export default function NewArticlePage() {
           </button>
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 h-[calc(100vh-57px)]">
+
         <MarkdownEditor
           initialContent={content}
           onChange={setContent}
         />
+      </div>
+
+      {/* 右侧固定目录 */}
+      <div className={`fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-xl transition-all duration-300 z-50 ${showSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="sticky top-0 h-screen overflow-y-auto bg-gradient-to-b from-white to-gray-50">
+          <div className="p-6 border-b bg-white/80 backdrop-blur-sm flex items-center justify-between sticky top-0 z-10">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              目录
+            </h2>
+            <button
+              onClick={() => setShowSidebar(false)}
+              className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <nav className="p-6 space-y-2">
+            {content.split('\n')
+              .filter(line => line.startsWith('#'))
+              .map((heading, index) => {
+                const level = heading.match(/^#+/)?.[0].length || 1;
+                const text = heading.replace(/^#+\s+/, '');
+                return (
+                  <div
+                    key={index}
+                    className={`group flex items-center py-2 ${level === 1 ? 'text-gray-900 font-medium' : 'text-gray-600'} hover:text-blue-600 hover:bg-blue-50/50 rounded-lg cursor-pointer text-sm transition-all duration-200 ease-in-out`}
+                    style={{ paddingLeft: `${(level - 1) * 1.25}rem` }}
+                    onClick={() => {
+                      const element = document.getElementById(text.toLowerCase().replace(/\s+/g, '-'));
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    title={text}
+                  >
+                    <div className="w-1 h-1 rounded-full bg-gray-300 group-hover:bg-blue-500 mr-2 transition-colors duration-200"></div>
+                    <span className="truncate">{text}</span>
+                  </div>
+                );
+              })}
+          </nav>
+        </div>
       </div>
     </div>
   );
