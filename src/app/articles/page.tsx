@@ -32,88 +32,73 @@ export default function ArticlesPage() {
   }, []);
 
   const fetchAllArticles = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/articles');
-      if (!response.ok) {
-        throw new Error('获取文章列表失败');
-      }
-      const data = await response.json();
-      const sortedArticles = sortArticles(data.articles || []);
-      setAllArticles(sortedArticles);
-
-      // 更新分类计数
-      const counts: Record<string, number> = {};
-      data.articles.forEach((article: Article) => {
-        if (article.categoryId) {
-          counts[article.categoryId] = (counts[article.categoryId] || 0) + 1;
-        }
-      });
-      setCategoryCounts(counts);
-    } catch (error) {
-      console.error('获取文章列表失败:', error);
-      setAllArticles([]);
-    } finally {
-      setLoading(false);
+    const response = await fetch('/api/articles');
+    if (!response.ok) {
+      throw new Error('获取文章列表失败');
     }
+    const data = await response.json();
+    const sortedArticles = sortArticles(data.articles || []);
+    setAllArticles(sortedArticles);
   }, []);
 
   const fetchCategories = useCallback(async () => {
-    try {
-      const response = await fetch('/api/articles/categories');
-      if (!response.ok) {
-        throw new Error('获取分类列表失败');
-      }
-      const data = await response.json();
-      const sortedCategories = data.categories.sort((a: ArticleCategory, b: ArticleCategory) => {
-        // 首先按照置顶状态排序
-        if (a.isTop !== b.isTop) {
-          return b.isTop ? 1 : -1;
-        }
-        // 其次按照完成状态排序
-        if (a.status !== b.status) {
-          return a.status === 'completed' ? -1 : 1;
-        }
-        // 最后按照order和名称排序
-        if (a.order !== b.order) {
-          return a.order - b.order;
-        }
-        return a.name.localeCompare(b.name);
-      });
-      setCategories(sortedCategories);
-
-      const counts: Record<string, number> = {};
-      await Promise.all(
-        sortedCategories.map(async (category: ArticleCategory) => {
-          const articlesResponse = await fetch(`/api/articles?categoryId=${category._id}`);
-          if (articlesResponse.ok) {
-            const articlesData = await articlesResponse.json();
-            counts[category._id!] = articlesData.articles?.length || 0;
-          }
-        })
-      );
-      setCategoryCounts(counts);
-    } catch (error) {
-      console.error('获取分类列表失败:', error);
+    const response = await fetch('/api/articles/categories');
+    if (!response.ok) {
+      throw new Error('获取分类列表失败');
     }
+    const data = await response.json();
+    const sortedCategories = data.categories.sort((a: ArticleCategory, b: ArticleCategory) => {
+      if (a.isTop !== b.isTop) {
+        return b.isTop ? 1 : -1;
+      }
+      if (a.status !== b.status) {
+        return a.status === 'completed' ? -1 : 1;
+      }
+      if (a.order !== b.order) {
+        return a.order - b.order;
+      }
+      return a.name.localeCompare(b.name);
+    });
+    setCategories(sortedCategories);
   }, []);
 
   useEffect(() => {
+    if (allArticles.length && categories.length) {
+      const counts: Record<string, number> = {};
+      categories.forEach((category) => {
+        counts[category._id!] = allArticles.filter(article => article.categoryId === category._id).length;
+      });
+      setCategoryCounts(counts);
+    }
+  }, [allArticles, categories]);
+
+  useEffect(() => {
     const init = async () => {
-      await Promise.all([fetchCategories(), fetchAllArticles()]);
-      const urlParams = new URLSearchParams(window.location.search);
-      const categoryFromUrl = urlParams.get('category');
-      if (categoryFromUrl) {
-        setSelectedCategory(categoryFromUrl);
-      } else {
-        const lastCategory = localStorage.getItem('lastCategory');
-        if (lastCategory) {
-          setSelectedCategory(lastCategory);
+      try {
+        setLoading(true);
+        await fetchAllArticles();
+        await fetchCategories();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const categoryFromUrl = urlParams.get('category');
+        if (categoryFromUrl) {
+          setSelectedCategory(categoryFromUrl);
+        } else {
+          const lastCategory = localStorage.getItem('lastCategory');
+          if (lastCategory) {
+            setSelectedCategory(lastCategory);
+          }
         }
+      } catch (error) {
+        console.error('初始化失败:', error);
+      } finally {
+        setLoading(false);
       }
     };
+
     init();
-  }, [fetchCategories, fetchAllArticles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (selectedCategory) {
@@ -139,7 +124,6 @@ export default function ArticlesPage() {
     });
   };
 
-
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
     localStorage.setItem('lastCategory', categoryId);
@@ -161,8 +145,6 @@ export default function ArticlesPage() {
       setCurrentView('categories');
     }
   };
-
-
 
   if (!categories.length) {
     return (
