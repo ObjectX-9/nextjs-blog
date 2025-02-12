@@ -114,6 +114,15 @@ export default function FriendsManagementPage() {
       }
       setEditingFile(null);
       setEditingPreviewUrl("");
+      if (editingFriend) {
+        setEditingFriend({
+          ...editingFriend,
+          friend: {
+            ...editingFriend.friend,
+            avatar: ""
+          }
+        });
+      }
     } else {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);

@@ -13,6 +13,8 @@ import Lightbox from "yet-another-react-lightbox";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
 import Image from 'next/image';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 // 桌面端渲染组件
 const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
@@ -54,6 +56,24 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
     h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    code: ({ node, inline, className, children, ...props }: any) => {
+      const match = /language-([\w-]+)/.exec(className || '');
+      const language = match ? match[1] : '';
+      return !inline && language ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={language}
+          PreTag="div"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
     img: (props) => {
       const { src, alt, ...restProps } = props;
       return (
@@ -138,6 +158,24 @@ const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentPro
     h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    code: ({ node, inline, className, children, ...props }: any) => {
+      const match = /language-([\w-]+)/.exec(className || '');
+      const language = match ? match[1] : '';
+      return !inline && language ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={language}
+          PreTag="div"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
     img: (props) => {
       const { src, alt, ...restProps } = props;
       return (
