@@ -57,7 +57,7 @@ async function getArticles() {
   }
 }
 
-export default async function Index() {
+export default async function App() {
   const socialLinks = await getSocialLinks();
   const workExperiences = await getWorkExperiences();
   const articles = await getArticles();

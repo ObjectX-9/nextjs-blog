@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Article, ArticleCategory } from '@/app/model/article';
 
-
 export default function ArticlesPage() {
   const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -15,7 +14,6 @@ export default function ArticlesPage() {
   const [currentView, setCurrentView] = useState<'categories' | 'articles'>('categories');
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
-  // 检测移动端视图
   useEffect(() => {
     const checkMobileView = () => {
       const isMobile = window.innerWidth < 768;
@@ -32,13 +30,11 @@ export default function ArticlesPage() {
   useEffect(() => {
     const init = async () => {
       await fetchCategories();
-      // 从 URL 参数获取分类
       const urlParams = new URLSearchParams(window.location.search);
       const categoryFromUrl = urlParams.get('category');
       if (categoryFromUrl) {
         setSelectedCategory(categoryFromUrl);
       } else {
-        // 如果 URL 没有分类参数，从 localStorage 获取
         const lastCategory = localStorage.getItem('lastCategory');
         if (lastCategory) {
           setSelectedCategory(lastCategory);
@@ -61,12 +57,26 @@ export default function ArticlesPage() {
         throw new Error('获取分类列表失败');
       }
       const data = await response.json();
-      setCategories(data.categories);
+      const sortedCategories = data.categories.sort((a: ArticleCategory, b: ArticleCategory) => {
+        // 首先按照置顶状态排序
+        if (a.isTop !== b.isTop) {
+          return b.isTop ? 1 : -1;
+        }
+        // 其次按照完成状态排序
+        if (a.status !== b.status) {
+          return a.status === 'completed' ? -1 : 1;
+        }
+        // 最后按照order和名称排序
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      setCategories(sortedCategories);
 
-      // 获取所有分类的文章数量
       const counts: Record<string, number> = {};
       await Promise.all(
-        data.categories.map(async (category: ArticleCategory) => {
+        sortedCategories.map(async (category: ArticleCategory) => {
           const articlesResponse = await fetch(`/api/articles?categoryId=${category._id}`);
           if (articlesResponse.ok) {
             const articlesData = await articlesResponse.json();
@@ -76,8 +86,8 @@ export default function ArticlesPage() {
       );
       setCategoryCounts(counts);
 
-      if (data.categories.length > 0) {
-        setSelectedCategory(data.categories[0]._id);
+      if (sortedCategories.length > 0) {
+        setSelectedCategory(sortedCategories[0]._id);
       }
     } catch (error) {
       console.error('获取分类列表失败:', error);
@@ -93,7 +103,6 @@ export default function ArticlesPage() {
       }
       const data = await response.json();
       setArticles(data.articles || []);
-      // 更新当前分类的文章计数
       setCategoryCounts(prev => ({
         ...prev,
         [categoryId]: data.articles?.length || 0
@@ -108,7 +117,6 @@ export default function ArticlesPage() {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    // 保存选中的分类
     localStorage.setItem('lastCategory', categoryId);
     if (isMobileView) {
       setCurrentView('articles');
@@ -117,7 +125,6 @@ export default function ArticlesPage() {
 
   const handleArticleClick = (article: Article) => {
     if (isMobileView) {
-      // 移动端使用 window.location.href 进行跳转，以支持浏览器返回
       window.location.href = `/articles/${article._id}`;
     } else {
       router.push(`/articles/${article._id}`);
@@ -130,38 +137,44 @@ export default function ArticlesPage() {
     }
   };
 
-  // 骨架屏组件
   const ArticleSkeleton = () => (
-    <div className="animate-pulse">
-      {[1, 2, 3, 4, 5].map((i) => (
+    <div className="animate-pulse space-y-4">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
         <div key={i} className="p-3 border-b last:border-b-0">
-          <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-100 rounded w-1/4"></div>
+          <div className="h-5 bg-gray-200 rounded w-4/5 mb-2"></div>
+          <div className="h-4 bg-gray-100 rounded w-1/3"></div>
         </div>
       ))}
     </div>
   );
 
   const ArticleSkeletonDesktop = () => (
-    <div className="animate-pulse">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="p-2 rounded-lg mb-2">
-          <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-100 rounded w-1/4"></div>
+    <div className="animate-pulse space-y-4">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <div key={i} className="p-3 rounded-lg mb-2 bg-gray-50">
+          <div className="h-5 bg-gray-200 rounded w-4/5 mb-2"></div>
+          <div className="h-4 bg-gray-100 rounded w-1/3"></div>
         </div>
       ))}
     </div>
   );
 
   const CategorySkeleton = () => (
-    <div className="animate-pulse">
+    <div className="animate-pulse h-full">
       <div className="p-4 border-b">
-        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-7 bg-gray-200 rounded w-1/2 mb-4"></div>
       </div>
-      <div className="p-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="mb-3 last:mb-0">
-            <div className="h-10 bg-gray-100 rounded w-full"></div>
+      <div className="p-4 space-y-3">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="p-3 rounded-lg border border-gray-100">
+            <div className="flex gap-1 mb-2">
+              <div className="h-4 bg-gray-200 rounded w-12"></div>
+              <div className="h-4 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="h-5 bg-gray-100 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-100 rounded w-8"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -171,7 +184,6 @@ export default function ArticlesPage() {
   if (!categories.length) {
     return (
       <div className="min-h-screen flex">
-        {/* 移动端分类列表 */}
         <div className="md:hidden w-full">
           <div
             className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'}`}
@@ -179,17 +191,21 @@ export default function ArticlesPage() {
             <CategorySkeleton />
           </div>
           <div className="fixed inset-0 bg-white">
-            <ArticleSkeleton />
+            <div className="p-4">
+              <ArticleSkeleton />
+            </div>
           </div>
         </div>
 
-        {/* 桌面端布局 */}
         <div className="hidden md:flex w-full">
-          <div className="w-64 min-h-screen border-r bg-white">
+          <div className="w-[20vw] min-h-screen border-r bg-white">
             <CategorySkeleton />
           </div>
-          <div className="flex-1 p-6">
-            <ArticleSkeletonDesktop />
+          <div className="flex-1 pl-8 bg-white">
+            <div className="p-4">
+              <div className="h-7 bg-gray-200 rounded w-1/4 mb-6"></div>
+              <ArticleSkeletonDesktop />
+            </div>
           </div>
         </div>
       </div>
@@ -198,10 +214,8 @@ export default function ArticlesPage() {
 
   const renderMobileView = () => (
     <div className="w-full">
-      {/* 分类视图 */}
       <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
@@ -213,9 +227,21 @@ export default function ArticlesPage() {
                 <button
                   key={category._id}
                   onClick={() => handleCategorySelect(category._id!)}
-                  className="w-full text-left p-3 border-b last:border-b-0"
+                  className="w-full text-left p-3 border-b last:border-b-0 relative group hover:bg-gray-50"
                 >
-                  <span className="truncate block">{category.name}</span>
+                  <div className="absolute left-0 top-0 flex gap-1">
+                    {category.isTop && (
+                      <span className="text-[10px] font-medium bg-gray-300 text-white px-1.5 py-0.5 rounded">
+                        置顶
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-300 text-white`}>
+                      {category.status === 'completed' ? '已完成' : '进行中'}
+                    </span>
+                  </div>
+                  <div className="flex items-center min-h-[40px]">
+                    <span className="text-base font-medium truncate">{category.name}</span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -223,10 +249,8 @@ export default function ArticlesPage() {
         </div>
       </div>
 
-      {/* 文章列表视图 */}
       <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'articles' ? 'translate-x-0' : 'translate-x-full'
-          }`}
+        className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'articles' ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <button
           onClick={handleBack}
@@ -280,8 +304,7 @@ export default function ArticlesPage() {
 
   const renderDesktopView = () => (
     <div className="flex w-full">
-      {/* 分类列表 */}
-      <div className="w-64 border-r bg-white">
+      <div className="w-[20vw] border-r bg-white">
         <div className="sticky top-0 h-screen overflow-y-auto">
           <nav className="p-4">
             <h2 className="text-lg font-bold mb-4">技术文档</h2>
@@ -289,14 +312,35 @@ export default function ArticlesPage() {
               <button
                 key={category._id}
                 onClick={() => handleCategorySelect(category._id!)}
-                className={`w-full text-left p-2 rounded-lg mb-2 ${selectedCategory === category._id
-                  ? "bg-black text-white"
-                  : "hover:bg-gray-100"
+                className={`w-full text-left p-3 rounded-lg mb-2 relative group border ${selectedCategory === category._id
+                  ? "bg-black text-white border-transparent"
+                  : "hover:bg-gray-50 border-gray-200"
                   }`}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span className="truncate flex-1 mr-2">{category.name}</span>
-                  <span className="text-sm opacity-60 flex-shrink-0">{categoryCounts[category._id!] || 0} 篇</span>
+                <div className="absolute left-0 top-0 flex gap-1">
+                  {category.isTop && (
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${selectedCategory === category._id
+                      ? 'bg-white/25 text-white'
+                      : 'bg-gray-300 text-white hover:bg-gray-500'
+                      }`}>
+                      置顶
+                    </span>
+                  )}
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${selectedCategory === category._id
+                    ? 'bg-white/25 text-white'
+                    : 'bg-gray-300 text-white hover:bg-gray-500'
+                    }`}>
+                    {category.status === 'completed' ? '已完成' : '进行中'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between min-h-[40px]">
+                  <span className="text-base truncate mr-2">{category.name}</span>
+                  <span className={`text-sm ${selectedCategory === category._id
+                    ? 'text-white/60'
+                    : 'text-gray-400'
+                    }`}>
+                    {categoryCounts[category._id!] || 0} 篇
+                  </span>
                 </div>
               </button>
             ))}
@@ -304,8 +348,7 @@ export default function ArticlesPage() {
         </div>
       </div>
 
-      {/* 文章列表 */}
-      <div className="w-64 border-r bg-white">
+      <div className="flex-1 border-r pl-8 bg-white">
         <div className="sticky top-0 h-screen overflow-y-auto">
           <nav className="p-4">
             <h2 className="text-lg font-bold mb-4">
@@ -334,13 +377,6 @@ export default function ArticlesPage() {
               </div>
             )}
           </nav>
-        </div>
-      </div>
-
-      {/* 右侧空白区域 */}
-      <div className="flex-1 p-8 flex items-center justify-center">
-        <div className="text-gray-500">
-          请选择一篇文章
         </div>
       </div>
     </div>

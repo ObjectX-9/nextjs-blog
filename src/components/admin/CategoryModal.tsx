@@ -16,6 +16,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
   const [editingCategory, setEditingCategory] = useState<ArticleCategory | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [newCategoryOrder, setNewCategoryOrder] = useState<number>(0);
+  const [newCategoryIsTop, setNewCategoryIsTop] = useState<boolean>(false);
+  const [newCategoryStatus, setNewCategoryStatus] = useState<'completed' | 'in_progress'>('in_progress');
 
   // 获取分类列表
   const fetchCategories = async () => {
@@ -51,6 +54,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
         body: JSON.stringify({
           name: newCategoryName.trim(),
           description: newCategoryDescription.trim() || undefined,
+          order: newCategoryOrder,
+          isTop: newCategoryIsTop,
+          status: newCategoryStatus,
         }),
       });
 
@@ -62,6 +68,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
       toast.success('添加分类成功');
       setNewCategoryName('');
       setNewCategoryDescription('');
+      setNewCategoryOrder(0);
+      setNewCategoryIsTop(false);
+      setNewCategoryStatus('in_progress');
       fetchCategories();
       onCategoriesChange();
     } catch (error: any) {
@@ -87,6 +96,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
           id: editingCategory._id,
           name: newCategoryName.trim(),
           description: newCategoryDescription.trim() || undefined,
+          order: newCategoryOrder,
+          isTop: newCategoryIsTop,
+          status: newCategoryStatus,
         }),
       });
 
@@ -99,6 +111,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
       setEditingCategory(null);
       setNewCategoryName('');
       setNewCategoryDescription('');
+      setNewCategoryOrder(0);
+      setNewCategoryIsTop(false);
+      setNewCategoryStatus('in_progress');
       fetchCategories();
       onCategoriesChange();
     } catch (error: any) {
@@ -138,6 +153,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
     setEditingCategory(category);
     setNewCategoryName(category.name);
     setNewCategoryDescription(category.description || '');
+    setNewCategoryOrder(category.order || 0);
+    setNewCategoryIsTop(category.isTop || false);
+    setNewCategoryStatus(category.status || 'in_progress');
   };
 
   // 取消编辑
@@ -145,6 +163,9 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
     setEditingCategory(null);
     setNewCategoryName('');
     setNewCategoryDescription('');
+    setNewCategoryOrder(0);
+    setNewCategoryIsTop(false);
+    setNewCategoryStatus('in_progress');
   };
 
   // 处理 ESC 键关闭
@@ -203,6 +224,35 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={loading}
           />
+          <div className="flex gap-4">
+            <input
+              type="number"
+              placeholder="排序"
+              value={newCategoryOrder}
+              onChange={(e) => setNewCategoryOrder(Number(e.target.value))}
+              className="w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            />
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={newCategoryIsTop}
+                onChange={(e) => setNewCategoryIsTop(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={loading}
+              />
+              <span className="text-sm">置顶</span>
+            </label>
+            <select
+              value={newCategoryStatus}
+              onChange={(e) => setNewCategoryStatus(e.target.value as 'completed' | 'in_progress')}
+              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            >
+              <option value="in_progress">进行中</option>
+              <option value="completed">已完成</option>
+            </select>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={editingCategory ? handleUpdateCategory : handleAddCategory}
@@ -231,10 +281,22 @@ export default function CategoryModal({ isOpen, onClose, onCategoriesChange }: C
               className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="flex-1 min-w-0 mr-4">
-                <div className="font-medium truncate">{category.name}</div>
+                <div className="font-medium truncate">
+                  {category.name}
+                  {category.isTop && (
+                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                      置顶
+                    </span>
+                  )}
+                </div>
                 {category.description && (
                   <div className="text-sm text-gray-500 truncate">{category.description}</div>
                 )}
+                <div className="text-xs text-gray-400 mt-1 space-x-2">
+                  <span>排序: {category.order}</span>
+                  <span>•</span>
+                  <span>状态: {category.status === 'completed' ? '已完成' : '进行中'}</span>
+                </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <button

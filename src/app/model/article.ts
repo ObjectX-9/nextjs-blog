@@ -55,7 +55,13 @@ export enum ArticleStatus {
 export interface ArticleCategory {
   _id?: string;
   name: string;
+  // 排序
+  order: number;
   description?: string;
+  // 是否置顶
+  isTop?: boolean;
+  // 分类状态
+  status?: 'completed' | 'in_progress';
   createdAt: string;
   updatedAt: string;
 }

@@ -5,7 +5,10 @@ import { ObjectId } from "mongodb";
 interface IArticleCategory {
   _id?: ObjectId;
   name: string;
+  order: number;
   description?: string;
+  isTop?: boolean;
+  status?: 'completed' | 'in_progress';
   createdAt: string;
   updatedAt: string;
 }
@@ -17,7 +20,7 @@ export async function GET() {
     const categories = await db
       .collection<IArticleCategory>("articleCategories")
       .find()
-      .sort({ name: 1 })
+      .sort({ order: 1, name: 1 }) // 首先按order排序，其次按name排序
       .toArray();
 
     return NextResponse.json({ success: true, categories });
@@ -33,7 +36,7 @@ export async function GET() {
 // 创建新分类
 export async function POST(request: Request) {
   try {
-    const { name, description } = await request.json();
+    const { name, description, order, isTop, status } = await request.json();
     const db = await getDb();
 
     // 检查分类名是否已存在
@@ -50,7 +53,10 @@ export async function POST(request: Request) {
 
     const categoryToInsert: IArticleCategory = {
       name,
+      order: order || 0, // 默认排序为0
       description,
+      isTop: isTop || false, // 默认不置顶
+      status: status || 'in_progress', // 默认进行中
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -79,7 +85,7 @@ export async function POST(request: Request) {
 // 更新分类
 export async function PUT(request: Request) {
   try {
-    const { id, name, description } = await request.json();
+    const { id, name, description, order, isTop, status } = await request.json();
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
@@ -120,6 +126,9 @@ export async function PUT(request: Request) {
         $set: {
           name,
           description,
+          order: order !== undefined ? order : category.order,
+          isTop: isTop !== undefined ? isTop : category.isTop,
+          status: status || category.status,
           updatedAt: new Date().toISOString(),
         },
       }
