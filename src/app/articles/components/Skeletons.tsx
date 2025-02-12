@@ -22,7 +22,7 @@ export const ArticleSkeletonDesktop = () => (
 
 export const CategorySkeleton = () => (
   <div className="animate-pulse h-full">
-    <div className="p-4 border-b">
+    <div className="p-4 pb-0">
       <div className="h-7 bg-gray-200 rounded w-1/2 mb-4"></div>
     </div>
     <div className="p-4 space-y-2">
