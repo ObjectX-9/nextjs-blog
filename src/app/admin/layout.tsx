@@ -6,6 +6,7 @@ import { useState } from "react";
 
 const navItems = [
   { name: "网站信息管理", href: "/admin/site" },
+  { name: "文章管理", href: "/admin/articles" },
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
@@ -17,7 +18,6 @@ const navItems = [
   { name: "工作空间管理", href: "/admin/workspaces" },
   { name: "社交链接管理", href: "/admin/social-links" },
   { name: "工作经历管理", href: "/admin/work-experience" },
-  { name: "文章管理", href: "/admin/articles" },
 ];
 
 export default function AdminLayout({

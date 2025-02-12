@@ -62,6 +62,7 @@ const getColumns = (categories: ArticleCategory[], handleDelete: (id: string) =>
 
 const ArticlesPage = () => {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<ArticleCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -69,21 +70,15 @@ const ArticlesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  const handleCategoriesChange = () => {
-    fetchCategories();
-  };
-
   // 获取文章列表
-  const fetchArticles = useCallback(async (category?: string) => {
+  const fetchArticles = useCallback(async () => {
     try {
       setLoading(true);
-      const url = new URL('/api/articles', window.location.origin);
-      if (category) {
-        url.searchParams.set('categoryId', category);
+      const response = await fetch('/api/articles');
+      if (!response.ok) {
+        throw new Error('获取文章列表失败');
       }
-      const response = await fetch(url);
       const data = await response.json();
-      console.log('API Response:', data);
       setArticles(data.articles || []);
     } catch (error) {
       console.error('获取文章列表失败:', error);
@@ -113,31 +108,42 @@ const ArticlesPage = () => {
         throw new Error('删除失败');
       }
       antMessage.success('删除成功');
-      await fetchArticles(categoryFilter);
+      fetchArticles();
     } catch (error) {
       antMessage.error('删除失败');
     }
-  }, [fetchArticles, categoryFilter]);
+  }, [fetchArticles]);
 
-  // 筛选文章
-  const filterArticles = useCallback((articles: Article[]) => {
-    return articles.filter(article => {
-      const matchesSearch = article.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        article.content.toLowerCase().includes(searchText.toLowerCase());
-      const matchesStatus = !statusFilter || article.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchText, statusFilter]);
+  // 处理搜索和筛选
+  useEffect(() => {
+    let filtered = [...articles];
 
-  const filteredArticles = filterArticles(articles);
+    // 应用分类筛选
+    if (categoryFilter) {
+      filtered = filtered.filter(article => article.categoryId === categoryFilter);
+    }
 
+    // 应用状态筛选
+    if (statusFilter) {
+      filtered = filtered.filter(article => article.status === statusFilter);
+    }
+
+    // 应用搜索（只搜索标题）
+    if (searchText.trim()) {
+      const searchRegex = new RegExp(searchText.trim(), 'i');
+      filtered = filtered.filter(article => 
+        searchRegex.test(article.title || '')
+      );
+    }
+
+    setFilteredArticles(filtered);
+  }, [articles, searchText, statusFilter, categoryFilter]);
+
+  // 初始化加载
   useEffect(() => {
     fetchCategories();
-  }, [fetchCategories]);
-
-  useEffect(() => {
-    fetchArticles(categoryFilter);
-  }, [categoryFilter, fetchArticles]);
+    fetchArticles();
+  }, [fetchCategories, fetchArticles]);
 
   return (
     <div className="p-6">
@@ -164,7 +170,7 @@ const ArticlesPage = () => {
       {/* 搜索和筛选 */}
       <div className="mb-4 flex gap-4">
         <Search
-          placeholder="搜索文章标题或内容"
+          placeholder="搜索文章标题"
           allowClear
           style={{ width: 300 }}
           value={searchText}
@@ -175,6 +181,7 @@ const ArticlesPage = () => {
           value={categoryFilter}
           onChange={setCategoryFilter}
           placeholder="选择分类"
+          allowClear
         >
           <Select.Option value="">全部分类</Select.Option>
           {categories.map(category => (
@@ -186,8 +193,9 @@ const ArticlesPage = () => {
         <Select
           style={{ width: 200 }}
           value={statusFilter}
-          onChange={value => setStatusFilter(value as ArticleStatus | '')}
+          onChange={value => setStatusFilter(value)}
           placeholder="选择状态"
+          allowClear
         >
           <Select.Option value="">全部状态</Select.Option>
           <Select.Option value={ArticleStatus.PUBLISHED}>已发布</Select.Option>
@@ -201,7 +209,13 @@ const ArticlesPage = () => {
         dataSource={filteredArticles}
         rowKey="_id"
         loading={loading}
-        pagination={false}
+        pagination={{
+          total: filteredArticles.length,
+          pageSize: 10,
+          showTotal: (total) => `共 ${total} 条`,
+          showSizeChanger: true,
+          showQuickJumper: true
+        }}
       />
 
       {/* 分类管理模态框 */}
@@ -209,7 +223,7 @@ const ArticlesPage = () => {
         <CategoryModal
           isOpen={showCategoryModal}
           onClose={() => setShowCategoryModal(false)}
-          onCategoriesChange={handleCategoriesChange}
+          onCategoriesChange={fetchCategories}
         />
       )}
     </div>
