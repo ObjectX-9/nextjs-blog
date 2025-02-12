@@ -38,16 +38,6 @@ export const MobileView = ({
                 onClick={() => handleCategorySelect(category._id!)}
                 className="w-full text-left p-3 border-b last:border-b-0 relative group hover:bg-gray-50"
               >
-                <div className="absolute left-0 top-0 flex gap-1">
-                  {category.isTop && (
-                    <span className="text-[10px] font-medium bg-gray-300 text-white px-1.5 py-0.5 rounded">
-                      置顶
-                    </span>
-                  )}
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-300 text-white`}>
-                    {category.status === 'completed' ? '已完成' : '进行中'}
-                  </span>
-                </div>
                 <div className="flex items-center min-h-[40px]">
                   <span className="text-base font-medium truncate">{category.name}</span>
                 </div>

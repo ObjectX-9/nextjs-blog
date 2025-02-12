@@ -21,7 +21,7 @@ export const DesktopView = ({
   handleArticleClick,
 }: DesktopViewProps) => (
   <div className="flex w-full">
-    <div className="w-[20vw] border-r bg-white">
+    <div className="w-[25vw] border-r bg-white">
       <div className="sticky top-0 h-screen overflow-y-auto">
         <nav className="p-4">
           <h2 className="text-lg font-bold mb-4">技术文档</h2>
@@ -29,29 +29,31 @@ export const DesktopView = ({
             <button
               key={category._id}
               onClick={() => handleCategorySelect(category._id!)}
-              className={`w-full text-left p-3 rounded-lg mb-2 relative group border ${selectedCategory === category._id
+              className={`w-full text-left pl-3 pr-3 pt-2 pb-2 rounded-lg mb-2 relative group border ${selectedCategory === category._id
                 ? "bg-black text-white border-transparent"
                 : "hover:bg-gray-50 border-gray-200"
                 }`}
             >
-              <div className="absolute left-0 top-0 flex gap-1">
-                {category.isTop && (
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${selectedCategory === category._id
-                    ? 'bg-white/25 text-white'
-                    : 'bg-gray-300 text-white hover:bg-gray-500'
-                    }`}>
-                    置顶
-                  </span>
-                )}
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${selectedCategory === category._id
-                  ? 'bg-white/25 text-white'
-                  : 'bg-gray-300 text-white hover:bg-gray-500'
-                  }`}>
-                  {category.status === 'completed' ? '已完成' : '进行中'}
-                </span>
-              </div>
               <div className="flex items-center justify-between min-h-[40px]">
-                <span className="text-base truncate mr-2">{category.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-base truncate">{category.name}</span>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {category.isTop && (
+                      <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs ${selectedCategory === category._id
+                        ? 'border-white/20 text-white/80'
+                        : 'border-gray-200 text-gray-600'
+                        }`}>
+                        置顶
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs ${selectedCategory === category._id
+                      ? 'border-white/20 text-white/80'
+                      : 'border-gray-200 text-gray-600'
+                      }`}>
+                      {category.status === 'completed' ? '已完成' : '进行中'}
+                    </span>
+                  </div>
+                </div>
                 <span className={`text-sm ${selectedCategory === category._id
                   ? 'text-white/60'
                   : 'text-gray-400'
