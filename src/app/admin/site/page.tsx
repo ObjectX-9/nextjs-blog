@@ -2,17 +2,31 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ISite } from "@/app/model/site";
-import Image from 'next/image';
+import {
+  Button,
+  Input,
+  message,
+  Tabs,
+  Card,
+  Form,
+  Upload,
+  Statistic,
+  DatePicker,
+  Typography,
+} from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import { format } from "date-fns";
+import dayjs from "dayjs";
 
 interface SiteWithId extends ISite {
   _id?: string;
 }
 
 // 用于编辑状态的接口
-interface EditableSite extends Omit<ISite, 'visitCount' | 'likeCount'> {
+interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   _id?: string;
-  visitCount: number | null;  // 允许为 null 以支持输入框清空
-  likeCount: number | null;   // 允许为 null 以支持输入框清空
+  visitCount: number | null; // 允许为 null 以支持输入框清空
+  likeCount: number | null; // 允许为 null 以支持输入框清空
 }
 
 // 默认的空站点数据
@@ -32,7 +46,7 @@ const defaultSite: SiteWithId = {
     avatar: "",
     bio: "",
     description: "",
-    education: []
+    education: [],
   },
   seo: {
     keywords: [],
@@ -44,10 +58,17 @@ export default function SiteManagementPage() {
   const [site, setSite] = useState<SiteWithId>(defaultSite);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const [editedSite, setEditedSite] = useState<EditableSite>(defaultSite as EditableSite);
-  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
-  const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>({});
-  const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File }>({});
+  const [editedSite, setEditedSite] = useState<EditableSite>(
+    defaultSite as EditableSite
+  );
+  const [messageApi, contextHolder] = message.useMessage();
+  const [form] = Form.useForm();
+  const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+  const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File }>(
+    {}
+  );
   const [previewUrls, setPreviewUrls] = useState<{ [key: string]: string }>({});
 
   // 获取网站信息
@@ -61,7 +82,10 @@ export default function SiteManagementPage() {
       }
     } catch (error) {
       console.error("获取网站信息失败:", error);
-      setMessage({ type: 'error', text: '获取网站信息失败' });
+      messageApi.open({
+        type: "error",
+        content: "获取网站信息失败",
+      });
     }
   };
 
@@ -81,34 +105,34 @@ export default function SiteManagementPage() {
       if (field === "visitCount" || field === "likeCount") {
         // 如果是空字符串，设置为 null
         const numValue = value === "" ? null : Number(value);
-        setEditedSite(prev => ({
+        setEditedSite((prev) => ({
           ...prev,
-          [field]: numValue
+          [field]: numValue,
         }));
       } else {
-        setEditedSite(prev => ({
+        setEditedSite((prev) => ({
           ...prev,
-          [field]: value
+          [field]: value,
         }));
       }
     } else if (fields.length === 2) {
       // 处理嵌套对象的情况
       const [parentField, childField] = fields;
-      if (parentField === 'author') {
-        setEditedSite(prev => ({
+      if (parentField === "author") {
+        setEditedSite((prev) => ({
           ...prev,
           author: {
             ...prev.author,
-            [childField]: value
-          }
+            [childField]: value,
+          },
         }));
-      } else if (parentField === 'seo') {
-        setEditedSite(prev => ({
+      } else if (parentField === "seo") {
+        setEditedSite((prev) => ({
           ...prev,
           seo: {
             ...prev.seo,
-            [childField]: value
-          }
+            [childField]: value,
+          },
         }));
       }
     }
@@ -121,21 +145,22 @@ export default function SiteManagementPage() {
     }
 
     try {
-      setSelectedFiles(prev => ({ ...prev, [field]: file }));
+      setSelectedFiles((prev) => ({ ...prev, [field]: file }));
       const url = URL.createObjectURL(file);
-      setPreviewUrls(prev => ({ ...prev, [field]: url }));
+      setPreviewUrls((prev) => ({ ...prev, [field]: url }));
     } catch (error: any) {
       console.error("Error processing image:", error);
       alert(error.message || "处理图片时出错");
     }
   };
 
-  const handleFileInputChange = (field: string) => async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await handleFileSelect(field, file);
-    }
-  };
+  const handleFileInputChange =
+    (field: string) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        await handleFileSelect(field, file);
+      }
+    };
 
   const uploadFile = async (field: string, file: File) => {
     try {
@@ -158,19 +183,19 @@ export default function SiteManagementPage() {
       }
 
       // 更新编辑状态中的图片URL
-      if (field.startsWith('author.')) {
-        const authorField = field.split('.')[1];
-        setEditedSite(prev => ({
+      if (field.startsWith("author.")) {
+        const authorField = field.split(".")[1];
+        setEditedSite((prev) => ({
           ...prev,
           author: {
             ...prev.author,
-            [authorField]: data.url
-          }
+            [authorField]: data.url,
+          },
         }));
       } else {
-        setEditedSite(prev => ({
+        setEditedSite((prev) => ({
           ...prev,
-          [field]: data.url
+          [field]: data.url,
         }));
       }
 
@@ -186,23 +211,37 @@ export default function SiteManagementPage() {
 
     try {
       // 检查是否有未上传的图片
-      const imageFields = ['favicon', 'qrcode', 'appreciationCode', 'wechatGroup', 'backgroundImage'];
-      const authorImageFields = ['avatar'];
+      const imageFields = [
+        "favicon",
+        "qrcode",
+        "appreciationCode",
+        "wechatGroup",
+        "backgroundImage",
+      ];
+      const authorImageFields = ["avatar"];
       let hasUploading = false;
 
       // 创建一个新的对象来存储最终要保存的数据
       let finalSiteData = { ...editedSite };
 
       // 处理数字字段，确保是数字类型
-      if (typeof finalSiteData.visitCount === 'string' || finalSiteData.visitCount === null) {
-        finalSiteData.visitCount = finalSiteData.visitCount === null || finalSiteData.visitCount === ""
-          ? 0
-          : Number(finalSiteData.visitCount);
+      if (
+        typeof finalSiteData.visitCount === "string" ||
+        finalSiteData.visitCount === null
+      ) {
+        finalSiteData.visitCount =
+          finalSiteData.visitCount === null || finalSiteData.visitCount === ""
+            ? 0
+            : Number(finalSiteData.visitCount);
       }
-      if (typeof finalSiteData.likeCount === 'string' || finalSiteData.likeCount === null) {
-        finalSiteData.likeCount = finalSiteData.likeCount === null || finalSiteData.likeCount === ""
-          ? 0
-          : Number(finalSiteData.likeCount);
+      if (
+        typeof finalSiteData.likeCount === "string" ||
+        finalSiteData.likeCount === null
+      ) {
+        finalSiteData.likeCount =
+          finalSiteData.likeCount === null || finalSiteData.likeCount === ""
+            ? 0
+            : Number(finalSiteData.likeCount);
       }
 
       // 先上传所有未上传的图片
@@ -214,13 +253,13 @@ export default function SiteManagementPage() {
           hasUploading = true;
           uploadTasks.push(
             uploadFile(field, selectedFiles[field])
-              .then(url => {
+              .then((url) => {
                 finalSiteData = {
                   ...finalSiteData,
-                  [field]: url
+                  [field]: url,
                 };
               })
-              .catch(error => {
+              .catch((error) => {
                 console.error(`Error uploading ${field}:`, error);
                 throw new Error(`上传${field}失败：${error.message}`);
               })
@@ -235,16 +274,16 @@ export default function SiteManagementPage() {
           hasUploading = true;
           uploadTasks.push(
             uploadFile(fullField, selectedFiles[fullField])
-              .then(url => {
+              .then((url) => {
                 finalSiteData = {
                   ...finalSiteData,
                   author: {
                     ...finalSiteData.author,
-                    [field]: url
-                  }
+                    [field]: url,
+                  },
                 };
               })
-              .catch(error => {
+              .catch((error) => {
                 console.error(`Error uploading ${fullField}:`, error);
                 throw new Error(`上传${field}失败：${error.message}`);
               })
@@ -254,7 +293,10 @@ export default function SiteManagementPage() {
 
       // 如果有图片正在上传，等待所有上传完成
       if (hasUploading) {
-        setMessage({ type: 'info', text: '正在上传图片...' });
+        messageApi.open({
+          type: "info",
+          content: "正在上传图片...",
+        });
         await Promise.all(uploadTasks);
       }
 
@@ -262,36 +304,38 @@ export default function SiteManagementPage() {
       const siteToSave = {
         ...finalSiteData,
         author: {
-          name: finalSiteData.author?.name || '',
-          avatar: finalSiteData.author?.avatar || '',
-          bio: finalSiteData.author?.bio || '',
-          description: finalSiteData.author?.description || '',
-          education: finalSiteData.author?.education || []
+          name: finalSiteData.author?.name || "",
+          avatar: finalSiteData.author?.avatar || "",
+          bio: finalSiteData.author?.bio || "",
+          description: finalSiteData.author?.description || "",
+          education: finalSiteData.author?.education || [],
         },
         seo: {
-          keywords: Array.isArray(finalSiteData.seo?.keywords) ? finalSiteData.seo.keywords : [],
-          description: finalSiteData.seo?.description || '',
+          keywords: Array.isArray(finalSiteData.seo?.keywords)
+            ? finalSiteData.seo.keywords
+            : [],
+          description: finalSiteData.seo?.description || "",
         },
-        title: finalSiteData.title || '',
-        description: finalSiteData.description || '',
-        favicon: finalSiteData.favicon || '',
-        qrcode: finalSiteData.qrcode || '',
-        appreciationCode: finalSiteData.appreciationCode || '',
-        wechatGroup: finalSiteData.wechatGroup || '',
-        backgroundImage: finalSiteData.backgroundImage || '',
-        icp: finalSiteData.icp || '',
+        title: finalSiteData.title || "",
+        description: finalSiteData.description || "",
+        favicon: finalSiteData.favicon || "",
+        qrcode: finalSiteData.qrcode || "",
+        appreciationCode: finalSiteData.appreciationCode || "",
+        wechatGroup: finalSiteData.wechatGroup || "",
+        backgroundImage: finalSiteData.backgroundImage || "",
+        icp: finalSiteData.icp || "",
       };
 
-      console.log('Saving site data:', siteToSave);
+      console.log("Saving site data:", siteToSave);
 
       // 保存站点信息
       const response = await fetch("/api/site", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
         body: JSON.stringify(siteToSave),
       });
@@ -303,7 +347,10 @@ export default function SiteManagementPage() {
 
       const data = await response.json();
       if (data.success) {
-        setMessage({ type: 'success', text: '网站信息更新成功' });
+        messageApi.open({
+          type: "success",
+          content: "网站信息更新成功",
+        });
         // 清除选中的文件
         setSelectedFiles({});
         setPreviewUrls({});
@@ -313,14 +360,20 @@ export default function SiteManagementPage() {
       } else {
         // 处理后端返回的验证错误
         if (data.errors && Array.isArray(data.errors)) {
-          setMessage({ type: 'error', text: data.errors.join('、') });
+          messageApi.open({
+            type: "error",
+            content: data.errors.join("、"),
+          });
         } else {
           throw new Error(data.error || "更新失败");
         }
       }
     } catch (error: any) {
       console.error("更新网站信息失败:", error);
-      setMessage({ type: 'error', text: error.message || '更新网站信息失败' });
+      messageApi.open({
+        type: "error",
+        content: error.message || "更新网站信息失败",
+      });
     }
   };
 
@@ -334,14 +387,14 @@ export default function SiteManagementPage() {
       const response = await fetch("/api/site?" + new Date().getTime(), {
         method: "GET",
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       });
 
       if (!response.ok) {
-        throw new Error('获取数据失败');
+        throw new Error("获取数据失败");
       }
 
       const data = await response.json();
@@ -353,7 +406,10 @@ export default function SiteManagementPage() {
       }
     } catch (error) {
       console.error("刷新站点数据失败:", error);
-      setMessage({ type: 'error', text: '获取站点数据失败' });
+      messageApi.open({
+        type: "error",
+        content: "获取站点数据失败",
+      });
     }
   }, [isEditing]);
 
@@ -362,59 +418,29 @@ export default function SiteManagementPage() {
   }, [refreshSiteData]);
 
   const renderImageUpload = (field: string, label: string, value: string) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <div className="flex items-start space-x-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => handleInputChange(field, e.target.value)}
-            disabled={!isEditing}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-          />
-        </div>
-        {isEditing && (
-          <div className="relative">
-            <input
-              type="file"
-              id={`file-${field}`}
-              className="hidden"
-              accept="image/*"
-              onChange={handleFileInputChange(field)}
-              disabled={!!isUploading[field]}
-            />
-            {selectedFiles[field] ? (
-              <div className="relative group">
-                <Image
-                  src={previewUrls[field]}
-                  alt="Preview"
-                  width={40}
-                  height={40}
-                  className="rounded border"
-                />
-                <button
-                  onClick={() => uploadFile(field, selectedFiles[field])}
-                  disabled={!!isUploading[field]}
-                  className="mt-1 w-full px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {isUploading[field] ? "上传中..." : "上传"}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => document.getElementById(`file-${field}`)?.click()}
-                className="px-3 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
-              >
-                选择
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+    <Form.Item label={label} className="mb-4">
+      <Input
+        value={value}
+        onChange={(e) => handleInputChange(field, e.target.value)}
+        disabled={!isEditing}
+        className="mb-2"
+      />
+      {isEditing && (
+        <Upload
+          beforeUpload={(file) => {
+            handleFileSelect(field, file);
+            return false;
+          }}
+          showUploadList={false}
+        >
+          <Button icon={<UploadOutlined />} disabled={!!isUploading[field]}>
+            选择图片
+          </Button>
+        </Upload>
+      )}
       {value && (
         <div className="mt-2">
-          <Image
+          <img
             src={value}
             alt={label}
             width={100}
@@ -423,400 +449,238 @@ export default function SiteManagementPage() {
           />
         </div>
       )}
-    </div>
+    </Form.Item>
   );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {message && (
-        <div className={`mb-4 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700' : message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} sticky top-0 z-10`}>
-          {message.text}
-        </div>
-      )}
+      {contextHolder}
 
-      <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10">
-        <h1 className="text-2xl font-bold">网站信息管理</h1>
-        <div className="space-x-2">
+      <div className="flex justify-between items-center mb-6">
+        <Typography.Title level={2}>网站信息管理</Typography.Title>
+        <div>
           {!isEditing ? (
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              onClick={() => setIsEditing(true)}
-            >
+            <Button type="primary" onClick={() => setIsEditing(true)}>
               编辑
-            </button>
+            </Button>
           ) : (
             <>
-              <button
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                onClick={handleCancel}
-              >
+              <Button onClick={handleCancel} className="mr-2">
                 取消
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                onClick={handleSave}
-              >
+              </Button>
+              <Button type="primary" onClick={handleSave}>
                 保存
-              </button>
+              </Button>
             </>
           )}
         </div>
       </div>
 
-      {/* Stats Display */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 sticky top-20 bg-white z-10 py-4">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-center">
-            <div className="text-2xl font-bold">
-              {isEditing ? (
-                <input
-                  type="number"
-                  value={editedSite.visitCount === null ? "" : editedSite.visitCount}
-                  onChange={(e) => handleInputChange("visitCount", e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              ) : (
-                site.visitCount
-              )}
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          {isEditing ? (
+            <div>
+              <div className="text-sm text-gray-500 mb-1">访问人数</div>
+              <Input
+                type="number"
+                value={
+                  editedSite.visitCount === null ? "" : editedSite.visitCount
+                }
+                onChange={(e) =>
+                  handleInputChange("visitCount", e.target.value)
+                }
+              />
             </div>
-            <div className="text-sm text-gray-500">访问人数</div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-center">
-            <div className="text-2xl font-bold">
-              {isEditing ? (
-                <input
-                  type="number"
-                  value={editedSite.likeCount === null ? "" : editedSite.likeCount}
-                  onChange={(e) => handleInputChange("likeCount", e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              ) : (
-                site.likeCount
-              )}
+          ) : (
+            <Statistic title="访问人数" value={site.visitCount} />
+          )}
+        </Card>
+        <Card>
+          {isEditing ? (
+            <div>
+              <div className="text-sm text-gray-500 mb-1">点赞数</div>
+              <Input
+                type="number"
+                value={
+                  editedSite.likeCount === null ? "" : editedSite.likeCount
+                }
+                onChange={(e) => handleInputChange("likeCount", e.target.value)}
+              />
             </div>
-            <div className="text-sm text-gray-500">点赞数</div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-center">
-            <div className="text-2xl font-bold">
-              {isEditing ? (
-                <input
-                  type="datetime-local"
-                  value={new Date(editedSite.createdAt).toISOString().slice(0, 16)}
-                  onChange={(e) => handleInputChange("createdAt", new Date(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              ) : (
-                new Date(site.createdAt).toLocaleDateString('zh-CN', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })
-              )}
+          ) : (
+            <Statistic title="点赞数" value={site.likeCount} />
+          )}
+        </Card>
+        <Card>
+          {isEditing ? (
+            <div>
+              <div className="text-sm text-gray-500 mb-1">创建时间</div>
+              <DatePicker
+                showTime
+                value={dayjs(editedSite.createdAt)}
+                onChange={(date) =>
+                  handleInputChange("createdAt", date?.toDate() || new Date())
+                }
+              />
             </div>
-            <div className="text-sm text-gray-500">创建时间</div>
-          </div>
-        </div>
+          ) : (
+            <Statistic
+              title="创建时间"
+              value={format(new Date(site.createdAt), "yyyy年MM月dd日")}
+            />
+          )}
+        </Card>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-6 sticky top-[calc(20vh+6rem)] bg-white z-10">
-        <div className="flex space-x-1 border-b">
-          {[
-            { id: 'basic', name: '基本信息' },
-            { id: 'author', name: '作者信息' },
-            { id: 'seo', name: 'SEO设置' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 ${activeTab === tab.id
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              {tab.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow h-[calc(100vh-28rem)] overflow-y-auto">
-        {/* Basic Info Tab */}
-        {activeTab === 'basic' && (
-          <div className="space-y-6 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">网站标题</label>
-                <input
-                  type="text"
-                  value={editedSite.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                />
-              </div>
-              {renderImageUpload("favicon", "网站图标", editedSite.favicon)}
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">网站描述</label>
-              <textarea
-                value={editedSite.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                disabled={!isEditing}
-                rows={4}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              {renderImageUpload("backgroundImage", "首页背景图", editedSite.backgroundImage)}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {renderImageUpload("qrcode", "二维码", editedSite.qrcode)}
-              {renderImageUpload("appreciationCode", "赞赏码", editedSite.appreciationCode)}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {renderImageUpload("wechatGroup", "微信公众号图片", editedSite.wechatGroup)}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">ICP备案号</label>
-                <input
-                  type="text"
-                  value={editedSite.icp || ""}
-                  onChange={(e) => handleInputChange("icp", e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Author Tab */}
-        {activeTab === 'author' && (
-          <div className="space-y-6 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">作者名称</label>
-                <input
-                  type="text"
-                  value={editedSite.author.name}
-                  onChange={(e) => handleInputChange("author.name", e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                />
-              </div>
-              {renderImageUpload("author.avatar", "作者头像", editedSite.author.avatar)}
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">一句话描述</label>
-              <input
-                type="text"
-                value={editedSite.author.description}
-                onChange={(e) => handleInputChange("author.description", e.target.value)}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">作者简介</label>
-              <textarea
-                value={editedSite.author.bio}
-                onChange={(e) => handleInputChange("author.bio", e.target.value)}
-                disabled={!isEditing}
-                rows={4}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-gray-700">教育经历</label>
-                {isEditing && (
-                  <button
-                    onClick={() => {
-                      setEditedSite(prev => ({
-                        ...prev,
-                        author: {
-                          ...prev.author,
-                          education: [
-                            ...(prev.author.education || []),
-                            {
-                              school: "",
-                              major: "",
-                              degree: "",
-                              certifications: [],
-                              startDate: "",
-                              endDate: ""
-                            }
-                          ]
-                        }
-                      }));
-                    }}
-                    className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-                  >
-                    添加教育经历
-                  </button>
-                )}
-              </div>
-
-              {editedSite.author.education?.map((edu, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium">教育经历 #{index + 1}</h3>
-                    {isEditing && (
-                      <button
-                        onClick={() => {
-                          setEditedSite(prev => ({
-                            ...prev,
-                            author: {
-                              ...prev.author,
-                              education: prev.author.education?.filter((_, i) => i !== index) || []
-                            }
-                          }));
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        删除
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">学校</label>
-                      <input
-                        type="text"
-                        value={edu.school}
-                        onChange={(e) => {
-                          const newEducation = [...(editedSite.author.education || [])];
-                          newEducation[index] = { ...edu, school: e.target.value };
-                          handleInputChange("author.education", newEducation);
-                        }}
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">专业</label>
-                      <input
-                        type="text"
-                        value={edu.major}
-                        onChange={(e) => {
-                          const newEducation = [...(editedSite.author.education || [])];
-                          newEducation[index] = { ...edu, major: e.target.value };
-                          handleInputChange("author.education", newEducation);
-                        }}
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">学位</label>
-                      <input
-                        type="text"
-                        value={edu.degree}
-                        onChange={(e) => {
-                          const newEducation = [...(editedSite.author.education || [])];
-                          newEducation[index] = { ...edu, degree: e.target.value };
-                          handleInputChange("author.education", newEducation);
-                        }}
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">证书（用逗号分隔）</label>
-                      <input
-                        type="text"
-                        value={edu.certifications?.join(", ")}
-                        onChange={(e) => {
-                          const newEducation = [...(editedSite.author.education || [])];
-                          newEducation[index] = {
-                            ...edu,
-                            certifications: e.target.value.split(",").map(cert => cert.trim())
-                          };
-                          handleInputChange("author.education", newEducation);
-                        }}
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">开始时间</label>
-                      <input
-                        type="date"
-                        value={edu.startDate?.split('T')[0]}
-                        onChange={(e) => {
-                          const newEducation = [...(editedSite.author.education || [])];
-                          newEducation[index] = { ...edu, startDate: e.target.value };
-                          handleInputChange("author.education", newEducation);
-                        }}
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">结束时间</label>
-                      <input
-                        type="date"
-                        value={edu.endDate?.split('T')[0]}
-                        onChange={(e) => {
-                          const newEducation = [...(editedSite.author.education || [])];
-                          newEducation[index] = { ...edu, endDate: e.target.value };
-                          handleInputChange("author.education", newEducation);
-                        }}
-                        disabled={!isEditing}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-                  </div>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: "basic",
+            label: "基本信息",
+            children: (
+              <Form layout="vertical" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Form.Item label="网站标题">
+                    <Input
+                      value={editedSite.title}
+                      onChange={(e) =>
+                        handleInputChange("title", e.target.value)
+                      }
+                      disabled={!isEditing}
+                    />
+                  </Form.Item>
+                  {renderImageUpload("favicon", "网站图标", editedSite.favicon)}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* SEO Tab */}
-        {activeTab === 'seo' && (
-          <div className="space-y-6 p-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">SEO关键词（用逗号分隔）</label>
-              <input
-                type="text"
-                value={editedSite.seo.keywords.join(", ")}
-                onChange={(e) => handleInputChange("seo.keywords", e.target.value.split(",").map((k) => k.trim()))}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-              />
-            </div>
+                <Form.Item label="网站描述">
+                  <Input.TextArea
+                    value={editedSite.description}
+                    onChange={(e) =>
+                      handleInputChange("description", e.target.value)
+                    }
+                    disabled={!isEditing}
+                    rows={4}
+                  />
+                </Form.Item>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">SEO描述</label>
-              <textarea
-                value={editedSite.seo.description}
-                onChange={(e) => handleInputChange("seo.description", e.target.value)}
-                disabled={!isEditing}
-                rows={4}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-              />
-            </div>
-          </div>
-        )}
-      </div>
+                {renderImageUpload(
+                  "backgroundImage",
+                  "首页背景图",
+                  editedSite.backgroundImage
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {renderImageUpload("qrcode", "二维码", editedSite.qrcode)}
+                  {renderImageUpload(
+                    "appreciationCode",
+                    "赞赏码",
+                    editedSite.appreciationCode
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {renderImageUpload(
+                    "wechatGroup",
+                    "微信公众号图片",
+                    editedSite.wechatGroup
+                  )}
+                  <Form.Item label="ICP备案号">
+                    <Input
+                      value={editedSite.icp || ""}
+                      onChange={(e) => handleInputChange("icp", e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </Form.Item>
+                </div>
+              </Form>
+            ),
+          },
+          {
+            key: "author",
+            label: "作者信息",
+            children: (
+              <Form layout="vertical" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Form.Item label="作者名称">
+                    <Input
+                      value={editedSite.author?.name}
+                      onChange={(e) =>
+                        handleInputChange("author.name", e.target.value)
+                      }
+                      disabled={!isEditing}
+                    />
+                  </Form.Item>
+                  {renderImageUpload(
+                    "author.avatar",
+                    "作者头像",
+                    editedSite.author?.avatar || ""
+                  )}
+                </div>
+
+                <Form.Item label="作者简介">
+                  <Input.TextArea
+                    value={editedSite.author?.bio}
+                    onChange={(e) =>
+                      handleInputChange("author.bio", e.target.value)
+                    }
+                    disabled={!isEditing}
+                    rows={2}
+                  />
+                </Form.Item>
+
+                <Form.Item label="作者描述">
+                  <Input.TextArea
+                    value={editedSite.author?.description}
+                    onChange={(e) =>
+                      handleInputChange("author.description", e.target.value)
+                    }
+                    disabled={!isEditing}
+                    rows={4}
+                  />
+                </Form.Item>
+              </Form>
+            ),
+          },
+          {
+            key: "seo",
+            label: "SEO设置",
+            children: (
+              <Form layout="vertical" className="space-y-6">
+                <Form.Item label="SEO关键词">
+                  <Input
+                    value={
+                      Array.isArray(editedSite.seo?.keywords)
+                        ? editedSite.seo.keywords.join(",")
+                        : ""
+                    }
+                    onChange={(e) =>
+                      handleInputChange(
+                        "seo.keywords",
+                        e.target.value.split(",")
+                      )
+                    }
+                    disabled={!isEditing}
+                    placeholder="用逗号分隔多个关键词"
+                  />
+                </Form.Item>
+
+                <Form.Item label="SEO描述">
+                  <Input.TextArea
+                    value={editedSite.seo?.description}
+                    onChange={(e) =>
+                      handleInputChange("seo.description", e.target.value)
+                    }
+                    disabled={!isEditing}
+                    rows={4}
+                  />
+                </Form.Item>
+              </Form>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

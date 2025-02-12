@@ -81,6 +81,7 @@
     "clsx": "^2.1.0",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dayjs": "^1.11.13",
     "framer-motion": "^11.0.24",
     "github-markdown-css": "^5.5.1",
     "jose": "^5.9.6",
