@@ -5,6 +5,9 @@ export interface Article {
   // 文章标题
   title: string;
 
+  // 排序
+  order?: number;
+
   // 文章链接(slug)
   url?: string;
 

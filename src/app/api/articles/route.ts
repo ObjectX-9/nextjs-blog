@@ -28,8 +28,21 @@ export async function POST(request: Request) {
     const article = await request.json();
     const db = await getDb();
 
+    // 如果没有提供 order，获取当前最大 order 并加 1
+    let order = article.order;
+    if (order === undefined) {
+      const lastArticle = await db
+        .collection<IArticleDB>("articles")
+        .find({ categoryId: article.categoryId })
+        .sort({ order: -1 })
+        .limit(1)
+        .toArray();
+      order = (lastArticle[0]?.order || 0) + 1;
+    }
+
     const articleToInsert: IArticleDB = {
       ...article,
+      order: Number(order),
       likes: 0,
       views: 0,
       createdAt: new Date().toISOString(),
@@ -88,7 +101,7 @@ export async function GET(request: Request) {
     const articles = await db
       .collection<IArticleDB>("articles")
       .find(query)
-      .sort({ updatedAt: -1 })
+      .sort({ order: 1, updatedAt: -1 })
       .toArray();
 
     return NextResponse.json({ articles: articles.map(toArticle) });
@@ -120,6 +133,11 @@ export async function PUT(request: Request) {
       ...toDBArticle(article),
       updatedAt: new Date().toISOString(),
     };
+
+    // 处理 order 的更新
+    if (article.order !== undefined) {
+      articleToUpdate.order = Number(article.order);
+    }
 
     const result = await db.collection<IArticleDB>("articles").updateOne(
       { _id: new ObjectId(id) },

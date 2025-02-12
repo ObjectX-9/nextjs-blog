@@ -102,7 +102,21 @@ export default function ArticlesPage() {
         throw new Error('获取文章列表失败');
       }
       const data = await response.json();
-      setArticles(data.articles || []);
+      // 根据 order 和创建时间排序
+      const sortedArticles = (data.articles || []).sort((a: Article, b: Article) => {
+        if (a.order !== undefined && b.order !== undefined) {
+          if (a.order !== b.order) {
+            return a.order - b.order;
+          }
+        } else if (a.order !== undefined) {
+          return -1; // a 有 order，b 没有，a 排前面
+        } else if (b.order !== undefined) {
+          return 1;  // b 有 order，a 没有，b 排前面
+        }
+        // 如果 order 相同或都没有，按创建时间降序
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      setArticles(sortedArticles);
       setCategoryCounts(prev => ({
         ...prev,
         [categoryId]: data.articles?.length || 0

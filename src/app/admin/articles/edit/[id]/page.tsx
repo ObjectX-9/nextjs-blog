@@ -142,8 +142,8 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
 
       <div className="space-y-6">
         {/* 基本信息 */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-2">
             <label className="block text-sm font-medium mb-1">文章标题</label>
             <input
               type="text"
@@ -154,6 +154,16 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium mb-1">排序</label>
+            <input
+              type="number"
+              value={article.order || ''}
+              onChange={e => setArticle({ ...article, order: parseInt(e.target.value) || undefined })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="数字越小越靠前"
+            />
+          </div>
+          <div className="col-span-3">
             <label className="block text-sm font-medium mb-1">文章分类</label>
             <select
               value={article.categoryId || ''}
