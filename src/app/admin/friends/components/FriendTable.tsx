@@ -109,7 +109,7 @@ export const FriendTable = ({ friends, onEdit, onDelete, isMobile }: FriendTable
   ];
 
   return (
-    <div className="mt-6 bg-white rounded-lg shadow overflow-x-auto">
+    <div className="mt-6 bg-white rounded-lg shadow">
       <Table
         columns={columns}
         dataSource={friends}

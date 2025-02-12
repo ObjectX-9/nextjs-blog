@@ -197,7 +197,7 @@ export default function FriendsManagementPage() {
           setSelectedFile(null);
           setPreviewUrl("");
           setShowAddFriend(false);
-          message.success('添加成功');
+          message.success("添加成功");
         } else {
           throw new Error(data.error || "Failed to add friend");
         }
@@ -212,10 +212,10 @@ export default function FriendsManagementPage() {
 
   const handleDeleteFriend = async (_id: string) => {
     Modal.confirm({
-      title: '确认删除',
-      content: '确定要删除这个友链吗？此操作不可恢复。',
-      okText: '确认',
-      cancelText: '取消',
+      title: "确认删除",
+      content: "确定要删除这个友链吗？此操作不可恢复。",
+      okText: "确认",
+      cancelText: "取消",
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
@@ -226,13 +226,13 @@ export default function FriendsManagementPage() {
           const data = await response.json();
           if (data.success) {
             await fetchFriends();
-            message.success('删除成功');
+            message.success("删除成功");
           } else {
             throw new Error(data.error || "Failed to delete friend");
           }
         } catch (error) {
           console.error("Error deleting friend:", error);
-          message.error('删除失败，请重试');
+          message.error("删除失败，请重试");
         }
       },
     });
@@ -274,7 +274,7 @@ export default function FriendsManagementPage() {
           setEditingFriend(null);
           setEditingFile(null);
           setEditingPreviewUrl("");
-          message.success('更新成功');
+          message.success("更新成功");
         } else {
           throw new Error(data.error || "Failed to update friend");
         }
@@ -288,10 +288,10 @@ export default function FriendsManagementPage() {
   };
 
   return (
-    <div className="flex flex-col h-[100vh] w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col h-[100vh] w-full max-w-full">
       <h1 className="text-2xl font-bold p-4 md:p-6">友链管理</h1>
 
-      <div className="px-4 md:px-6 pb-6">
+      <div className="flex-1 px-4 md:px-6 pb-6">
         <Button
           className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded text-sm md:text-base"
           onClick={() => setShowAddFriend(true)}
@@ -328,7 +328,9 @@ export default function FriendsManagementPage() {
           onCancel={() => setEditingFriend(null)}
           onSave={handleEditFriendSave}
           friend={editingFriend.friend}
-          onFriendChange={(friend) => setEditingFriend({ ...editingFriend, friend })}
+          onFriendChange={(friend) =>
+            setEditingFriend({ ...editingFriend, friend })
+          }
           editingFile={editingFile}
           editingPreviewUrl={editingPreviewUrl}
           onFileSelect={(file) => handleFileSelect(file, true)}
