@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { MarkdownComponentProps } from '../types/components';
 import type { Components } from 'react-markdown';
-import type { HTMLAttributes, DetailedHTMLProps } from 'react';
+import type { HTMLAttributes, DetailedHTMLProps, ImgHTMLAttributes } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -16,8 +16,8 @@ import Image from 'next/image';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
-// 桌面端渲染组件
-const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
+// 创建共用的渲染组件函数
+const useMarkdownRenderer = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImage, setCurrentImage] = useState('');
 
@@ -37,7 +37,7 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
     return componentFunction(componentConfig.props);
   };
 
-  const customComponents: Components = {
+  const createCustomComponents = () => ({
     div: (props: DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement> & { 'data-component'?: string }) => {
       const { 'data-component': dataComponent, ...rest } = props;
 
@@ -50,12 +50,12 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
 
       return <div {...rest}>{props.children}</div>;
     },
-    h1: ({ node, ...props }) => <h1 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h2: ({ node, ...props }) => <h2 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h3: ({ node, ...props }) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h1: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h1 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h2: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h2 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h3: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h4: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h5: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
+    h6: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
     code: ({ node, inline, className, children, ...props }: any) => {
       const match = /language-([\w-]+)/.exec(className || '');
       const language = match ? match[1] : '';
@@ -74,7 +74,7 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
         </code>
       );
     },
-    img: (props) => {
+    img: (props: DetailedHTMLProps<ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>) => {
       const { src, alt, ...restProps } = props;
       return (
         <>
@@ -101,7 +101,15 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
         </>
       );
     }
-  };
+  });
+
+  return { createCustomComponents };
+};
+
+// 桌面端渲染组件
+const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
+  const { createCustomComponents } = useMarkdownRenderer();
+  const customComponents = createCustomComponents();
 
   return (
     <div className="markdown-content w-full h-full">
@@ -120,90 +128,8 @@ const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
 
 // 移动端渲染组件
 const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentProps & { isMobile?: boolean }) => {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [currentImage, setCurrentImage] = useState('');
-
-  const renderComponent = (id: string) => {
-    const componentConfig = componentRegistry.get(id);
-    if (!componentConfig) {
-      console.warn(`Component with id ${id} not found in registry`);
-      return null;
-    }
-
-    const componentFunction = componentConfig.component;
-    if (!componentFunction) {
-      console.warn(`Component type ${componentConfig.type} not found in componentMap`);
-      return null;
-    }
-
-    return componentFunction(componentConfig.props);
-  };
-
-  const customComponents: Components = {
-    div: (props: DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement> & { 'data-component'?: string }) => {
-      const { 'data-component': dataComponent, ...rest } = props;
-
-      if (dataComponent) {
-        const component = renderComponent(dataComponent);
-        if (component) {
-          return <div {...rest}>{component}</div>;
-        }
-      }
-
-      return <div {...rest}>{props.children}</div>;
-    },
-    h1: ({ node, ...props }) => <h1 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h2: ({ node, ...props }) => <h2 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h3: ({ node, ...props }) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h4: ({ node, ...props }) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h5: ({ node, ...props }) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h6: ({ node, ...props }) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    code: ({ node, inline, className, children, ...props }: any) => {
-      const match = /language-([\w-]+)/.exec(className || '');
-      const language = match ? match[1] : '';
-      return !inline && language ? (
-        <SyntaxHighlighter
-          style={vscDarkPlus}
-          language={language}
-          PreTag="div"
-          {...props}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      ) : (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    },
-    img: (props) => {
-      const { src, alt, ...restProps } = props;
-      return (
-        <>
-          <Image
-            src={src || ''}
-            alt={alt || ''}
-            {...restProps}
-            width={500}
-            height={300}
-            onClick={() => {
-              setCurrentImage(src || '');
-              setLightboxOpen(true);
-            }}
-            className="cursor-pointer hover:opacity-80 transition-opacity"
-          />
-          {lightboxOpen && currentImage === src && (
-            <Lightbox
-              open={lightboxOpen}
-              close={() => setLightboxOpen(false)}
-              slides={[{ src: currentImage }]}
-              plugins={[Zoom]}
-            />
-          )}
-        </>
-      );
-    }
-  };
+  const { createCustomComponents } = useMarkdownRenderer();
+  const customComponents = createCustomComponents();
 
   return (
     <div className="markdown-content">
