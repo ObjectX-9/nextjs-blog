@@ -21,7 +21,7 @@ export const DesktopView = ({
   handleArticleClick,
 }: DesktopViewProps) => (
   <div className="flex w-full">
-    <div className="w-[25vw] border-r bg-white">
+    <div className="w-[22vw] border-r bg-white">
       <div className="sticky top-0 h-screen overflow-y-auto">
         <nav className="p-4">
           <h2 className="text-lg font-bold mb-4">技术文档</h2>
@@ -29,9 +29,9 @@ export const DesktopView = ({
             <button
               key={category._id}
               onClick={() => handleCategorySelect(category._id!)}
-              className={`w-full text-left pl-3 pr-3 pt-2 pb-2 rounded-lg mb-2 relative group border ${selectedCategory === category._id
-                ? "bg-black text-white border-transparent"
-                : "hover:bg-gray-50 border-gray-200"
+              className={`w-full text-left pl-2 pr-2 pt-[2px] pb-[2px] mt-2 rounded-lg relative group ${selectedCategory === category._id
+                ? "bg-black text-white"
+                : "hover:bg-gray-50"
                 }`}
             >
               <div className="flex items-center justify-between min-h-[40px]">
