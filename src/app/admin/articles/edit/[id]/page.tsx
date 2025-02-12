@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
+import { Input, Button, Select, InputNumber, Space, Tag, Typography, Form, Spin, message } from 'antd';
+import { PlusOutlined, EditOutlined } from '@ant-design/icons';
+
+const { TextArea } = Input;
+const { Title, Text } = Typography;
 
 const EditArticlePage = ({ params }: { params: { id: string } }) => {
   const router = useRouter();
@@ -31,7 +36,7 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
           setTags(data.tags);
         }
       } catch (error) {
-        showToast('获取文章失败', 'error');
+        message.error('获取文章失败');
       } finally {
         setLoading(false);
       }
@@ -43,7 +48,7 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
         const data = await response.json();
         setCategories(data.categories || []);
       } catch (error) {
-        showToast('获取分类失败', 'error');
+        message.error('获取分类失败');
       }
     };
 
@@ -72,13 +77,13 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
         throw new Error('保存失败');
       }
 
-      showToast('保存成功', 'success');
+      message.success('保存成功');
       if (status === ArticleStatus.PUBLISHED) {
         router.push('/admin/articles');
       }
     } catch (error) {
       console.error('保存失败:', error);
-      showToast('保存失败', 'error');
+      message.error('保存失败');
     } finally {
       setSaving(false);
     }
@@ -97,23 +102,10 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  // Toast 提示
-  const showToast = (message: string, type: 'success' | 'error') => {
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'
-      } transition-opacity duration-500`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      setTimeout(() => document.body.removeChild(toast), 500);
-    }, 3000);
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <Spin size="large" />
       </div>
     );
   }
@@ -121,150 +113,142 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">编辑文章</h1>
-        <div className="flex space-x-2">
-          <button
+        <Title level={2} style={{ margin: 0 }}>编辑文章</Title>
+        <Space>
+          <Button
             onClick={() => handleSave()}
-            disabled={saving}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            loading={saving}
+            type="primary"
           >
-            {saving ? '保存中...' : '保存草稿'}
-          </button>
-          <button
+            保存草稿
+          </Button>
+          <Button
             onClick={() => handleSave(ArticleStatus.PUBLISHED)}
-            disabled={saving}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+            loading={saving}
+            type="primary"
+            className="bg-green-500 hover:bg-green-600"
           >
-            {saving ? '保存中...' : '发布文章'}
-          </button>
-        </div>
+            发布文章
+          </Button>
+        </Space>
       </div>
 
-      <div className="space-y-6">
+      <Form layout="vertical" className="space-y-6">
         {/* 基本信息 */}
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
-            <label className="block text-sm font-medium mb-1">文章标题</label>
-            <input
-              type="text"
-              value={article.title}
-              onChange={e => setArticle({ ...article, title: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="请输入文章标题"
-            />
+            <Form.Item label="文章标题" required>
+              <Input
+                value={article.title}
+                onChange={e => setArticle({ ...article, title: e.target.value })}
+                placeholder="请输入文章标题"
+              />
+            </Form.Item>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">排序</label>
-            <input
-              type="number"
-              value={article.order || ''}
-              onChange={e => setArticle({ ...article, order: parseInt(e.target.value) || undefined })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="数字越小越靠前"
-            />
+            <Form.Item label="排序">
+              <InputNumber
+                className="w-full"
+                value={article.order}
+                onChange={value => setArticle({ ...article, order: value || undefined })}
+                placeholder="数字越小越靠前"
+              />
+            </Form.Item>
           </div>
           <div className="col-span-3">
-            <label className="block text-sm font-medium mb-1">文章分类</label>
-            <select
-              value={article.categoryId || ''}
-              onChange={e => setArticle({ ...article, categoryId: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">请选择分类</option>
-              {categories.map(category => (
-                <option key={category._id} value={category._id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <Form.Item label="文章分类">
+              <Select
+                value={article.categoryId || undefined}
+                onChange={value => setArticle({ ...article, categoryId: value })}
+                placeholder="请选择分类"
+              >
+                {categories.map(category => (
+                  <Select.Option key={category._id} value={category._id}>
+                    {category.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
           </div>
         </div>
 
         {/* 标签管理 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">文章标签</label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {tags.map(tag => (
-              <span
-                key={tag}
-                className="px-2 py-1 bg-gray-100 rounded-full text-sm flex items-center"
-              >
-                {tag}
-                <button
-                  onClick={() => handleRemoveTag(tag)}
-                  className="ml-1 text-gray-500 hover:text-gray-700"
+        <Form.Item label="文章标签">
+          <Space direction="vertical" className="w-full">
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <Tag
+                  key={tag}
+                  closable
+                  onClose={() => handleRemoveTag(tag)}
                 >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newTag}
-              onChange={e => setNewTag(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleAddTag()}
-              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="输入标签名称并按回车添加"
-            />
-            <button
-              onClick={handleAddTag}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-            >
-              添加标签
-            </button>
-          </div>
-        </div>
+                  {tag}
+                </Tag>
+              ))}
+            </div>
+            <Space.Compact className="w-full">
+              <Input
+                value={newTag}
+                onChange={e => setNewTag(e.target.value)}
+                onPressEnter={handleAddTag}
+                placeholder="输入标签名称并按回车添加"
+              />
+              <Button icon={<PlusOutlined />} onClick={handleAddTag}>
+                添加标签
+              </Button>
+            </Space.Compact>
+          </Space>
+        </Form.Item>
 
         {/* 文章摘要 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">文章摘要</label>
-          <textarea
+        <Form.Item label="文章摘要">
+          <TextArea
             value={article.summary || ''}
             onChange={e => setArticle({ ...article, summary: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
             placeholder="请输入文章摘要"
           />
-        </div>
+        </Form.Item>
 
         {/* 封面图片 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">封面图片</label>
-          <input
-            type="text"
+        <Form.Item label="封面图片">
+          <Input
             value={article.coverImage || ''}
             onChange={e => setArticle({ ...article, coverImage: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="请输入封面图片URL"
           />
-        </div>
+        </Form.Item>
 
         {/* 文章内容编辑按钮 */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium">文章内容</label>
-            <Link
-              href={`/admin/articles/edit/${params.id}/content`}
-              className="text-blue-500 hover:text-blue-600"
-            >
-              编辑内容
-            </Link>
-          </div>
+        <Form.Item
+          label={
+            <div className="flex justify-between items-center w-full">
+              <span>文章内容</span>
+              <Link
+                href={`/admin/articles/edit/${params.id}/content`}
+                className="text-blue-500 hover:text-blue-600"
+              >
+                <Space>
+                  <EditOutlined />
+                  编辑内容
+                </Space>
+              </Link>
+            </div>
+          }
+        >
           <div className="p-4 bg-gray-50 rounded-lg">
             {article.content ? (
               <div className="prose max-w-none">
-                <div className="line-clamp-3 text-gray-600">
+                <Text className="line-clamp-3 text-gray-600">
                   {article.content}
-                </div>
+                </Text>
               </div>
             ) : (
-              <div className="text-gray-400">暂无内容</div>
+              <Text type="secondary">暂无内容</Text>
             )}
           </div>
-        </div>
-      </div>
+        </Form.Item>
+      </Form>
     </div>
   );
 };
