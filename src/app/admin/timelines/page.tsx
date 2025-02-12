@@ -3,6 +3,29 @@
 import { useState, useEffect, useCallback } from "react";
 import imageCompression from "browser-image-compression";
 import Image from "next/image";
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  DatePicker,
+  Upload,
+  Space,
+  Card,
+  message,
+  Typography,
+  Popconfirm,
+} from "antd";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UploadOutlined,
+  EnvironmentOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+
+const { Text, Paragraph } = Typography;
 
 interface TimelineLink {
   text: string;
@@ -23,13 +46,13 @@ interface TimelineEvent {
 }
 
 export default function TimelinesAdmin() {
+  const [form] = Form.useForm();
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<{
     [key: number]: boolean;
   }>({});
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -65,36 +88,48 @@ export default function TimelinesAdmin() {
       links: [],
     });
     setEditingIndex(null);
+    form.resetFields();
   };
 
   const handleEditEvent = (event: TimelineEvent, index: number) => {
     setEditingEvent({ ...event });
     setEditingIndex(index);
+    form.setFieldsValue({
+      date: dayjs(
+        `${event.year}-${String(event.month).padStart(2, "0")}-${String(
+          event.day
+        ).padStart(2, "0")}`
+      ),
+      title: event.title,
+      location: event.location || "",
+      description: event.description,
+      tweetUrl: event.tweetUrl || "",
+      links: event.links || [],
+    });
   };
 
   const handleDeleteEvent = async (event: TimelineEvent) => {
     if (!event._id) return;
 
-    if (confirm("确定要删除这个时间轴事件吗？")) {
-      try {
-        const response = await fetch(`/api/timelines?id=${event._id}`, {
-          method: "DELETE",
-        });
+    try {
+      const response = await fetch(`/api/timelines?id=${event._id}`, {
+        method: "DELETE",
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to delete timeline event");
-        }
-
-        const data = await response.json();
-        if (data.success) {
-          await fetchEvents(); // Refresh the events list
-        } else {
-          throw new Error("Failed to delete timeline event");
-        }
-      } catch (error) {
-        console.error("Error deleting timeline event:", error);
-        alert("删除失败，请重试");
+      if (!response.ok) {
+        throw new Error("Failed to delete timeline event");
       }
+
+      const data = await response.json();
+      if (data.success) {
+        message.success("删除成功");
+        await fetchEvents();
+      } else {
+        throw new Error("Failed to delete timeline event");
+      }
+    } catch (error) {
+      console.error("Error deleting timeline event:", error);
+      message.error("删除失败，请重试");
     }
   };
 
@@ -138,35 +173,12 @@ export default function TimelinesAdmin() {
   };
 
   const handleSaveEvent = async () => {
-    if (!editingEvent) return;
-
-    // Reset errors
-    setErrors({});
-    const newErrors: { [key: string]: string } = {};
-
-    // Validate URLs
-    if (editingEvent.tweetUrl && !validateUrl(editingEvent.tweetUrl)) {
-      newErrors.tweetUrl = "请输入有效的URL（以http://或https://开头）";
-    }
-
-    // Validate links
-    if (editingEvent.links) {
-      editingEvent.links.forEach((link, index) => {
-        if (!validateUrl(link.url)) {
-          newErrors[`link_${index}`] = "请输入有效的URL（以http://或https://开头）";
-        }
-      });
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setIsUploading(true);
     try {
+      const values = await form.validateFields();
+      const date = values.date as dayjs.Dayjs;
+
       // Upload image if there's a selected file
-      let finalImageUrl = editingEvent.imageUrl;
+      let finalImageUrl = editingEvent?.imageUrl;
       if (selectedFile) {
         setIsCompressing(true);
         let fileToUpload = selectedFile;
@@ -201,10 +213,17 @@ export default function TimelinesAdmin() {
         finalImageUrl = data.url;
       }
 
-      // Save event with the image URL
       const eventToSave = {
         ...editingEvent,
+        year: date.year(),
+        month: date.month() + 1,
+        day: date.date(),
+        title: values.title,
+        location: values.location,
+        description: values.description,
+        tweetUrl: values.tweetUrl,
         imageUrl: finalImageUrl,
+        links: values.links,
       };
 
       const method = eventToSave._id ? "PUT" : "POST";
@@ -225,21 +244,22 @@ export default function TimelinesAdmin() {
 
       const data = await response.json();
       if (data.success) {
-        await fetchEvents(); // Refresh the events list
+        message.success("保存成功");
+        await fetchEvents();
         setEditingEvent(null);
         setEditingIndex(null);
-        setErrors({});
-        setSelectedFile(null);
+        form.resetFields();
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           setPreviewUrl("");
         }
+        setSelectedFile(null);
       } else {
         throw new Error("Failed to save timeline event");
       }
     } catch (error) {
       console.error("Error saving timeline event:", error);
-      alert("保存失败，请重试");
+      message.error("保存失败，请重试");
     } finally {
       setIsUploading(false);
       setIsCompressing(false);
@@ -271,11 +291,11 @@ export default function TimelinesAdmin() {
 
     // Clear error when user starts typing
     if (field === "url") {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[`link_${index}`];
-        return newErrors;
-      });
+      // setErrors((prev) => {
+      //   const newErrors = { ...prev };
+      //   delete newErrors[`link_${index}`];
+      //   return newErrors;
+      // });
     }
   };
 
@@ -292,7 +312,9 @@ export default function TimelinesAdmin() {
   };
 
   const formatDateValue = (year: number, month: number, day: number) => {
-    return `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+    return `${year}-${month.toString().padStart(2, "0")}-${day
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const sortEvents = (events: TimelineEvent[]) => {
@@ -327,8 +349,8 @@ export default function TimelinesAdmin() {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件');
+    if (!file.type.startsWith("image/")) {
+      alert("请选择图片文件");
       return;
     }
 
@@ -359,333 +381,318 @@ export default function TimelinesAdmin() {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-white relative h-[100vh] overflow-y-auto">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
-        <h1 className="text-xl md:text-2xl font-bold">时间轴管理</h1>
-        <button
-          onClick={() => handleAddEvent()}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-        >
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <Typography.Title level={2} style={{ margin: 0 }}>
+          时间轴管理
+        </Typography.Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddEvent}>
           添加事件
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-4">
         {events.map((event, index) => (
-          <div key={index} className="border rounded-lg p-4 shadow-sm bg-white relative">
-            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:justify-between">
-              <div className="space-y-2">
-                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-                  <span className="text-gray-500 text-sm md:text-base">
+          <Card key={index} className="w-full shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex flex-col space-y-4">
+              <div className="flex flex-col space-y-2">
+                <Space align="start" className="flex-wrap">
+                  <Text type="secondary" className="whitespace-nowrap">
                     {event.year}年{event.month}月{event.day}日
-                  </span>
-                  <h3 className="font-semibold text-base md:text-lg" title={event.title}>
-                    {truncateText(event.title, 30)}
-                  </h3>
-                </div>
+                  </Text>
+                  <Typography.Title 
+                    level={4} 
+                    style={{ 
+                      margin: 0,
+                      maxWidth: '100%',
+                    }}
+                    ellipsis={{ 
+                      tooltip: event.title 
+                    }}
+                  >
+                    {event.title}
+                  </Typography.Title>
+                </Space>
+                
                 {event.location && (
-                  <p className="text-sm text-gray-500">
-                    📍 {event.location}
-                  </p>
+                  <div>
+                    <Space>
+                      <EnvironmentOutlined className="text-gray-400" />
+                      <Text type="secondary">{event.location}</Text>
+                    </Space>
+                  </div>
                 )}
+
                 {event.imageUrl && (
-                  <div className="mt-2">
+                  <div className="relative w-full aspect-[16/9] max-w-2xl mx-auto overflow-hidden rounded-lg bg-gray-50">
                     <Image
                       src={event.imageUrl}
                       alt={event.title}
-                      width={200}
-                      height={120}
-                      className="max-h-[120px] object-contain bg-white"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
                 )}
-                <div className="text-gray-600">
-                  <p className="text-sm md:text-base">
-                    {truncateDescription(
-                      event.description,
-                      !!expandedDescriptions[index]
-                    )}
-                  </p>
-                  {event.description.length > 100 && (
-                    <button
-                      onClick={() => toggleDescription(index)}
-                      className="text-blue-500 text-sm hover:underline mt-2"
-                    >
-                      {expandedDescriptions[index] ? "收起" : "展开"}
-                    </button>
-                  )}
-                </div>
+
+                <Paragraph
+                  ellipsis={
+                    !expandedDescriptions[index]
+                      ? { rows: 3, expandable: true, symbol: "展开" }
+                      : false
+                  }
+                  onClick={() => toggleDescription(index)}
+                  className="text-gray-600 mb-0"
+                >
+                  {event.description}
+                </Paragraph>
+
                 {event.links && event.links.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <Space wrap size={[8, 8]} className="pt-2">
                     {event.links.map((link, linkIndex) => (
-                      <a
+                      <Button
                         key={linkIndex}
+                        type="link"
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-sm"
+                        className="!px-2 !h-auto"
                       >
                         {link.text}
-                      </a>
+                      </Button>
                     ))}
-                  </div>
+                  </Space>
                 )}
               </div>
-              <div className="flex space-x-2 w-full md:w-auto">
-                <button
+
+              <Space className="justify-end">
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
                   onClick={() => handleEditEvent(event, index)}
-                  className="flex-1 md:flex-none px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
                 >
                   编辑
-                </button>
-                <button
-                  onClick={() => handleDeleteEvent(event)}
-                  className="flex-1 md:flex-none px-3 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600"
+                </Button>
+                <Popconfirm
+                  title="确定要删除这个时间轴事件吗？"
+                  onConfirm={() => handleDeleteEvent(event)}
+                  okText="确认"
+                  cancelText="取消"
                 >
-                  删除
-                </button>
-              </div>
+                  <Button danger icon={<DeleteOutlined />}>
+                    删除
+                  </Button>
+                </Popconfirm>
+              </Space>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
-      {/* Edit Modal */}
-      {editingEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
-            <div className="sticky top-0 bg-white p-4 border-b z-10">
-              <h2 className="text-lg font-semibold">
-                {editingEvent._id ? "编辑事件" : "添加事件"}
-              </h2>
-            </div>
+      <Modal
+        title={editingEvent?._id ? "编辑事件" : "添加事件"}
+        open={!!editingEvent}
+        onCancel={() => {
+          setEditingEvent(null);
+          setEditingIndex(null);
+          form.resetFields();
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl("");
+          }
+          setSelectedFile(null);
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setEditingEvent(null);
+              setEditingIndex(null);
+              form.resetFields();
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                setPreviewUrl("");
+              }
+              setSelectedFile(null);
+            }}
+          >
+            取消
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={isUploading || isCompressing}
+            onClick={handleSaveEvent}
+          >
+            {isUploading ? "保存中..." : isCompressing ? "压缩中..." : "保存"}
+          </Button>,
+        ]}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            date: editingEvent
+              ? dayjs(
+                  `${editingEvent.year}-${String(editingEvent.month).padStart(
+                    2,
+                    "0"
+                  )}-${String(editingEvent.day).padStart(2, "0")}`
+                )
+              : dayjs(),
+            title: editingEvent?.title || "",
+            location: editingEvent?.location || "",
+            description: editingEvent?.description || "",
+            tweetUrl: editingEvent?.tweetUrl || "",
+          }}
+        >
+          <Form.Item
+            label="日期"
+            name="date"
+            rules={[{ required: true, message: "请选择日期" }]}
+          >
+            <DatePicker style={{ width: "100%" }} />
+          </Form.Item>
 
-            <div className="p-4">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    日期
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border rounded-lg text-base"
-                    value={formatDateValue(editingEvent.year, editingEvent.month, editingEvent.day || 1)}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    标题
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border rounded-lg text-base"
-                    value={editingEvent.title}
-                    onChange={(e) =>
-                      setEditingEvent({ ...editingEvent, title: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    地点（可选）
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border rounded-lg text-base"
-                    value={editingEvent.location || ""}
-                    onChange={(e) =>
-                      setEditingEvent({
-                        ...editingEvent,
-                        location: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    描述
-                  </label>
-                  <textarea
-                    className="w-full px-3 py-2 border rounded-lg text-base min-h-[100px]"
-                    value={editingEvent.description}
-                    onChange={(e) =>
-                      setEditingEvent({
-                        ...editingEvent,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tweet URL（可选）
-                  </label>
-                  <input
-                    type="text"
-                    className={`w-full px-3 py-2 border rounded-lg text-base ${errors.tweetUrl ? "border-red-500" : ""
-                      }`}
-                    value={editingEvent.tweetUrl || ""}
-                    onChange={(e) => {
-                      setEditingEvent({
-                        ...editingEvent,
-                        tweetUrl: e.target.value,
-                      });
-                      setErrors((prev) => {
-                        const newErrors = { ...prev };
-                        delete newErrors.tweetUrl;
-                        return newErrors;
-                      });
-                    }}
-                    placeholder="https://"
-                  />
-                  {errors.tweetUrl && (
-                    <p className="text-red-500 text-sm mt-1">{errors.tweetUrl}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    图片
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[200px] flex items-center justify-center bg-white relative">
-                    {(previewUrl || editingEvent.imageUrl) ? (
-                      <div className="relative w-full h-full flex items-center justify-center">
-                        <Image
-                          src={previewUrl || editingEvent.imageUrl || ''}
-                          alt="Preview"
-                          width={200}
-                          height={120}
-                          className="max-w-full max-h-[180px] object-contain bg-white"
-                        />
-                        <button
-                          onClick={() => {
-                            if (previewUrl) {
-                              URL.revokeObjectURL(previewUrl);
-                            }
-                            setPreviewUrl("");
-                            setSelectedFile(null);
-                            if (editingEvent) {
-                              setEditingEvent({
-                                ...editingEvent,
-                                imageUrl: "",
-                              });
-                            }
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md z-20"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="text-center w-full select-none">
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/gif"
-                          onChange={handleFileChange}
-                          className="hidden"
-                          id="image-upload"
-                        />
-                        <label
-                          htmlFor="image-upload"
-                          className="cursor-pointer inline-block hover:opacity-80 transition-opacity"
-                        >
-                          <div className="mx-auto w-12 h-12 text-gray-400 mb-3">
-                            <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <p className="text-blue-600 text-sm font-medium">点击选择图片或拖拽到此处</p>
-                          <p className="text-gray-500 text-xs mt-2">支持 PNG、JPG、GIF 格式，最大 10MB</p>
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </div>
+          <Form.Item
+            label="标题"
+            name="title"
+            rules={[{ required: true, message: "请输入标题" }]}
+          >
+            <Input />
+          </Form.Item>
 
-                {/* Links Section */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      链接（可选）
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleAddLink}
-                      className="text-sm text-blue-500 hover:text-blue-600"
-                    >
-                      + 添加链接
-                    </button>
-                  </div>
-                  {editingEvent.links?.map((link, index) => (
-                    <div key={index} className="flex flex-col md:flex-row gap-2 mb-3">
-                      <input
-                        type="text"
-                        placeholder="链接文本"
-                        className="flex-1 px-3 py-2 border rounded-lg text-base"
-                        value={link.text}
-                        onChange={(e) =>
-                          handleUpdateLink(index, "text", e.target.value)
-                        }
-                      />
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          placeholder="https://"
-                          className={`w-full px-3 py-2 border rounded-lg text-base ${errors[`link_${index}`] ? "border-red-500" : ""
-                            }`}
-                          value={link.url}
-                          onChange={(e) =>
-                            handleUpdateLink(index, "url", e.target.value)
-                          }
-                        />
-                        {errors[`link_${index}`] && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors[`link_${index}`]}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleRemoveLink(index)}
-                        className="w-full md:w-auto px-3 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 text-sm"
-                      >
-                        删除
-                      </button>
-                    </div>
-                  ))}
-                </div>
+          <Form.Item label="地点" name="location">
+            <Input prefix={<EnvironmentOutlined />} placeholder="可选" />
+          </Form.Item>
 
-                <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end space-x-3 z-10">
-                  <button
-                    onClick={() => {
-                      setEditingEvent(null);
-                      setEditingIndex(null);
-                      setErrors({});
+          <Form.Item
+            label="描述"
+            name="description"
+            rules={[{ required: true, message: "请输入描述" }]}
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+
+          <Form.Item
+            label="Tweet URL"
+            name="tweetUrl"
+            rules={[
+              {
+                type: "url",
+                message: "请输入有效的URL",
+              },
+            ]}
+          >
+            <Input placeholder="https://" />
+          </Form.Item>
+
+          <Form.Item label="图片">
+            <Upload.Dragger
+              name="file"
+              multiple={false}
+              showUploadList={false}
+              beforeUpload={(file) => {
+                handleFileChange({ target: { files: [file] } } as any);
+                return false;
+              }}
+              accept="image/*"
+            >
+              {previewUrl || editingEvent?.imageUrl ? (
+                <div className="relative">
+                  <Image
+                    src={previewUrl || editingEvent?.imageUrl || ""}
+                    alt="Preview"
+                    width={200}
+                    height={120}
+                    className="max-w-full max-h-[180px] object-contain bg-white mx-auto"
+                  />
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    className="absolute top-0 right-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (previewUrl) {
                         URL.revokeObjectURL(previewUrl);
-                        setPreviewUrl("");
                       }
+                      setPreviewUrl("");
                       setSelectedFile(null);
+                      if (editingEvent) {
+                        setEditingEvent({
+                          ...editingEvent,
+                          imageUrl: "",
+                        });
+                      }
                     }}
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={handleSaveEvent}
-                    disabled={isUploading || isCompressing}
-                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-colors ${isUploading || isCompressing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-                      }`}
-                  >
-                    {isUploading ? "保存中..." : isCompressing ? "压缩中..." : "保存"}
-                  </button>
+                  />
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              ) : (
+                <>
+                  <p className="ant-upload-drag-icon">
+                    <UploadOutlined />
+                  </p>
+                  <p className="ant-upload-text">点击选择或拖拽图片到此处</p>
+                  <p className="ant-upload-hint">
+                    支持 PNG、JPG、GIF 格式，最大 10MB
+                  </p>
+                </>
+              )}
+            </Upload.Dragger>
+          </Form.Item>
+
+          <Form.List name="links" initialValue={editingEvent?.links || []}>
+            {(fields, { add, remove }) => (
+              <>
+                <div className="flex justify-between items-center mb-2">
+                  <Typography.Text>链接</Typography.Text>
+                  <Button
+                    type="link"
+                    onClick={() => add()}
+                    icon={<PlusOutlined />}
+                  >
+                    添加链接
+                  </Button>
+                </div>
+                {fields.map((field, index) => (
+                  <Space
+                    key={field.key}
+                    style={{ display: "flex", marginBottom: 8 }}
+                    align="baseline"
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, "text"]}
+                      rules={[{ required: true, message: "请输入链接文本" }]}
+                    >
+                      <Input placeholder="链接文本" />
+                    </Form.Item>
+                    <Form.Item
+                      {...field}
+                      name={[field.name, "url"]}
+                      rules={[
+                        { required: true, message: "请输入URL" },
+                        { type: "url", message: "请输入有效的URL" },
+                      ]}
+                    >
+                      <Input placeholder="https://" />
+                    </Form.Item>
+                    <Button
+                      type="text"
+                      danger
+                      onClick={() => remove(field.name)}
+                    >
+                      删除
+                    </Button>
+                  </Space>
+                ))}
+              </>
+            )}
+          </Form.List>
+        </Form>
+      </Modal>
     </div>
   );
 }
