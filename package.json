@@ -10,6 +10,7 @@
     "prod": "next build && next start"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.6.1",
     "@mdx-js/loader": "^3.0.1",
     "@mdx-js/react": "^3.0.1",
     "@next/mdx": "^14.1.4",
@@ -74,6 +75,7 @@
     "@uiw/react-md-editor": "^4.0.5",
     "acorn": "^8.14.0",
     "ali-oss": "^6.21.0",
+    "antd": "^5.24.0",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",

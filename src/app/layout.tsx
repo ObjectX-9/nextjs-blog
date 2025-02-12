@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import '@/styles/notion-scrollbar.css'
+import 'antd/dist/reset.css';  
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
 import SidePanel from "@/components/SidePanel";

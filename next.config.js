@@ -19,10 +19,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**",
+        hostname: "**.aliyuncs.com",
       },
     ],
   },
+  transpilePackages: ['antd', '@ant-design/icons'],
   compiler: {
     // 生产环境移除 console
     removeConsole: process.env.NODE_ENV === 'production' ? {
@@ -54,7 +55,11 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
-          }
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-store',
+          },
         ]
       },
       {
