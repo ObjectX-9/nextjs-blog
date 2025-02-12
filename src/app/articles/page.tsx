@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Article, ArticleCategory } from '@/app/model/article';
+import { ArticleSkeleton, ArticleSkeletonDesktop, CategorySkeleton } from './components/Skeletons';
 
 export default function ArticlesPage() {
   const router = useRouter();
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [allArticles, setAllArticles] = useState<Article[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<ArticleCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -27,30 +29,34 @@ export default function ArticlesPage() {
     return () => window.removeEventListener('resize', checkMobileView);
   }, []);
 
-  useEffect(() => {
-    const init = async () => {
-      await fetchCategories();
-      const urlParams = new URLSearchParams(window.location.search);
-      const categoryFromUrl = urlParams.get('category');
-      if (categoryFromUrl) {
-        setSelectedCategory(categoryFromUrl);
-      } else {
-        const lastCategory = localStorage.getItem('lastCategory');
-        if (lastCategory) {
-          setSelectedCategory(lastCategory);
-        }
+  const fetchAllArticles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/articles');
+      if (!response.ok) {
+        throw new Error('获取文章列表失败');
       }
-    };
-    init();
+      const data = await response.json();
+      const sortedArticles = sortArticles(data.articles || []);
+      setAllArticles(sortedArticles);
+
+      // 更新分类计数
+      const counts: Record<string, number> = {};
+      data.articles.forEach((article: Article) => {
+        if (article.categoryId) {
+          counts[article.categoryId] = (counts[article.categoryId] || 0) + 1;
+        }
+      });
+      setCategoryCounts(counts);
+    } catch (error) {
+      console.error('获取文章列表失败:', error);
+      setAllArticles([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    if (selectedCategory) {
-      fetchArticles(selectedCategory);
-    }
-  }, [selectedCategory]);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await fetch('/api/articles/categories');
       if (!response.ok) {
@@ -85,49 +91,52 @@ export default function ArticlesPage() {
         })
       );
       setCategoryCounts(counts);
-
-      if (sortedCategories.length > 0) {
-        setSelectedCategory(sortedCategories[0]._id);
-      }
     } catch (error) {
       console.error('获取分类列表失败:', error);
     }
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([fetchCategories(), fetchAllArticles()]);
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryFromUrl = urlParams.get('category');
+      if (categoryFromUrl) {
+        setSelectedCategory(categoryFromUrl);
+      } else {
+        const lastCategory = localStorage.getItem('lastCategory');
+        if (lastCategory) {
+          setSelectedCategory(lastCategory);
+        }
+      }
+    };
+    init();
+  }, [fetchCategories, fetchAllArticles]);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = allArticles.filter(article => article.categoryId === selectedCategory);
+      const sorted = sortArticles(filtered);
+      setFilteredArticles(sorted);
+    }
+  }, [selectedCategory, allArticles]);
+
+  const sortArticles = (articles: Article[]) => {
+    return [...articles].sort((a: Article, b: Article) => {
+      if (a.order !== undefined && b.order !== undefined) {
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+      } else if (a.order !== undefined) {
+        return -1; // a 有 order，b 没有，a 排前面
+      } else if (b.order !== undefined) {
+        return 1;  // b 有 order，a 没有，b 排前面
+      }
+      // 如果 order 相同或都没有，按创建时间降序
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   };
 
-  const fetchArticles = async (categoryId: string) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/articles?categoryId=${categoryId}`);
-      if (!response.ok) {
-        throw new Error('获取文章列表失败');
-      }
-      const data = await response.json();
-      // 根据 order 和创建时间排序
-      const sortedArticles = (data.articles || []).sort((a: Article, b: Article) => {
-        if (a.order !== undefined && b.order !== undefined) {
-          if (a.order !== b.order) {
-            return a.order - b.order;
-          }
-        } else if (a.order !== undefined) {
-          return -1; // a 有 order，b 没有，a 排前面
-        } else if (b.order !== undefined) {
-          return 1;  // b 有 order，a 没有，b 排前面
-        }
-        // 如果 order 相同或都没有，按创建时间降序
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-      setArticles(sortedArticles);
-      setCategoryCounts(prev => ({
-        ...prev,
-        [categoryId]: data.articles?.length || 0
-      }));
-    } catch (error) {
-      console.error('获取文章列表失败:', error);
-      setArticles([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -151,49 +160,7 @@ export default function ArticlesPage() {
     }
   };
 
-  const ArticleSkeleton = () => (
-    <div className="animate-pulse space-y-4">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <div key={i} className="p-3 border-b last:border-b-0">
-          <div className="h-5 bg-gray-200 rounded w-4/5 mb-2"></div>
-          <div className="h-4 bg-gray-100 rounded w-1/3"></div>
-        </div>
-      ))}
-    </div>
-  );
 
-  const ArticleSkeletonDesktop = () => (
-    <div className="animate-pulse space-y-4">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <div key={i} className="p-3 rounded-lg mb-2 bg-gray-50">
-          <div className="h-5 bg-gray-200 rounded w-4/5 mb-2"></div>
-          <div className="h-4 bg-gray-100 rounded w-1/3"></div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const CategorySkeleton = () => (
-    <div className="animate-pulse h-full">
-      <div className="p-4 border-b">
-        <div className="h-7 bg-gray-200 rounded w-1/2 mb-4"></div>
-      </div>
-      <div className="p-4 space-y-3">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <div key={i} className="p-3 rounded-lg border border-gray-100">
-            <div className="flex gap-1 mb-2">
-              <div className="h-4 bg-gray-200 rounded w-12"></div>
-              <div className="h-4 bg-gray-200 rounded w-16"></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="h-5 bg-gray-100 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-100 rounded w-8"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   if (!categories.length) {
     return (
@@ -291,8 +258,8 @@ export default function ArticlesPage() {
           </h2>
           {loading ? (
             <ArticleSkeleton />
-          ) : articles.length > 0 ? (
-            articles.map((article) => (
+          ) : filteredArticles.length > 0 ? (
+            filteredArticles.map((article) => (
               <button
                 key={article._id}
                 onClick={() => handleArticleClick(article)}
@@ -370,8 +337,8 @@ export default function ArticlesPage() {
             </h2>
             {loading ? (
               <ArticleSkeletonDesktop />
-            ) : articles.length > 0 ? (
-              articles.map((article) => (
+            ) : filteredArticles.length > 0 ? (
+              filteredArticles.map((article) => (
                 <button
                   key={article._id}
                   onClick={() => handleArticleClick(article)}
