@@ -15,7 +15,7 @@ const WebInspiration = ({
   onLike,
   onView,
   hasLiked,
-  site
+  site,
 }: {
   inspiration: InspirationDocument;
   onLike: (id: string) => void;
@@ -30,10 +30,7 @@ const WebInspiration = ({
     >
       <div className="flex items-start space-x-3">
         <Avatar className="w-10 h-10 flex-shrink-0">
-          <AvatarImage
-            src={site?.author?.avatar}
-            alt={site?.author?.name}
-          />
+          <AvatarImage src={site?.author?.avatar} alt={site?.author?.name} />
           <AvatarFallback>{(site?.author?.name)![0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
@@ -60,43 +57,68 @@ const WebInspiration = ({
               <div className="w-full max-w-full sm:max-w-5xl mx-auto mb-4">
                 <div className="relative w-full aspect-video min-h-[240px] sm:min-h-[480px]">
                   <iframe
-                    src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}&autoplay=0&quality=80`}
+                    src={`//player.bilibili.com/player.html?bvid=${
+                      inspiration.bilibili.bvid
+                    }&page=${
+                      inspiration.bilibili.page || 1
+                    }&autoplay=0&quality=80`}
                     scrolling="no"
-                    style={{ border: 'none' }}
+                    style={{ border: "none" }}
                     frameBorder="no"
                     allowFullScreen={true}
                     className="absolute inset-0 w-full h-full rounded-lg shadow-lg"
                   />
                 </div>
                 <div className="flex items-center space-x-2 mt-2 text-xs sm:text-sm text-gray-500 px-2 sm:px-0">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M306.005333 117.632L444.330667 256h135.296l138.368-138.325333a42.666667 42.666667 0 0 1 60.373333 60.373333L700.330667 256H789.333333A149.333333 149.333333 0 0 1 938.666667 405.333333v341.333334a149.333333 149.333333 0 0 1-149.333334 149.333333h-554.666666A149.333333 149.333333 0 0 1 85.333333 746.666667v-341.333334A149.333333 149.333333 0 0 1 234.666667 256h88.96L245.632 177.962667a42.666667 42.666667 0 0 1 60.373333-60.373334zM789.333333 341.333333h-554.666666a64 64 0 0 0-63.701334 57.856L170.666667 405.333333v341.333334a64 64 0 0 0 57.856 63.701333L234.666667 810.666667h554.666666a64 64 0 0 0 63.701334-57.856L853.333333 746.666667v-341.333334A64 64 0 0 0 789.333333 341.333333zM341.333333 469.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666666-42.666667z m341.333334 0a42.666667 42.666667 0 0 1 42.666666 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#00AEEC" />
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    viewBox="0 0 1024 1024"
+                    version="1.1"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M306.005333 117.632L444.330667 256h135.296l138.368-138.325333a42.666667 42.666667 0 0 1 60.373333 60.373333L700.330667 256H789.333333A149.333333 149.333333 0 0 1 938.666667 405.333333v341.333334a149.333333 149.333333 0 0 1-149.333334 149.333333h-554.666666A149.333333 149.333333 0 0 1 85.333333 746.666667v-341.333334A149.333333 149.333333 0 0 1 234.666667 256h88.96L245.632 177.962667a42.666667 42.666667 0 0 1 60.373333-60.373334zM789.333333 341.333333h-554.666666a64 64 0 0 0-63.701334 57.856L170.666667 405.333333v341.333334a64 64 0 0 0 57.856 63.701333L234.666667 810.666667h554.666666a64 64 0 0 0 63.701334-57.856L853.333333 746.666667v-341.333334A64 64 0 0 0 789.333333 341.333333zM341.333333 469.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666666-42.666667z m341.333334 0a42.666667 42.666667 0 0 1 42.666666 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666667-42.666667z"
+                      fill="#00AEEC"
+                    />
                   </svg>
                   <span>BV号: {inspiration.bilibili.bvid}</span>
                   {inspiration.bilibili.title && (
-                    <span className="truncate">标题: {inspiration.bilibili.title}</span>
+                    <span className="truncate">
+                      标题: {inspiration.bilibili.title}
+                    </span>
                   )}
                 </div>
               </div>
             )}
             {inspiration.images && inspiration.images.length > 0 && (
-              <div className={`grid gap-2 mb-3 ${inspiration.images?.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' :
-                inspiration.images?.length === 2 ? 'grid-cols-2 max-w-2xl mx-auto' :
-                  'grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto'
-                }`}>
+              <div
+                className={`grid gap-2 mb-3 ${
+                  inspiration.images?.length === 1
+                    ? "grid-cols-1 max-w-3xl mx-auto"
+                    : inspiration.images?.length === 2
+                    ? "grid-cols-2 max-w-2xl mx-auto"
+                    : "grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto"
+                }`}
+              >
                 {inspiration.images?.slice(0, 4).map((img, index) => (
-                  <div key={index} className={`relative aspect-square w-full h-full ${inspiration.images?.length === 1
-                    ? 'min-h-[280px] sm:min-h-[320px] max-h-[400px]'
-                    : 'min-h-[160px] sm:min-h-[200px] max-h-[280px]'
-                    }`}>
+                  <div
+                    key={index}
+                    className={`relative aspect-square w-full h-full ${
+                      inspiration.images?.length === 1
+                        ? "min-h-[280px] sm:min-h-[320px] max-h-[400px]"
+                        : "min-h-[160px] sm:min-h-[200px] max-h-[280px]"
+                    }`}
+                  >
                     <Image
                       src={img}
                       alt={`Inspiration image ${index + 1}`}
                       fill
                       className="rounded-lg object-cover"
-                      sizes={inspiration.images?.length === 1
-                        ? '(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 800px'
-                        : '(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 400px'}
+                      sizes={
+                        inspiration.images?.length === 1
+                          ? "(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 800px"
+                          : "(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 400px"
+                      }
                     />
                   </div>
                 ))}
@@ -149,15 +171,11 @@ const WebInspiration = ({
                   e.stopPropagation();
                   onLike(inspiration._id.toString());
                 }}
-                className={`flex items-center space-x-1 transition-colors ${hasLiked
-                  ? "text-red-500"
-                  : "hover:text-red-500"
-                  }`}
+                className={`flex items-center space-x-1 transition-colors ${
+                  hasLiked ? "text-red-500" : "hover:text-red-500"
+                }`}
               >
-                <Heart
-                  size={14}
-                  fill={hasLiked ? "currentColor" : "none"}
-                />
+                <Heart size={14} fill={hasLiked ? "currentColor" : "none"} />
                 <span>{inspiration.likes || 0}</span>
               </button>
               <button
@@ -181,7 +199,7 @@ const MobileInspiration = ({
   onLike,
   onView,
   hasLiked,
-  site
+  site,
 }: {
   inspiration: InspirationDocument;
   onLike: (id: string) => void;
@@ -196,10 +214,7 @@ const MobileInspiration = ({
     >
       <div className="flex items-start space-x-2">
         <Avatar className="w-8 h-8 flex-shrink-0">
-          <AvatarImage
-            src={site?.author?.avatar}
-            alt={site?.author?.name}
-          />
+          <AvatarImage src={site?.author?.avatar} alt={site?.author?.name} />
           <AvatarFallback>{(site?.author?.name)![0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
@@ -226,42 +241,66 @@ const MobileInspiration = ({
               <div className="w-full max-w-full sm:max-w-5xl mx-auto mb-4">
                 <div className="relative w-full aspect-video">
                   <iframe
-                    src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid}&page=${inspiration.bilibili.page || 1}&autoplay=0&quality=80`}
+                    src={`//player.bilibili.com/player.html?bvid=${
+                      inspiration.bilibili.bvid
+                    }&page=${
+                      inspiration.bilibili.page || 1
+                    }&autoplay=0&quality=80`}
                     scrolling="no"
-                    style={{ border: 'none' }}
+                    style={{ border: "none" }}
                     frameBorder="no"
                     allowFullScreen={true}
                     className="absolute inset-0 w-full h-full rounded-lg shadow-lg"
                   />
                 </div>
                 <div className="flex items-center space-x-2 mt-2 text-xs sm:text-sm text-gray-500 px-2 sm:px-0">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M306.005333 117.632L444.330667 256h135.296l138.368-138.325333a42.666667 42.666667 0 0 1 60.373333 60.373333L700.330667 256H789.333333A149.333333 149.333333 0 0 1 938.666667 405.333333v341.333334a149.333333 149.333333 0 0 1-149.333334 149.333333h-554.666666A149.333333 149.333333 0 0 1 85.333333 746.666667v-341.333334A149.333333 149.333333 0 0 1 234.666667 256h88.96L245.632 177.962667a42.666667 42.666667 0 0 1 60.373333-60.373334zM789.333333 341.333333h-554.666666a64 64 0 0 0-63.701334 57.856L170.666667 405.333333v341.333334a64 64 0 0 0 57.856 63.701333L234.666667 810.666667h554.666666a64 64 0 0 0 63.701334-57.856L853.333333 746.666667v-341.333334A64 64 0 0 0 789.333333 341.333333zM341.333333 469.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666666-42.666667z m341.333334 0a42.666667 42.666667 0 0 1 42.666666 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#00AEEC" />
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    viewBox="0 0 1024 1024"
+                    version="1.1"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M306.005333 117.632L444.330667 256h135.296l138.368-138.325333a42.666667 42.666667 0 0 1 60.373333 60.373333L700.330667 256H789.333333A149.333333 149.333333 0 0 1 938.666667 405.333333v341.333334a149.333333 149.333333 0 0 1-149.333334 149.333333h-554.666666A149.333333 149.333333 0 0 1 85.333333 746.666667v-341.333334A149.333333 149.333333 0 0 1 234.666667 256h88.96L245.632 177.962667a42.666667 42.666667 0 0 1 60.373333-60.373334zM789.333333 341.333333h-554.666666a64 64 0 0 0-63.701334 57.856L170.666667 405.333333v341.333334a64 64 0 0 0 57.856 63.701333L234.666667 810.666667h554.666666a64 64 0 0 0 63.701334-57.856L853.333333 746.666667v-341.333334A64 64 0 0 0 789.333333 341.333333zM341.333333 469.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666666-42.666667z m341.333334 0a42.666667 42.666667 0 0 1 42.666666 42.666667v85.333333a42.666667 42.666667 0 0 1-85.333333 0v-85.333333a42.666667 42.666667 0 0 1 42.666667-42.666667z"
+                      fill="#00AEEC"
+                    />
                   </svg>
                   <span>BV号: {inspiration.bilibili.bvid}</span>
                   {inspiration.bilibili.title && (
-                    <span className="truncate">标题: {inspiration.bilibili.title}</span>
+                    <span className="truncate">
+                      标题: {inspiration.bilibili.title}
+                    </span>
                   )}
                 </div>
               </div>
             )}
             {inspiration.images && inspiration.images.length > 0 && (
-              <div className={`grid gap-1.5 mb-2 ${inspiration.images?.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' :
-                'grid-cols-2 max-w-md mx-auto'
-                }`}>
+              <div
+                className={`grid gap-1.5 mb-2 ${
+                  inspiration.images?.length === 1
+                    ? "grid-cols-1 max-w-lg mx-auto"
+                    : "grid-cols-2 max-w-md mx-auto"
+                }`}
+              >
                 {inspiration.images?.slice(0, 4).map((img, index) => (
-                  <div key={index} className={`relative aspect-square w-full h-full ${inspiration.images?.length === 1
-                    ? 'min-h-[200px] max-h-[300px]'
-                    : 'min-h-[140px] max-h-[200px]'
-                    }`}>
+                  <div
+                    key={index}
+                    className={`relative aspect-square w-full h-full ${
+                      inspiration.images?.length === 1
+                        ? "min-h-[200px] max-h-[300px]"
+                        : "min-h-[140px] max-h-[200px]"
+                    }`}
+                  >
                     <Image
                       src={img}
                       alt={`Inspiration image ${index + 1}`}
                       fill
                       className="rounded-lg object-cover"
-                      sizes={inspiration.images?.length === 1
-                        ? '(max-width: 640px) 85vw, 500px'
-                        : '(max-width: 640px) 42vw, 250px'}
+                      sizes={
+                        inspiration.images?.length === 1
+                          ? "(max-width: 640px) 85vw, 500px"
+                          : "(max-width: 640px) 42vw, 250px"
+                      }
                     />
                   </div>
                 ))}
@@ -314,15 +353,11 @@ const MobileInspiration = ({
                   e.stopPropagation();
                   onLike(inspiration._id.toString());
                 }}
-                className={`flex items-center space-x-1 transition-colors ${hasLiked
-                  ? "text-red-500"
-                  : "hover:text-red-500"
-                  }`}
+                className={`flex items-center space-x-1 transition-colors ${
+                  hasLiked ? "text-red-500" : "hover:text-red-500"
+                }`}
               >
-                <Heart
-                  size={12}
-                  fill={hasLiked ? "currentColor" : "none"}
-                />
+                <Heart size={12} fill={hasLiked ? "currentColor" : "none"} />
                 <span>{inspiration.likes || 0}</span>
               </button>
               <button
@@ -346,8 +381,12 @@ export default function InspirationPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [likedInspirations, setLikedInspirations] = useState<Set<string>>(new Set());
-  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(new Set());
+  const [likedInspirations, setLikedInspirations] = useState<Set<string>>(
+    new Set()
+  );
+  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(
+    new Set()
+  );
   const [isMobile, setIsMobile] = useState(false);
   const { site } = useSiteStore();
 
@@ -357,8 +396,8 @@ export default function InspirationPage() {
     };
 
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const fetchInspirations = async (currentPage: number, isLoadMore = false) => {
@@ -370,12 +409,12 @@ export default function InspirationPage() {
 
     try {
       const response = await fetch(
-        `/api/inspirations?page=${currentPage}&limit=10&sort=createdAt:desc`
+        `/api/inspirations?page=${currentPage}&limit=1000000&sort=createdAt:desc`
       );
       const result = await response.json();
 
       if (isLoadMore) {
-        setInspirations(prev => [...prev, ...result.data]);
+        setInspirations((prev) => [...prev, ...result.data]);
       } else {
         setInspirations(result.data);
       }
@@ -411,24 +450,31 @@ export default function InspirationPage() {
 
   const loadMoreInspirations = useCallback(() => {
     if (hasMore && !isLoadingMore) {
-      setPage(prev => prev + 1);
+      setPage((prev) => prev + 1);
     }
   }, [hasMore, isLoadingMore]);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
-      const clientHeight = document.documentElement.clientHeight || window.innerHeight;
+      const scrollTop =
+        document.documentElement.scrollTop || document.body.scrollTop;
+      const scrollHeight =
+        document.documentElement.scrollHeight || document.body.scrollHeight;
+      const clientHeight =
+        document.documentElement.clientHeight || window.innerHeight;
 
       // 当滚动到距离底部100px时触发加载
-      if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !isLoadingMore) {
+      if (
+        scrollTop + clientHeight >= scrollHeight - 100 &&
+        hasMore &&
+        !isLoadingMore
+      ) {
         loadMoreInspirations();
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [hasMore, isLoadingMore, loadMoreInspirations]);
 
   const handleLike = useCallback(
@@ -571,7 +617,7 @@ export default function InspirationPage() {
           </div>
 
           <div className="space-y-4 sm:space-y-6">
-            {inspirations.map((inspiration) => (
+            {inspirations.map((inspiration) =>
               isMobile ? (
                 <MobileInspiration
                   key={inspiration._id.toString()}
@@ -591,7 +637,7 @@ export default function InspirationPage() {
                   site={site}
                 />
               )
-            ))}
+            )}
           </div>
 
           {inspirations.length === 0 && (
@@ -600,7 +646,11 @@ export default function InspirationPage() {
 
           {isLoadingMore && (
             <div className="text-center text-gray-500 py-4">
-              <div className="animate-spin inline-block w-5 h-5 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
+              <div
+                className="animate-spin inline-block w-5 h-5 border-[3px] border-current border-t-transparent text-blue-600 rounded-full"
+                role="status"
+                aria-label="loading"
+              >
                 <span className="sr-only">Loading...</span>
               </div>
             </div>
