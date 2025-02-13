@@ -192,7 +192,7 @@ export default function ProjectsAdmin() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[100vw] flex flex-col min-h-[100vh] bg-gray-50">
+    <div className="p-4 md:p-6 max-w-[100vw] flex flex-col min-h-[100vh] bg-white">
       <div className="mb-6 bg-white p-6 rounded-lg shadow-sm">
         <Title level={2} className="!mb-0">
           项目管理
@@ -262,15 +262,17 @@ export default function ProjectsAdmin() {
                     okText="确定"
                     cancelText="取消"
                   >
-                    <Button danger ghost>删除分类</Button>
+                    <Button danger ghost>
+                      删除分类
+                    </Button>
                   </Popconfirm>
                 </Space>
               </div>
               <div className="grid gap-4">
                 {categoryProjects.map((project) => (
-                  <Card 
-                    key={project._id} 
-                    size="small" 
+                  <Card
+                    key={project._id}
+                    size="small"
                     className="hover:shadow-md transition-shadow duration-300"
                     bordered={false}
                   >
@@ -284,10 +286,7 @@ export default function ProjectsAdmin() {
                         </Paragraph>
                         <Space size={[0, 8]} wrap className="mb-3">
                           {project.tags.map((tag, index) => (
-                            <Tag 
-                              key={index}
-                              className="rounded-full px-3 py-1"
-                            >
+                            <Tag key={index} className="rounded-full px-3 py-1">
                               {tag}
                             </Tag>
                           ))}
@@ -405,12 +404,15 @@ export default function ProjectsAdmin() {
         ]}
         width={720}
         className="top-[50px]"
-        maskStyle={{ background: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(2px)' }}
+        maskStyle={{
+          background: "rgba(0, 0, 0, 0.45)",
+          backdropFilter: "blur(2px)",
+        }}
       >
         {editingProject && (
           <Form layout="vertical" className="mt-4">
-            <Form.Item 
-              label="项目标题" 
+            <Form.Item
+              label="项目标题"
               required
               tooltip="项目的名称，建议简短明了"
             >
@@ -426,7 +428,7 @@ export default function ProjectsAdmin() {
                 size="large"
               />
             </Form.Item>
-            <Form.Item 
+            <Form.Item
               label="项目描述"
               required
               tooltip="详细描述项目的功能和特点"
@@ -444,10 +446,7 @@ export default function ProjectsAdmin() {
                 size="large"
               />
             </Form.Item>
-            <Form.Item 
-              label="GitHub 地址"
-              tooltip="项目的 GitHub 仓库地址"
-            >
+            <Form.Item label="GitHub 地址" tooltip="项目的 GitHub 仓库地址">
               <Input
                 value={editingProject.github || ""}
                 onChange={(e) =>
@@ -461,10 +460,7 @@ export default function ProjectsAdmin() {
                 size="large"
               />
             </Form.Item>
-            <Form.Item 
-              label="项目地址"
-              tooltip="项目的线上访问地址"
-            >
+            <Form.Item label="项目地址" tooltip="项目的线上访问地址">
               <Input
                 value={editingProject.url || ""}
                 onChange={(e) =>
@@ -475,10 +471,7 @@ export default function ProjectsAdmin() {
                 size="large"
               />
             </Form.Item>
-            <Form.Item 
-              label="标签"
-              tooltip="用于分类和快速识别项目的关键词"
-            >
+            <Form.Item label="标签" tooltip="用于分类和快速识别项目的关键词">
               <Input
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
@@ -528,11 +521,7 @@ export default function ProjectsAdmin() {
                 </Space>
               </div>
             </Form.Item>
-            <Form.Item 
-              label="状态"
-              required
-              tooltip="项目当前的开发状态"
-            >
+            <Form.Item label="状态" required tooltip="项目当前的开发状态">
               <Select
                 value={editingProject.status}
                 onChange={(value) =>
@@ -575,12 +564,15 @@ export default function ProjectsAdmin() {
         ]}
         width={520}
         className="top-[50px]"
-        maskStyle={{ background: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(2px)' }}
+        maskStyle={{
+          background: "rgba(0, 0, 0, 0.45)",
+          backdropFilter: "blur(2px)",
+        }}
       >
         {editingCategory && (
           <Form layout="vertical" className="mt-4">
-            <Form.Item 
-              label="分类名称" 
+            <Form.Item
+              label="分类名称"
               required
               tooltip="分类的名称，用于区分不同类型的项目"
             >
@@ -596,11 +588,7 @@ export default function ProjectsAdmin() {
                 size="large"
               />
             </Form.Item>
-            <Form.Item 
-              label="分类描述"
-              required
-              tooltip="对这个分类的简要说明"
-            >
+            <Form.Item label="分类描述" required tooltip="对这个分类的简要说明">
               <Input.TextArea
                 value={editingCategory.data.description}
                 onChange={(e) =>
