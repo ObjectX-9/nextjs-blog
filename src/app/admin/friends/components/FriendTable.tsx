@@ -1,18 +1,21 @@
-import { Button, Table } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import Image from 'next/image';
-import { Avatar } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { FriendWithId } from '../types';
+import { Button, Table } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import Image from "next/image";
+import { Avatar } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { FriendWithId } from "../types";
 
 interface FriendTableProps {
   friends: FriendWithId[];
   onEdit: (friend: FriendWithId, index: number) => void;
   onDelete: (id: string) => void;
-  isMobile: boolean;
 }
 
-export const FriendTable = ({ friends, onEdit, onDelete, isMobile }: FriendTableProps) => {
+export const FriendTable = ({
+  friends,
+  onEdit,
+  onDelete,
+}: FriendTableProps) => {
   const columns: ColumnsType<FriendWithId> = [
     {
       title: "头像",
@@ -87,7 +90,7 @@ export const FriendTable = ({ friends, onEdit, onDelete, isMobile }: FriendTable
       key: "action",
       width: 150,
       render: (_, record, index) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <Button
             size="small"
             icon={<EditOutlined />}
@@ -110,11 +113,7 @@ export const FriendTable = ({ friends, onEdit, onDelete, isMobile }: FriendTable
 
   return (
     <div className="mt-6 bg-white rounded-lg shadow">
-      <Table
-        columns={columns}
-        dataSource={friends}
-        pagination={false}
-      />
+      <Table columns={columns} dataSource={friends} pagination={false} />
     </div>
   );
 };

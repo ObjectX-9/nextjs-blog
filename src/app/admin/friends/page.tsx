@@ -303,7 +303,6 @@ export default function FriendsManagementPage() {
           friends={friends}
           onEdit={(friend, index) => setEditingFriend({ index, friend })}
           onDelete={(id) => handleDeleteFriend(id)}
-          isMobile={window.innerWidth < 768}
         />
       </div>
 
