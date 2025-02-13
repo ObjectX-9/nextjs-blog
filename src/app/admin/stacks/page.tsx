@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { IStack } from "@/app/model/stack";
 import Image from 'next/image';
+import { Button, Card, Form, Input, Modal, Upload, message, Space, Typography, Layout, Row, Col, Tooltip } from 'antd';
+import { PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined, UploadOutlined, GithubOutlined } from '@ant-design/icons';
+
+const { Title, Paragraph, Text } = Typography;
+const { Content } = Layout;
 
 interface StackWithId extends IStack {
   _id: string;
@@ -14,13 +19,13 @@ export default function StacksAdmin() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     fetchStacks();
   }, []);
 
   useEffect(() => {
-    // Clean up preview URL when component unmounts
     return () => {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -67,18 +72,18 @@ export default function StacksAdmin() {
   };
 
   const handleSaveStack = async () => {
-    if (!editingStack) return;
-
-    setIsUploading(true);
     try {
-      let iconUrl = editingStack.iconSrc;
+      const values = await form.validateFields();
+      setIsUploading(true);
+
+      let iconUrl = editingStack?.iconSrc || '';
 
       // Upload new image if selected
       if (selectedFile) {
         iconUrl = await uploadImage(selectedFile);
       }
 
-      const method = editingStack._id ? 'PUT' : 'POST';
+      const method = editingStack?._id ? 'PUT' : 'POST';
       const response = await fetch('/api/stacks', {
         method,
         headers: {
@@ -86,12 +91,13 @@ export default function StacksAdmin() {
         },
         body: JSON.stringify({
           ...editingStack,
+          ...values,
           iconSrc: iconUrl,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${editingStack._id ? 'update' : 'create'} stack`);
+        throw new Error(`Failed to ${editingStack?._id ? 'update' : 'create'} stack`);
       }
 
       const data = await response.json();
@@ -100,12 +106,14 @@ export default function StacksAdmin() {
         setEditingStack(null);
         setSelectedFile(null);
         setPreviewUrl("");
+        form.resetFields();
+        message.success(`${editingStack?._id ? '更新' : '创建'}成功`);
       } else {
-        throw new Error(data.error || `Failed to ${editingStack._id ? 'update' : 'create'} stack`);
+        throw new Error(data.error || `Failed to ${editingStack?._id ? 'update' : 'create'} stack`);
       }
     } catch (error) {
       console.error('Error saving stack:', error);
-      alert('保存失败，请重试');
+      message.error('保存失败，请重试');
     } finally {
       setIsUploading(false);
     }
@@ -114,6 +122,7 @@ export default function StacksAdmin() {
   const handleAddStack = () => {
     setSelectedFile(null);
     setPreviewUrl("");
+    form.resetFields();
     setEditingStack({
       title: "",
       description: "",
@@ -125,6 +134,7 @@ export default function StacksAdmin() {
   const handleEditStack = (stack: StackWithId) => {
     setSelectedFile(null);
     setPreviewUrl("");
+    form.setFieldsValue(stack);
     setEditingStack({ ...stack });
   };
 
@@ -140,214 +150,261 @@ export default function StacksAdmin() {
       }
     } catch (error) {
       console.error('Error fetching stacks:', error);
-      alert('获取数据失败，请刷新重试');
+      message.error('获取数据失败，请刷新重试');
     }
   };
 
   const handleDeleteStack = async (id: string) => {
-    if (confirm('确定要删除这个技术栈吗？')) {
-      try {
-        const response = await fetch(`/api/stacks?id=${id}`, {
-          method: 'DELETE',
-        });
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除这个技术栈吗？此操作不可恢复。',
+      okText: '确认删除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/stacks?id=${id}`, {
+            method: 'DELETE',
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to delete stack');
-        }
+          if (!response.ok) {
+            throw new Error('Failed to delete stack');
+          }
 
-        const data = await response.json();
-        if (data.success) {
-          await fetchStacks();
-        } else {
-          throw new Error(data.error || 'Failed to delete stack');
+          const data = await response.json();
+          if (data.success) {
+            await fetchStacks();
+            message.success('删除成功');
+          } else {
+            throw new Error(data.error || 'Failed to delete stack');
+          }
+        } catch (error) {
+          console.error('Error deleting stack:', error);
+          message.error('删除失败，请重试');
         }
-      } catch (error) {
-        console.error('Error deleting stack:', error);
-        alert('删除失败，请重试');
-      }
-    }
+      },
+    });
   };
 
   return (
-    <div className="p-4 md:p-6 h-[100vh] overflow-y-auto">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
-        <h1 className="text-xl md:text-2xl font-bold">技术栈管理</h1>
-        <button
-          onClick={handleAddStack}
-          className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
-        >
-          添加技术栈
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {stacks.map((stack) => (
-          <div key={stack._id} className="border rounded-lg p-4 shadow-sm">
-            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-start md:justify-between">
-              <div className="flex items-center gap-3">
-                <Image
-                  src={stack.iconSrc}
-                  alt={stack.title}
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 object-contain"
-                />
-                <h3 className="font-semibold text-sm md:text-base">{stack.title}</h3>
-              </div>
-              <div className="flex space-x-2 w-full md:w-auto">
-                <button
-                  onClick={() => handleEditStack(stack)}
-                  className="flex-1 md:flex-none px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
-                >
-                  编辑
-                </button>
-                <button
-                  onClick={() => handleDeleteStack(stack._id)}
-                  className="flex-1 md:flex-none px-3 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600"
-                >
-                  删除
-                </button>
-              </div>
-            </div>
-            <p className="mt-3 text-gray-600 text-sm line-clamp-2">{stack.description}</p>
-            <a
-              href={stack.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 text-blue-500 text-sm block hover:underline break-all"
+    <Layout className="min-h-screen bg-gray-50">
+      <Content className="p-6 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <Title level={2} className="!mb-0">技术栈管理</Title>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={handleAddStack}
+              size="large"
             >
-              {stack.link}
-            </a>
+              添加技术栈
+            </Button>
           </div>
-        ))}
-      </div>
 
-      {/* Edit Modal */}
-      {editingStack && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center p-0 md:p-4 z-40">
-          <div className="bg-white rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] overflow-y-auto relative z-50">
-            <div className="sticky top-0 bg-white p-4 md:p-6 border-b z-10">
-              <h2 className="text-lg md:text-xl font-semibold">
-                {editingStack._id ? "编辑技术栈" : "添加技术栈"}
-              </h2>
-            </div>
-
-            <div className="p-4 md:p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  标题
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-lg text-base"
-                  value={editingStack.title}
-                  onChange={(e) =>
-                    setEditingStack({ ...editingStack, title: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  描述
-                </label>
-                <textarea
-                  className="w-full px-3 py-2 border rounded-lg text-base min-h-[100px]"
-                  value={editingStack.description}
-                  onChange={(e) =>
-                    setEditingStack({
-                      ...editingStack,
-                      description: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  链接
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-lg text-base"
-                  value={editingStack.link}
-                  onChange={(e) =>
-                    setEditingStack({ ...editingStack, link: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  图标
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                  {(previewUrl || editingStack.iconSrc) && (
-                    <div className="mb-4">
+          <Row gutter={[16, 16]}>
+            {stacks.map((stack) => (
+              <Col xs={24} sm={12} lg={8} key={stack._id}>
+                <Card
+                  hoverable
+                  className="h-full"
+                  actions={[
+                    <Tooltip title="编辑" key="edit">
+                      <Button 
+                        type="text" 
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditStack(stack)}
+                      >
+                        编辑
+                      </Button>
+                    </Tooltip>,
+                    <Tooltip title="删除" key="delete">
+                      <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDeleteStack(stack._id)}
+                      >
+                        删除
+                      </Button>
+                    </Tooltip>
+                  ]}
+                >
+                  <Card.Meta
+                    avatar={
                       <Image
-                        src={previewUrl || editingStack.iconSrc || ""}
+                        src={stack.iconSrc}
+                        alt={stack.title}
+                        width={48}
+                        height={48}
+                        className="object-contain"
+                      />
+                    }
+                    title={
+                      <Text strong className="text-lg">
+                        {stack.title}
+                      </Text>
+                    }
+                    description={
+                      <div className="space-y-2">
+                        <Paragraph 
+                          ellipsis={{ rows: 2 }} 
+                          className="text-gray-600"
+                        >
+                          {stack.description}
+                        </Paragraph>
+                        <a
+                          href={stack.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-blue-500 hover:text-blue-600"
+                        >
+                          {stack.link.includes('github.com') ? (
+                            <GithubOutlined className="mr-1" />
+                          ) : (
+                            <LinkOutlined className="mr-1" />
+                          )}
+                          <Text ellipsis>
+                            {stack.link}
+                          </Text>
+                        </a>
+                      </div>
+                    }
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+
+          <Modal
+            title={
+              <Title level={4} className="!mb-0">
+                {editingStack?._id ? "编辑技术栈" : "添加技术栈"}
+              </Title>
+            }
+            open={!!editingStack}
+            onCancel={() => {
+              setEditingStack(null);
+              form.resetFields();
+            }}
+            footer={[
+              <Button 
+                key="cancel" 
+                onClick={() => {
+                  setEditingStack(null);
+                  form.resetFields();
+                }}
+              >
+                取消
+              </Button>,
+              <Button
+                key="submit"
+                type="primary"
+                loading={isUploading}
+                onClick={handleSaveStack}
+              >
+                保存
+              </Button>
+            ]}
+            width={720}
+            destroyOnClose
+            centered
+          >
+            <Form
+              form={form}
+              layout="vertical"
+              initialValues={editingStack || {}}
+              className="mt-6"
+            >
+              <Form.Item
+                name="title"
+                label="标题"
+                rules={[{ required: true, message: '请输入标题' }]}
+              >
+                <Input placeholder="请输入技术栈标题" />
+              </Form.Item>
+              
+              <Form.Item
+                name="description"
+                label="描述"
+                rules={[{ required: true, message: '请输入描述' }]}
+              >
+                <Input.TextArea
+                  placeholder="请输入技术栈描述"
+                  autoSize={{ minRows: 3, maxRows: 6 }}
+                  showCount
+                  maxLength={500}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                name="link"
+                label="链接"
+                rules={[
+                  { required: true, message: '请输入链接' },
+                  { type: 'url', message: '请输入有效的URL' }
+                ]}
+              >
+                <Input 
+                  placeholder="请输入技术栈相关链接" 
+                  prefix={<LinkOutlined className="text-gray-400" />}
+                />
+              </Form.Item>
+
+              <Form.Item 
+                label="图标"
+                required
+                tooltip="支持 PNG、JPG、GIF 格式，最大 10MB"
+              >
+                <Upload.Dragger
+                  accept="image/png,image/jpeg,image/gif"
+                  beforeUpload={(file) => {
+                    if (file.size > 10 * 1024 * 1024) {
+                      message.error('图片大小不能超过10MB');
+                      return false;
+                    }
+                    handleFileSelect(file);
+                    return false;
+                  }}
+                  showUploadList={false}
+                >
+                  {(previewUrl || editingStack?.iconSrc) ? (
+                    <div className="p-4">
+                      <Image
+                        src={previewUrl || editingStack?.iconSrc || ""}
                         alt="Stack icon preview"
                         width={64}
                         height={64}
-                        className="w-16 h-16 object-contain"
+                        className="w-16 h-16 object-contain mx-auto mb-4"
                       />
+                      <Button icon={<UploadOutlined />}>更换图片</Button>
+                    </div>
+                  ) : (
+                    <div className="p-8">
+                      <p className="text-gray-500">
+                        <UploadOutlined className="text-3xl mb-3" />
+                        <br />
+                        点击或拖拽上传图片
+                      </p>
+                      <p className="text-gray-400 text-sm">支持 PNG、JPG、GIF 格式，最大 10MB</p>
                     </div>
                   )}
-                  <div className="flex flex-col items-center justify-center text-sm text-gray-600">
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/gif"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.size > 10 * 1024 * 1024) {
-                            alert('图片大小不能超过10MB');
-                            return;
-                          }
-                          handleFileSelect(file);
-                        }
-                      }}
-                      className="hidden"
-                      id="icon-upload"
-                    />
-                    {!selectedFile && !editingStack.iconSrc ? (
-                      <>
-                        <label
-                          htmlFor="icon-upload"
-                          className="cursor-pointer text-blue-500 hover:text-blue-600"
-                        >
-                          点击选择图片或拖拽到此处
-                        </label>
-                        <p className="mt-1 text-gray-500">支持 PNG、JPG、GIF 格式，最大 10MB</p>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleRemoveFile}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        移除图片
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-white p-4 md:p-6 border-t flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 md:justify-end z-10">
-              <button
-                onClick={() => setEditingStack(null)}
-                className="w-full md:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 text-base"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleSaveStack}
-                className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base"
-              >
-                保存
-              </button>
-            </div>
-          </div>
+                </Upload.Dragger>
+                {(previewUrl || editingStack?.iconSrc) && (
+                  <Button 
+                    type="link" 
+                    danger 
+                    onClick={handleRemoveFile}
+                    className="mt-2"
+                  >
+                    移除图片
+                  </Button>
+                )}
+              </Form.Item>
+            </Form>
+          </Modal>
         </div>
-      )}
-    </div>
+      </Content>
+    </Layout>
   );
 }
