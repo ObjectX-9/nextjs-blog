@@ -3,25 +3,28 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Form, Input, Select, Upload, Button, Card, message, Space, Alert } from 'antd';
+import { PlusOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { RcFile } from 'antd/es/upload';
 import { extractBilibiliInfo } from '@/app/utils/bilibili';
 
+const { TextArea } = Input;
+
 export default function NewInspiration() {
+  const [form] = Form.useForm();
   const router = useRouter();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [bilibiliInfo, setBilibiliInfo] = useState<{ bvid: string; page?: number } | null>(null);
   const [bilibiliError, setBilibiliError] = useState<string>('');
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-
+  const handleImageUpload = async (file: RcFile) => {
     if (bilibiliInfo) {
-      alert('已添加视频，不能同时上传图片');
-      return;
+      message.warning('已添加视频，不能同时上传图片');
+      return false;
     }
 
     setUploading(true);
-    const file = e.target.files[0];
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'inspirations');
@@ -34,15 +37,17 @@ export default function NewInspiration() {
       const data = await response.json();
       if (data.url) {
         setImages([...images, data.url]);
+        message.success('图片上传成功');
       } else {
         throw new Error('上传失败');
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('图片上传失败，请重试');
+      message.error('图片上传失败，请重试');
     } finally {
       setUploading(false);
     }
+    return false;
   };
 
   const handleBilibiliUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +59,7 @@ export default function NewInspiration() {
     }
 
     if (images.length > 0) {
-      alert('已上传图片，不能同时添加视频');
+      message.warning('已上传图片，不能同时添加视频');
       return;
     }
 
@@ -62,21 +67,19 @@ export default function NewInspiration() {
       const info = extractBilibiliInfo(url);
       setBilibiliInfo(info);
       setBilibiliError('');
+      message.success('成功解析BV号');
     } catch (error) {
       setBilibiliInfo(null);
       setBilibiliError((error as Error).message);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-
+  const handleSubmit = async (values: any) => {
     const newInspiration = {
-      title: formData.get('title'),
-      content: formData.get('content'),
-      status: formData.get('status'),
-      tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()).filter(Boolean) || [],
+      title: values.title,
+      content: values.content,
+      status: values.status,
+      tags: values.tags || [],
       images: images,
       bilibili: bilibiliInfo
     };
@@ -91,10 +94,12 @@ export default function NewInspiration() {
       });
 
       if (response.ok) {
+        message.success('创建成功');
         router.push('/admin/inspirations');
       }
     } catch (error) {
       console.error('Error creating inspiration:', error);
+      message.error('创建失败');
     }
   };
 
@@ -102,66 +107,56 @@ export default function NewInspiration() {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  const uploadButton = (
+    <div>
+      {uploading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div style={{ marginTop: 8 }}>上传图片</div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">新建灵感笔记</h1>
+        <Card className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">新建灵感笔记</h1>
 
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  标题
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            initialValues={{ status: 'draft' }}
+          >
+            <Form.Item
+              label="标题"
+              name="title"
+            >
+              <Input placeholder="请输入标题（选填）" />
+            </Form.Item>
+
+            <Form.Item label="图片">
+              <Upload
+                listType="picture-card"
+                showUploadList={false}
+                beforeUpload={handleImageUpload}
+                disabled={uploading || !!bilibiliInfo}
+              >
+                {uploadButton}
+              </Upload>
+              
+              {bilibiliInfo && (
+                <Alert
+                  message="已添加视频，不能上传图片"
+                  type="warning"
+                  showIcon
+                  className="mb-4"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  图片
-                </label>
-                <div className="mb-4">
-                  <label
-                    className={`flex justify-center items-center w-full h-32 px-4 transition bg-white border-2 ${bilibiliInfo
-                        ? 'border-gray-200 cursor-not-allowed'
-                        : 'border-gray-300 border-dashed cursor-pointer hover:border-blue-400'
-                      } rounded-md appearance-none focus:outline-none`}>
-                    <div className="flex flex-col items-center space-y-2">
-                      <svg className={`w-6 h-6 ${bilibiliInfo ? 'text-gray-300' : 'text-gray-400'}`} stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <div className="text-sm text-gray-600">
-                        {bilibiliInfo ? (
-                          <span className="text-gray-400">已添加视频，不能上传图片</span>
-                        ) : (
-                          <>
-                            <span className="font-medium text-blue-600 hover:underline">选择图片</span>
-                            <span className="text-gray-500"> 或拖拽文件到这里</span>
-                          </>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500">支持 PNG, JPG, GIF 格式</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={uploading || !!bilibiliInfo}
-                    />
-                  </label>
-                </div>
-                {images.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-                    {images.map((image, index) => (
-                      <div key={index} className="relative group aspect-w-16 aspect-h-9 h-48">
+              )}
+              
+              {images.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                  {images.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-w-16 aspect-h-9 h-48 relative">
                         <Image
                           src={image}
                           alt={`上传的图片 ${index + 1}`}
@@ -169,120 +164,80 @@ export default function NewInspiration() {
                           className="object-cover rounded-lg"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 rounded-lg">
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
+                        <Button
+                          type="primary"
+                          danger
+                          icon={<DeleteOutlined />}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeImage(index)}
+                        />
                       </div>
-                    ))}
-                  </div>
-                )}
-                {uploading && (
-                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-                    <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>正在上传...</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                  内容
-                </label>
-                <textarea
-                  id="content"
-                  name="content"
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  B站视频链接
-                </label>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    onChange={handleBilibiliUrlChange}
-                    placeholder="输入B站视频链接，将自动解析BV号"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${images.length > 0
-                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-300'
-                      }`}
-                    disabled={images.length > 0}
-                  />
-                  {images.length > 0 && (
-                    <p className="text-gray-500 text-sm">已上传图片，不能添加视频</p>
-                  )}
-                  {bilibiliError && (
-                    <p className="text-red-500 text-sm">{bilibiliError}</p>
-                  )}
-                  {bilibiliInfo && (
-                    <div className="text-sm text-green-600">
-                      已成功解析BV号: {bilibiliInfo.bvid}
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
+              )}
+            </Form.Item>
 
-              <div>
-                <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-                  标签 (用逗号分隔)
-                </label>
-                <input
-                  type="text"
-                  id="tags"
-                  name="tags"
-                  placeholder="技术, 生活, 想法"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+            <Form.Item
+              label="内容"
+              name="content"
+              rules={[{ required: true, message: '请输入内容' }]}
+            >
+              <TextArea rows={4} />
+            </Form.Item>
 
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  状态
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  defaultValue="draft"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="draft">草稿</option>
-                  <option value="published">发布</option>
-                </select>
-              </div>
-            </div>
+            <Form.Item
+              label="B站视频链接"
+              extra={bilibiliInfo && <span className="text-green-600">已成功解析BV号: {bilibiliInfo.bvid}</span>}
+            >
+              <Input
+                onChange={handleBilibiliUrlChange}
+                placeholder="输入B站视频链接，将自动解析BV号"
+                disabled={images.length > 0}
+                status={bilibiliError ? 'error' : undefined}
+              />
+              {images.length > 0 && (
+                <div className="mt-1 text-gray-500 text-sm">已上传图片，不能添加视频</div>
+              )}
+              {bilibiliError && (
+                <div className="mt-1 text-red-500 text-sm">{bilibiliError}</div>
+              )}
+            </Form.Item>
 
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200"
-              >
-                创建
-              </button>
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200 transition duration-200"
-              >
-                取消
-              </button>
-            </div>
-          </form>
-        </div>
+            <Form.Item
+              label="标签"
+              name="tags"
+            >
+              <Select
+                mode="tags"
+                style={{ width: '100%' }}
+                placeholder="输入标签后按回车"
+                tokenSeparators={[',']}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="状态"
+              name="status"
+            >
+              <Select>
+                <Select.Option value="draft">草稿</Select.Option>
+                <Select.Option value="published">发布</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit">
+                  创建
+                </Button>
+                <Button onClick={() => router.back()}>
+                  取消
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Card>
       </div>
     </div>
   );
