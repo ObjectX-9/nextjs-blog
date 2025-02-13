@@ -2,8 +2,7 @@ import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import '@/styles/notion-scrollbar.css'
-import 'antd/dist/reset.css';  
+import "@/styles/notion-scrollbar.css";
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
 import SidePanel from "@/components/SidePanel";
@@ -26,9 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: siteInfo?.title || "ObjectX's blog",
-    description: siteInfo?.seo?.description || "ObjectX's articles about programming and life",
+    description:
+      siteInfo?.seo?.description ||
+      "ObjectX's articles about programming and life",
     keywords: siteInfo?.seo?.keywords || [],
-  }
+  };
 }
 
 export default function RootLayout({

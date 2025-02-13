@@ -5,23 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Github, Star } from "lucide-react";
 
-const styles = `
-  @layer utilities {
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  }
-`;
-
-interface Screenshot {
-  url: string;
-  screenshot?: string;
-}
-
 interface GithubStats {
   stars: number;
   isStarred: boolean;
@@ -59,17 +42,20 @@ interface ProjectCategory {
 }
 
 const CACHE_KEYS = {
-  PROJECTS: 'projects_data',
-  CATEGORIES: 'project_categories',
-  SCREENSHOTS: 'project_screenshots',
-  GITHUB_STATS: 'project_github_stats',
-  LAST_FETCH: 'projects_last_fetch',
+  PROJECTS: "projects_data",
+  CATEGORIES: "project_categories",
+  SCREENSHOTS: "project_screenshots",
+  GITHUB_STATS: "project_github_stats",
+  LAST_FETCH: "projects_last_fetch",
 };
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const GITHUB_STATS_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for GitHub stats
 
-function getFromCache<T>(key: string, duration: number = CACHE_DURATION): T | null {
+function getFromCache<T>(
+  key: string,
+  duration: number = CACHE_DURATION
+): T | null {
   if (typeof window === "undefined") return null;
   const cached = localStorage.getItem(key);
   if (!cached) return null;
@@ -100,7 +86,9 @@ function setCache(key: string, data: any): void {
 export default function Projects() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [screenshots, setScreenshots] = useState<Record<string, string>>({});
-  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>({});
+  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>(
+    {}
+  );
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -118,7 +106,7 @@ export default function Projects() {
       }
 
       try {
-        const response = await fetch('/api/projects');
+        const response = await fetch("/api/projects");
         const data = await response.json();
         if (data?.projects) {
           setProjects(data.projects);
@@ -128,7 +116,7 @@ export default function Projects() {
           }
         }
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error("Error fetching projects:", error);
       }
     };
 
@@ -148,7 +136,7 @@ export default function Projects() {
       }
 
       try {
-        const response = await fetch('/api/projects/categories');
+        const response = await fetch("/api/projects/categories");
         const data = await response.json();
         if (data?.categories) {
           setCategories(data.categories);
@@ -158,7 +146,7 @@ export default function Projects() {
           }
         }
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error("Error fetching categories:", error);
       }
     };
 
@@ -168,20 +156,27 @@ export default function Projects() {
   const projectGradients = useMemo(() => {
     const gradients: Record<string, string> = {};
     projects.forEach((project) => {
-      const colors = gradientColors[Math.floor(Math.random() * gradientColors.length)];
-      gradients[project.title] = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+      const colors =
+        gradientColors[Math.floor(Math.random() * gradientColors.length)];
+      gradients[
+        project.title
+      ] = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
     });
     return gradients;
   }, [projects]);
 
   useEffect(() => {
-    const currentProjects = projects.filter((project) => project.categoryId === selectedCategory);
+    const currentProjects = projects.filter(
+      (project) => project.categoryId === selectedCategory
+    );
 
     currentProjects.forEach(async (project) => {
       if (!project.url || screenshots[project.url] || project.imageUrl) return;
 
       // Try to get screenshot from cache first
-      const cachedScreenshot = getFromCache<string>(`${CACHE_KEYS.SCREENSHOTS}_${project.url}`);
+      const cachedScreenshot = getFromCache<string>(
+        `${CACHE_KEYS.SCREENSHOTS}_${project.url}`
+      );
       if (cachedScreenshot) {
         setScreenshots((prev) => ({
           ...prev,
@@ -210,7 +205,9 @@ export default function Projects() {
   }, [selectedCategory, screenshots, projects]);
 
   useEffect(() => {
-    const currentProjects = projects.filter((project) => project.categoryId === selectedCategory);
+    const currentProjects = projects.filter(
+      (project) => project.categoryId === selectedCategory
+    );
 
     currentProjects.forEach(async (project) => {
       if (!project.github) return;
@@ -334,7 +331,9 @@ export default function Projects() {
   };
 
   const filteredProjects = useMemo(() => {
-    return projects.filter((project) => project.categoryId === selectedCategory);
+    return projects.filter(
+      (project) => project.categoryId === selectedCategory
+    );
   }, [selectedCategory, projects]);
 
   return (
@@ -397,7 +396,8 @@ export default function Projects() {
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6">
             <h2 className="text-2xl sm:text-3xl font-bold mb-6">
-              {categories.find(c => c._id === selectedCategory)?.name || '加载中...'}
+              {categories.find((c) => c._id === selectedCategory)?.name ||
+                "加载中..."}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:gap-6">
               {filteredProjects.map((project, index) => (
