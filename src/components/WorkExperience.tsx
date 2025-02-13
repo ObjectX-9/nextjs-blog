@@ -14,6 +14,14 @@ interface WorkExperienceProps {
 }
 
 export const WorkExperience = ({ experiences, calculateDuration }: WorkExperienceProps) => {
+  const ensureHttps = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
   return (
     <div className="space-y-8">
       {experiences.map((experience) => {
@@ -27,7 +35,9 @@ export const WorkExperience = ({ experiences, calculateDuration }: WorkExperienc
               <p className="text-gray-800">
                 {experience.description}{" "}
                 <a
-                  href={experience.companyUrl}
+                  href={ensureHttps(experience.companyUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-pink-500 font-medium"
                 >
                   {experience.company}
