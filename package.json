@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prod": "next build && next start"
+    "prod": "npm run install && next build && next start"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
