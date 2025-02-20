@@ -6,6 +6,7 @@ import { MarkdownRenderer } from "@/components/customMdRender/core/MarkdownRende
 import "@/styles/markdown.css";
 import { useParams, useRouter } from "next/navigation";
 import { useSiteStore } from "@/store/site";
+import Image from "next/image";
 
 interface VerificationState {
   verified: boolean;
@@ -148,13 +149,13 @@ export default function ArticleDetailPage() {
     try {
       const response = await fetch("/api/site");
       const data = await response.json();
-      
+
       console.log("API返回数据:", data); // 查看完整的返回数据
-      
+
       // 去除空格并转换为大写进行比对
       const inputCode = verificationCode.trim().toUpperCase();
       const serverCode = data?.site?.verificationCode?.trim().toUpperCase();
-      
+
       console.log("API验证码:", serverCode, "输入验证码:", inputCode);
 
       if (serverCode && inputCode === serverCode) {
@@ -165,7 +166,9 @@ export default function ArticleDetailPage() {
         // 存储验证状态
         const verification: VerificationState = {
           verified: true,
-          expireTime: Date.now() + (data?.site?.verificationCodeExpirationTime || 24) * 60 * 60 * 1000,
+          expireTime:
+            Date.now() +
+            (data?.site?.verificationCodeExpirationTime || 24) * 60 * 60 * 1000,
         };
         localStorage.setItem(
           `article_verification_${params.id}`,
@@ -253,10 +256,11 @@ export default function ArticleDetailPage() {
             <div className="text-center mb-6">
               <h2 className="text-lg font-normal mb-2">
                 扫码关注公众号：
-                <span className="text-[#ff4d4f]">代码随想录</span>
+                <span className="text-black">{site?.wechatGroupName}</span>
               </h2>
               <p className="text-base mb-1">
-                发送：<span className="text-[#ff4d4f]">验证码</span>
+                发送:{" "}
+                <span className="text-black">《{site?.wechatKeyword}》</span>
               </p>
               <p className="text-base">即可解锁本站全部文章</p>
             </div>
@@ -264,11 +268,17 @@ export default function ArticleDetailPage() {
             {/* 二维码部分 */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               {site && site.wechatGroup ? (
-                <img
-                  src={site.wechatGroup}
-                  alt="微信群二维码"
-                  className="w-[200px] h-[200px] mx-auto"
-                />
+                <div className="relative w-[200px] h-[200px] mx-auto">
+                  <Image
+                    src={site.wechatGroup}
+                    alt="微信群二维码"
+                    fill
+                    sizes="200px"
+                    className="object-contain"
+                    priority={true}
+                    unoptimized={true}
+                  />
+                </div>
               ) : (
                 <div className="w-[200px] h-[200px] mx-auto flex items-center justify-center text-gray-400">
                   加载中...
@@ -287,7 +297,7 @@ export default function ArticleDetailPage() {
               />
               <button
                 onClick={handleVerification}
-                className="px-6 py-2 bg-[#ff4d4f] text-white rounded hover:bg-[#ff7875] transition-colors"
+                className="px-6 py-2 bg-black text-white rounded hover:bg-[#ff7875] transition-colors"
               >
                 提交
               </button>
@@ -298,11 +308,6 @@ export default function ArticleDetailPage() {
                 {verificationError}
               </p>
             )}
-
-            {/* 底部文字 */}
-            <div className="mt-6 text-center text-gray-400 text-sm">
-              该工具由 TechGrow 免费提供
-            </div>
           </div>
         </div>
       </div>

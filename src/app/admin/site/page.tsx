@@ -34,6 +34,8 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   verificationCode?: string;
   verificationCodeExpirationTime?: number;
   verificationCodeCreateTime?: number;
+  wechatGroupName?: string; // 添加微信公众号名称
+  wechatKeyword?: string; // 添加微信公众号关键词
 }
 
 interface FileState {
@@ -51,6 +53,8 @@ const defaultSite: SiteWithId = {
   qrcode: "",
   appreciationCode: "",
   wechatGroup: "",
+  wechatGroupName: "", // 添加微信公众号名称
+  wechatKeyword: "", // 添加微信公众号关键词
   backgroundImage: "",
   title: "",
   description: "",
@@ -136,6 +140,8 @@ export default function SiteManagementPage() {
           verificationCodeExpirationTime:
             data.site.verificationCodeExpirationTime ?? 24,
           verificationCodeCreateTime: data.site.verificationCodeCreateTime ?? 0,
+          wechatGroupName: data.site.wechatGroupName ?? "", // 添加微信公众号名称
+          wechatKeyword: data.site.wechatKeyword ?? "", // 添加微信公众号关键词
         };
         console.log("Site with defaults:", siteWithDefaults);
         setSite(siteWithDefaults);
@@ -422,6 +428,22 @@ export default function SiteManagementPage() {
                 "微信公众号图片",
                 editedSite.wechatGroup
               )}
+              <Form.Item label="微信公众号名称">
+                <Input
+                  value={editedSite.wechatGroupName || ""}
+                  onChange={(e) => handleInputChange("wechatGroupName", e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="请输入微信公众号名称"
+                />
+              </Form.Item>
+              <Form.Item label="微信公众号关键词">
+                <Input
+                  value={editedSite.wechatKeyword || ""}
+                  onChange={(e) => handleInputChange("wechatKeyword", e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="请输入微信公众号关键词"
+                />
+              </Form.Item>
               <Form.Item label="ICP备案号">
                 <Input
                   value={editedSite.icp || ""}

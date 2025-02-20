@@ -9,6 +9,7 @@ export interface ISite {
   qrcode: string; // 二维码图片链接
   appreciationCode: string; // 赞赏码图片链接
   wechatGroup: string; // 微信公众号图片链接
+  wechatGroupName?: string; // 微信公众号名称
   title: string; // 网站标题
   description: string; // 网站描述
   backgroundImage: string; // 首页背景图链接
@@ -30,6 +31,7 @@ export interface ISite {
   verificationCode?: string; // 文章验证
   verificationCodeCreateTime?: number;
   verificationCodeExpirationTime?: number; // 文章验证过期时间
+  wechatKeyword?: string; // 微信公众号关键词
 }
 
 const siteSchema = new Schema<ISite>({
@@ -39,6 +41,7 @@ const siteSchema = new Schema<ISite>({
   favicon: { type: String, required: true },
   qrcode: { type: String, required: true },
   appreciationCode: { type: String, required: true },
+  wechatGroupName: { type: String },
   wechatGroup: { type: String, required: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
@@ -60,6 +63,7 @@ const siteSchema = new Schema<ISite>({
   verificationCode: { type: String },
   verificationCodeCreateTime: { type: Number },
   verificationCodeExpirationTime: { type: Number },
+  wechatKeyword: { type: String },
 });
 
 export const Site = models.Site || model<ISite>("Site", siteSchema);

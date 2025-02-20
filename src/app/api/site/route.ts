@@ -62,6 +62,8 @@ export async function GET() {
         qrcode: "",
         appreciationCode: "",
         wechatGroup: "",
+        wechatGroupName: "", // 添加微信公众号名称
+        wechatKeyword: "", // 添加微信公众号关键词
         title: "我的博客",
         description: "这是一个博客网站",
         backgroundImage: "/images/background.jpg",
@@ -191,6 +193,8 @@ export async function POST(request: Request) {
       qrcode: siteData.qrcode || '',
       appreciationCode: siteData.appreciationCode || '',
       wechatGroup: siteData.wechatGroup || '',
+      wechatGroupName: siteData.wechatGroupName || '', // 添加微信公众号名称
+      wechatKeyword: siteData.wechatKeyword || '', // 添加微信公众号关键词
       backgroundImage: siteData.backgroundImage || '/images/background.jpg',
       icp: siteData.icp || '',
       // 添加验证码相关字段
