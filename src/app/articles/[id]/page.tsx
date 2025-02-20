@@ -114,17 +114,17 @@ export default function ArticleDetailPage() {
         const verification: VerificationState = JSON.parse(storedVerification);
         if (verification.expireTime > Date.now()) {
           setIsVerified(true);
+          setShowVerification(false);
           return true;
         } else {
           localStorage.removeItem(`article_verification_${params.id}`);
         }
       }
+      setShowVerification(true);
       return false;
     };
 
-    if (!checkVerification()) {
-      setShowVerification(true);
-    }
+    checkVerification();
   }, [params.id]);
 
   // 获取验证码
