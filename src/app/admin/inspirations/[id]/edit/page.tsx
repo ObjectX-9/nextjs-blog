@@ -5,17 +5,24 @@ import { useRouter } from 'next/navigation';
 import { IInspiration } from '@/app/model/inspiration';
 import Image from 'next/image';
 import { Form, Input, Select, Upload, Button, Spin, Card, message, Space, InputNumber } from 'antd';
-import { PlusOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, LoadingOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { RcFile } from 'antd/es/upload';
 
 const { TextArea } = Input;
+
+interface Link {
+  title: string;
+  url: string;
+  icon?: string;
+}
 
 export default function EditInspiration({ params }: { params: { id: string } }) {
   const [form] = Form.useForm();
   const [inspiration, setInspiration] = useState<IInspiration | null>(null);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<string[]>([]);
+  const [links, setLinks] = useState<Link[]>([]);
   const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
@@ -27,6 +34,9 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
         setInspiration(data);
         if (data.images) {
           setImages(data.images);
+        }
+        if (data.links) {
+          setLinks(data.links);
         }
         // 设置表单初始值
         form.setFieldsValue({
@@ -82,6 +92,7 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
       status: values.status,
       tags: values.tags?.split(',').map((tag: string) => tag.trim()).filter(Boolean) || [],
       images: images,
+      links: links.filter(link => link.title && link.url), // 只保存有标题和URL的链接
       views: values.views,
       likes: values.likes
     };
@@ -180,6 +191,58 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
                   ))}
                 </div>
               )}
+            </Form.Item>
+
+            <Form.Item label="链接">
+              <div className="space-y-4">
+                {links.map((link, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input
+                      placeholder="链接标题"
+                      value={link.title}
+                      onChange={(e) => {
+                        const newLinks = [...links];
+                        newLinks[index].title = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                    />
+                    <Input
+                      placeholder="链接URL"
+                      value={link.url}
+                      onChange={(e) => {
+                        const newLinks = [...links];
+                        newLinks[index].url = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                    />
+                    <Input
+                      placeholder="图标URL（可选）"
+                      value={link.icon}
+                      onChange={(e) => {
+                        const newLinks = [...links];
+                        newLinks[index].icon = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                    />
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => {
+                        setLinks(links.filter((_, i) => i !== index));
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={() => setLinks([...links, { title: '', url: '', icon: '' }])}
+                  block
+                  icon={<LinkOutlined />}
+                >
+                  添加链接
+                </Button>
+              </div>
             </Form.Item>
 
             <Form.Item
