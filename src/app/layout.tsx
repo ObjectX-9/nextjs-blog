@@ -5,7 +5,7 @@ import "./globals.css";
 import "@/styles/notion-scrollbar.css";
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
-import SidePanel from "@/components/SidePanel";
+import LayoutWrapper from "@/components/LayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -41,10 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
-          <div className="min-h-screen bg-white lg:flex">
-            <SidePanel></SidePanel>
-            <div className="flex flex-1">{children}</div>
-          </div>
+          <LayoutWrapper>{children}</LayoutWrapper>
         </SiteProvider>
       </body>
     </html>
