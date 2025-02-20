@@ -72,7 +72,7 @@ const WebInspiration = ({
               })}
             </span>
           </div>
-          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-4 w-full inline-block max-w-full">
+          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-4 inline-block">
             {inspiration.title && (
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {inspiration.title}
@@ -157,14 +157,14 @@ const WebInspiration = ({
             )}
 
             {inspiration.links && inspiration.links.length > 0 && (
-              <div className="mb-3 space-y-2">
+              <div className="mb-3 flex flex-wrap gap-2">
                 {inspiration.links.map((link, index) => (
                   <a
                     key={index}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    className="inline-flex items-center space-x-1.5 text-sm text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-2 py-1 rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
@@ -173,14 +173,14 @@ const WebInspiration = ({
                       <Image
                         src={link.icon}
                         alt="Link icon"
-                        width={16}
-                        height={16}
+                        width={14}
+                        height={14}
                         className="rounded"
                       />
                     ) : (
-                      <LinkIcon size={16} />
+                      <LinkIcon size={14} />
                     )}
-                    <span>{link.title}</span>
+                    <span className="truncate max-w-[200px]">{link.title}</span>
                   </a>
                 ))}
               </div>
@@ -372,14 +372,14 @@ const MobileInspiration = ({
             )}
 
             {inspiration.links && inspiration.links.length > 0 && (
-              <div className="mb-2 space-y-1.5">
+              <div className="mb-2 flex flex-wrap gap-1.5">
                 {inspiration.links.map((link, index) => (
                   <a
                     key={index}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                    className="inline-flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-2 py-0.5 rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
@@ -395,7 +395,7 @@ const MobileInspiration = ({
                     ) : (
                       <LinkIcon size={12} />
                     )}
-                    <span>{link.title}</span>
+                    <span className="truncate max-w-[160px]">{link.title}</span>
                   </a>
                 ))}
               </div>

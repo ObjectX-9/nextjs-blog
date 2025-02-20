@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Form, Input, Select, Upload, Button, Card, message, Space, Alert } from 'antd';
-import { PlusOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, LoadingOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
 import type { RcFile } from 'antd/es/upload';
 import { extractBilibiliInfo } from '@/app/utils/bilibili';
 
@@ -14,6 +14,7 @@ export default function NewInspiration() {
   const [form] = Form.useForm();
   const router = useRouter();
   const [images, setImages] = useState<string[]>([]);
+  const [links, setLinks] = useState<Array<{ title: string; url: string; icon?: string }>>([]);
   const [uploading, setUploading] = useState(false);
   const [bilibiliInfo, setBilibiliInfo] = useState<{ bvid: string; page?: number } | null>(null);
   const [bilibiliError, setBilibiliError] = useState<string>('');
@@ -81,7 +82,8 @@ export default function NewInspiration() {
       status: values.status,
       tags: values.tags || [],
       images: images,
-      bilibili: bilibiliInfo
+      bilibili: bilibiliInfo,
+      links: links
     };
 
     try {
@@ -214,6 +216,51 @@ export default function NewInspiration() {
                 placeholder="输入标签后按回车"
                 tokenSeparators={[',']}
               />
+            </Form.Item>
+
+            <Form.Item label="链接">
+              <div className="space-y-4">
+                {links.map((link, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input
+                      value={link.title}
+                      onChange={(e) => {
+                        const newLinks = [...links];
+                        newLinks[index].title = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                      placeholder="链接标题"
+                      className="flex-1"
+                    />
+                    <Input
+                      value={link.url}
+                      onChange={(e) => {
+                        const newLinks = [...links];
+                        newLinks[index].url = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                      placeholder="链接地址"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => {
+                        setLinks(links.filter((_, i) => i !== index));
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={() => setLinks([...links, { title: '', url: '' }])}
+                  block
+                  icon={<LinkOutlined />}
+                >
+                  添加链接
+                </Button>
+              </div>
             </Form.Item>
 
             <Form.Item
