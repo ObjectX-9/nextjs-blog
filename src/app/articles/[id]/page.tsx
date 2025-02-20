@@ -107,25 +107,22 @@ export default function ArticleDetailPage() {
   // 验证码相关状态
   useEffect(() => {
     const checkVerification = () => {
-      const storedVerification = localStorage.getItem(
-        `article_verification_${params.id}`
-      );
+      const storedVerification = localStorage.getItem('article_verification');
       if (storedVerification) {
         const verification: VerificationState = JSON.parse(storedVerification);
         if (verification.expireTime > Date.now()) {
           setIsVerified(true);
           setShowVerification(false);
-          return true;
+          return;
         } else {
-          localStorage.removeItem(`article_verification_${params.id}`);
+          localStorage.removeItem('article_verification');
         }
       }
       setShowVerification(true);
-      return false;
     };
 
     checkVerification();
-  }, [params.id]);
+  }, []);
 
   // 获取验证码
   const fetchCaptcha = async () => {
@@ -171,7 +168,7 @@ export default function ArticleDetailPage() {
             (data?.site?.verificationCodeExpirationTime || 24) * 60 * 60 * 1000,
         };
         localStorage.setItem(
-          `article_verification_${params.id}`,
+          'article_verification',
           JSON.stringify(verification)
         );
       } else {
