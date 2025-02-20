@@ -149,7 +149,7 @@ export default function InspirationManagement() {
   // 获取灵感笔记列表
   const fetchInspirations = async () => {
     try {
-      const response = await fetch("/api/inspirations");
+      const response = await fetch("/api/inspirations?page=1&limit=1000000&sort=createdAt:desc");
       const data = await response.json();
       setInspirations(data.data);
     } catch (error) {
@@ -312,9 +312,8 @@ export default function InspirationManagement() {
                   <div className="mb-3">
                     <div className="relative aspect-video mb-2">
                       <iframe
-                        src={`//player.bilibili.com/player.html?bvid=${
-                          inspiration.bilibili.bvid
-                        }&page=${inspiration.bilibili.page || 1}`}
+                        src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid
+                          }&page=${inspiration.bilibili.page || 1}`}
                         scrolling="no"
                         style={{ border: "none" }}
                         frameBorder="no"

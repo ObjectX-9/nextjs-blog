@@ -4,7 +4,6 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { MarkdownComponentProps } from '../types/components';
-import type { Components } from 'react-markdown';
 import type { HTMLAttributes, DetailedHTMLProps, ImgHTMLAttributes } from 'react';
 import { componentRegistry } from '../ComponentRegistry';
 import { cn } from '@/lib/utils';

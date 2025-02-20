@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { Heart, Eye, Link as LinkIcon } from "lucide-react";
 import { InspirationDocument } from "@/app/model/inspiration";
@@ -23,10 +23,38 @@ const WebInspiration = ({
   hasLiked: boolean;
   site: ISite | null;
 }) => {
+  const viewTimeoutRef = useRef<NodeJS.Timeout>();
+  const hasViewedRef = useRef(false);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hasViewedRef.current) return;
+
+    viewTimeoutRef.current = setTimeout(() => {
+      onView(inspiration._id.toString());
+      hasViewedRef.current = true;
+    }, 1000); // 1秒后触发浏览量增加
+  }, [inspiration._id, onView]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (viewTimeoutRef.current) {
+      clearTimeout(viewTimeoutRef.current);
+    }
+  }, []);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (viewTimeoutRef.current) {
+        clearTimeout(viewTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
       className="flex flex-col space-y-2 mb-8"
-      onClick={() => onView(inspiration._id.toString())}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="flex items-start space-x-3">
         <Avatar className="w-10 h-10 flex-shrink-0">
@@ -44,7 +72,7 @@ const WebInspiration = ({
               })}
             </span>
           </div>
-          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-4 inline-block max-w-full">
+          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-4 w-full inline-block max-w-full">
             {inspiration.title && (
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {inspiration.title}
@@ -57,15 +85,15 @@ const WebInspiration = ({
               <div className="w-full max-w-full sm:max-w-5xl mx-auto mb-4">
                 <div className="relative w-full aspect-video min-h-[240px] sm:min-h-[480px]">
                   <iframe
-                    src={`//player.bilibili.com/player.html?bvid=${
-                      inspiration.bilibili.bvid
-                    }&page=${
-                      inspiration.bilibili.page || 1
-                    }&autoplay=0&quality=80`}
+                    src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid
+                      }&page=${inspiration.bilibili.page || 1
+                      }&autoplay=0&quality=80`}
                     scrolling="no"
                     style={{ border: "none" }}
                     frameBorder="no"
                     allowFullScreen={true}
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                    referrerPolicy="no-referrer"
                     className="absolute inset-0 w-full h-full rounded-lg shadow-lg"
                   />
                 </div>
@@ -92,33 +120,36 @@ const WebInspiration = ({
             )}
             {inspiration.images && inspiration.images.length > 0 && (
               <div
-                className={`grid gap-2 mb-3 ${
-                  inspiration.images?.length === 1
-                    ? "grid-cols-1 max-w-3xl mx-auto"
-                    : inspiration.images?.length === 2
+                className={`grid gap-2 mb-3 ${inspiration.images?.length === 1
+                  ? "grid-cols-1 max-w-3xl mx-auto"
+                  : inspiration.images?.length === 2
                     ? "grid-cols-2 max-w-2xl mx-auto"
                     : "grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto"
-                }`}
+                  }`}
               >
                 {inspiration.images?.slice(0, 4).map((img, index) => (
                   <div
                     key={index}
-                    className={`relative aspect-square w-full h-full ${
-                      inspiration.images?.length === 1
-                        ? "min-h-[280px] sm:min-h-[320px] max-h-[400px]"
-                        : "min-h-[160px] sm:min-h-[200px] max-h-[280px]"
-                    }`}
+                    className={`relative w-full ${inspiration.images?.length === 1
+                      ? "min-h-[280px] sm:min-h-[320px] max-h-[400px]"
+                      : "min-h-[160px] sm:min-h-[200px] max-h-[280px]"
+                      }`}
                   >
                     <Image
                       src={img}
                       alt={`Inspiration image ${index + 1}`}
                       fill
-                      className="rounded-lg object-cover"
+                      loading="lazy"
+                      className="rounded-lg object-contain"
                       sizes={
                         inspiration.images?.length === 1
                           ? "(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 800px"
                           : "(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 400px"
                       }
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/placeholder-image.jpg"; // 添加一个占位图
+                      }}
                     />
                   </div>
                 ))}
@@ -134,6 +165,9 @@ const WebInspiration = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   >
                     {link.icon ? (
                       <Image
@@ -171,9 +205,8 @@ const WebInspiration = ({
                   e.stopPropagation();
                   onLike(inspiration._id.toString());
                 }}
-                className={`flex items-center space-x-1 transition-colors ${
-                  hasLiked ? "text-red-500" : "hover:text-red-500"
-                }`}
+                className={`flex items-center space-x-1 transition-colors ${hasLiked ? "text-red-500" : "hover:text-red-500"
+                  }`}
               >
                 <Heart size={14} fill={hasLiked ? "currentColor" : "none"} />
                 <span>{inspiration.likes || 0}</span>
@@ -207,10 +240,38 @@ const MobileInspiration = ({
   hasLiked: boolean;
   site: ISite | null;
 }) => {
+  const viewTimeoutRef = useRef<NodeJS.Timeout>();
+  const hasViewedRef = useRef(false);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hasViewedRef.current) return;
+
+    viewTimeoutRef.current = setTimeout(() => {
+      onView(inspiration._id.toString());
+      hasViewedRef.current = true;
+    }, 1000); // 1秒后触发浏览量增加
+  }, [inspiration._id, onView]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (viewTimeoutRef.current) {
+      clearTimeout(viewTimeoutRef.current);
+    }
+  }, []);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (viewTimeoutRef.current) {
+        clearTimeout(viewTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
       className="flex flex-col space-y-2 mb-4"
-      onClick={() => onView(inspiration._id.toString())}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="flex items-start space-x-2">
         <Avatar className="w-8 h-8 flex-shrink-0">
@@ -228,7 +289,7 @@ const MobileInspiration = ({
               })}
             </span>
           </div>
-          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-3 inline-block max-w-full">
+          <div className="bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 p-3 w-full inline-block max-w-full">
             {inspiration.title && (
               <h3 className="text-base font-semibold text-gray-900 mb-1">
                 {inspiration.title}
@@ -241,15 +302,15 @@ const MobileInspiration = ({
               <div className="w-full max-w-full sm:max-w-5xl mx-auto mb-4">
                 <div className="relative w-full aspect-video">
                   <iframe
-                    src={`//player.bilibili.com/player.html?bvid=${
-                      inspiration.bilibili.bvid
-                    }&page=${
-                      inspiration.bilibili.page || 1
-                    }&autoplay=0&quality=80`}
+                    src={`//player.bilibili.com/player.html?bvid=${inspiration.bilibili.bvid
+                      }&page=${inspiration.bilibili.page || 1
+                      }&autoplay=0&quality=80`}
                     scrolling="no"
                     style={{ border: "none" }}
                     frameBorder="no"
                     allowFullScreen={true}
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                    referrerPolicy="no-referrer"
                     className="absolute inset-0 w-full h-full rounded-lg shadow-lg"
                   />
                 </div>
@@ -276,31 +337,34 @@ const MobileInspiration = ({
             )}
             {inspiration.images && inspiration.images.length > 0 && (
               <div
-                className={`grid gap-1.5 mb-2 ${
-                  inspiration.images?.length === 1
-                    ? "grid-cols-1 max-w-lg mx-auto"
-                    : "grid-cols-2 max-w-md mx-auto"
-                }`}
+                className={`grid gap-1.5 mb-2 ${inspiration.images?.length === 1
+                  ? "grid-cols-1 max-w-lg mx-auto"
+                  : "grid-cols-2 max-w-md mx-auto"
+                  }`}
               >
                 {inspiration.images?.slice(0, 4).map((img, index) => (
                   <div
                     key={index}
-                    className={`relative aspect-square w-full h-full ${
-                      inspiration.images?.length === 1
-                        ? "min-h-[200px] max-h-[300px]"
-                        : "min-h-[140px] max-h-[200px]"
-                    }`}
+                    className={`relative w-full ${inspiration.images?.length === 1
+                      ? "min-h-[200px] max-h-[300px]"
+                      : "min-h-[140px] max-h-[200px]"
+                      }`}
                   >
                     <Image
                       src={img}
                       alt={`Inspiration image ${index + 1}`}
                       fill
-                      className="rounded-lg object-cover"
+                      loading="lazy"
+                      className="rounded-lg object-contain"
                       sizes={
                         inspiration.images?.length === 1
                           ? "(max-width: 640px) 85vw, 500px"
                           : "(max-width: 640px) 42vw, 250px"
                       }
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/placeholder-image.jpg"; // 添加一个占位图
+                      }}
                     />
                   </div>
                 ))}
@@ -316,6 +380,9 @@ const MobileInspiration = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center space-x-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   >
                     {link.icon ? (
                       <Image
@@ -353,9 +420,8 @@ const MobileInspiration = ({
                   e.stopPropagation();
                   onLike(inspiration._id.toString());
                 }}
-                className={`flex items-center space-x-1 transition-colors ${
-                  hasLiked ? "text-red-500" : "hover:text-red-500"
-                }`}
+                className={`flex items-center space-x-1 transition-colors ${hasLiked ? "text-red-500" : "hover:text-red-500"
+                  }`}
               >
                 <Heart size={12} fill={hasLiked ? "currentColor" : "none"} />
                 <span>{inspiration.likes || 0}</span>
@@ -384,9 +450,6 @@ export default function InspirationPage() {
   const [likedInspirations, setLikedInspirations] = useState<Set<string>>(
     new Set()
   );
-  const [viewedInspirations, setViewedInspirations] = useState<Set<string>>(
-    new Set()
-  );
   const [isMobile, setIsMobile] = useState(false);
   const { site } = useSiteStore();
 
@@ -409,7 +472,7 @@ export default function InspirationPage() {
 
     try {
       const response = await fetch(
-        `/api/inspirations?page=${currentPage}&limit=1000000&sort=createdAt:desc`
+        `/api/inspirations?page=${currentPage}&limit=10&sort=createdAt:desc`
       );
       const result = await response.json();
 
@@ -421,16 +484,10 @@ export default function InspirationPage() {
 
       setHasMore(result.data.length === 10);
 
-      // Retrieve liked and viewed inspirations from localStorage
       const storedLikedInspirations = localStorage.getItem("likedInspirations");
-      const storedViewedInspirations =
-        localStorage.getItem("viewedInspirations");
 
       if (storedLikedInspirations) {
         setLikedInspirations(new Set(JSON.parse(storedLikedInspirations)));
-      }
-      if (storedViewedInspirations) {
-        setViewedInspirations(new Set(JSON.parse(storedViewedInspirations)));
       }
     } catch (error) {
       console.error("Failed to fetch inspirations:", error);
@@ -445,36 +502,38 @@ export default function InspirationPage() {
   };
 
   useEffect(() => {
-    fetchInspirations(page);
+    // 只在首次加载时获取数据
+    if (page === 1) {
+      fetchInspirations(page);
+    }
   }, [page]);
 
   const loadMoreInspirations = useCallback(() => {
     if (hasMore && !isLoadingMore) {
-      setPage((prev) => prev + 1);
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchInspirations(nextPage, true);
     }
-  }, [hasMore, isLoadingMore]);
+  }, [hasMore, isLoadingMore, page]);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop =
-        document.documentElement.scrollTop || document.body.scrollTop;
-      const scrollHeight =
-        document.documentElement.scrollHeight || document.body.scrollHeight;
-      const clientHeight =
-        document.documentElement.clientHeight || window.innerHeight;
+    const scrollContainer = scrollContainerRef.current;
 
-      // 当滚动到距离底部100px时触发加载
-      if (
-        scrollTop + clientHeight >= scrollHeight - 100 &&
-        hasMore &&
-        !isLoadingMore
-      ) {
+    const handleScroll = () => {
+      if (!scrollContainer) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+
+      // 当滚动到距离底部50px时触发加载
+      if (scrollTop + clientHeight >= scrollHeight - 50 && hasMore && !isLoadingMore) {
         loadMoreInspirations();
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    scrollContainer?.addEventListener("scroll", handleScroll);
+    return () => scrollContainer?.removeEventListener("scroll", handleScroll);
   }, [hasMore, isLoadingMore, loadMoreInspirations]);
 
   const handleLike = useCallback(
@@ -523,8 +582,6 @@ export default function InspirationPage() {
 
   const handleView = useCallback(
     async (inspirationId: string) => {
-      if (viewedInspirations.has(inspirationId)) return;
-
       try {
         const response = await fetch(
           `/api/inspirations/${inspirationId}/stats`,
@@ -538,18 +595,6 @@ export default function InspirationPage() {
         );
 
         if (response.ok) {
-          const updatedViewedInspirations = new Set(viewedInspirations).add(
-            inspirationId
-          );
-          setViewedInspirations(updatedViewedInspirations);
-
-          // Update localStorage
-          localStorage.setItem(
-            "viewedInspirations",
-            JSON.stringify(Array.from(updatedViewedInspirations))
-          );
-
-          // Update the inspirations list with the new view count
           setInspirations((prevInspirations) =>
             prevInspirations.map((inspiration) =>
               inspiration._id.toString() === inspirationId
@@ -562,28 +607,8 @@ export default function InspirationPage() {
         console.error("Failed to record view:", error);
       }
     },
-    [viewedInspirations]
+    []
   );
-
-  useEffect(() => {
-    // Automatically record view for each inspiration when it first appears
-    inspirations.forEach((inspiration) => {
-      const inspirationId = inspiration._id.toString();
-      // Check if the inspiration has not been viewed in the current session
-      if (!viewedInspirations.has(inspirationId)) {
-        // Attempt to get view tracking from localStorage to prevent multiple views
-        const viewedInspirationsInStorage =
-          localStorage.getItem("viewedInspirations");
-        const storedViewedInspirations = viewedInspirationsInStorage
-          ? new Set(JSON.parse(viewedInspirationsInStorage))
-          : new Set();
-
-        if (!storedViewedInspirations.has(inspirationId)) {
-          handleView(inspirationId);
-        }
-      }
-    });
-  }, [inspirations, viewedInspirations, handleView]);
 
   if (isLoading) {
     return (
@@ -607,7 +632,10 @@ export default function InspirationPage() {
 
   return (
     <main className="flex-1 h-screen overflow-hidden">
-      <div className="h-full overflow-y-auto px-4 py-4 sm:py-16">
+      <div
+        ref={scrollContainerRef}
+        className="h-full overflow-y-auto px-4 py-4 sm:py-16"
+      >
         <div className="w-full max-w-3xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-6">
             灵感笔记
