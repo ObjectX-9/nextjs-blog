@@ -25,10 +25,7 @@ export default function ArticleDetailPage() {
 
   // 验证码相关状态
   const [verificationCode, setVerificationCode] = useState("");
-  const [captchaData, setCaptchaData] = useState<{
-    key: string;
-    svg: string;
-  } | null>(null);
+  const [captchaData, setCaptchaData] = useState<string>("");
   const [isVerified, setIsVerified] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
@@ -132,9 +129,10 @@ export default function ArticleDetailPage() {
   // 获取验证码
   const fetchCaptcha = async () => {
     try {
-      const response = await fetch("/api/site/captcha");
+      const response = await fetch("/api/site");
       const data = await response.json();
-      setCaptchaData(data);
+      setCaptchaData(data.verificationCode);
+      console.log("获取到的验证码:", data.verificationCode); // 调试日志
     } catch (error) {
       console.error("获取验证码失败:", error);
     }
@@ -142,34 +140,32 @@ export default function ArticleDetailPage() {
 
   // 验证码校验
   const handleVerification = async () => {
-    if (!captchaData) {
-      setVerificationError("请先获取验证码");
+    if (!verificationCode) {
+      setVerificationError("请输入验证码");
       return;
     }
 
     try {
-      const response = await fetch("/api/site/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          key: captchaData.key,
-          code: verificationCode,
-        }),
-      });
-
+      const response = await fetch("/api/site");
       const data = await response.json();
+      
+      console.log("API返回数据:", data); // 查看完整的返回数据
+      
+      // 去除空格并转换为大写进行比对
+      const inputCode = verificationCode.trim().toUpperCase();
+      const serverCode = data?.site?.verificationCode?.trim().toUpperCase();
+      
+      console.log("API验证码:", serverCode, "输入验证码:", inputCode);
 
-      if (data.success) {
+      if (serverCode && inputCode === serverCode) {
         setIsVerified(true);
         setShowVerification(false);
         setVerificationError("");
 
-        // 存储验证状态，有效期24小时
+        // 存储验证状态
         const verification: VerificationState = {
           verified: true,
-          expireTime: Date.now() + 24 * 60 * 60 * 1000,
+          expireTime: Date.now() + (data?.site?.verificationCodeExpirationTime || 24) * 60 * 60 * 1000,
         };
         localStorage.setItem(
           `article_verification_${params.id}`,
@@ -177,7 +173,6 @@ export default function ArticleDetailPage() {
         );
       } else {
         setVerificationError("验证码错误，请重试");
-        fetchCaptcha();
       }
     } catch (error) {
       console.error("验证失败:", error);
