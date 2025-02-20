@@ -3,6 +3,19 @@ import { getDb } from "@/lib/mongodb";
 import { ISite } from "@/app/model/site";
 import { IEducation } from "@/app/model/education";
 
+// 生成随机验证码
+function generateVerificationCode(length: number = 6): string {
+  return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
+}
+
+// 检查验证码是否过期
+function isVerificationCodeExpired(createTime?: number, expirationHours?: number): boolean {
+  if (!createTime || !expirationHours) return true;
+  const now = Date.now();
+  const expirationTime = createTime + (expirationHours * 60 * 60 * 1000);
+  return now > expirationTime;
+}
+
 // Get site information
 export async function GET() {
   try {
@@ -11,6 +24,26 @@ export async function GET() {
 
     // Get the first site document (assuming we only have one site)
     const site = await collection.findOne({}, { maxTimeMS: 1000 });
+
+    // 检查验证码是否过期，如果过期则生成新的
+    if (site?.isOpenVerifyArticle && isVerificationCodeExpired(site.verificationCodeCreateTime, site.verificationCodeExpirationTime)) {
+      const newVerificationCode = generateVerificationCode();
+      const createTime = Date.now();
+      
+      await collection.updateOne(
+        { _id: site._id },
+        { 
+          $set: { 
+            verificationCode: newVerificationCode,
+            verificationCodeCreateTime: createTime,
+            verificationCodeExpirationTime: site.verificationCodeExpirationTime || 24 // 默认24小时
+          } 
+        }
+      );
+      site.verificationCode = newVerificationCode;
+      site.verificationCodeCreateTime = createTime;
+      site.verificationCodeExpirationTime = site.verificationCodeExpirationTime || 24;
+    }
 
     // 设置响应头以防止缓存
     const headers = new Headers({
@@ -50,6 +83,10 @@ export async function GET() {
           keywords: ["博客"],
           description: "博客描述",
         },
+        isOpenVerifyArticle: false,
+        verificationCode: "",
+        verificationCodeCreateTime: 0,
+        verificationCodeExpirationTime: 24 // 默认24小时
       };
 
       const result = await collection.insertOne(defaultSite);
@@ -155,7 +192,12 @@ export async function POST(request: Request) {
       appreciationCode: siteData.appreciationCode || '',
       wechatGroup: siteData.wechatGroup || '',
       backgroundImage: siteData.backgroundImage || '/images/background.jpg',
-      icp: siteData.icp || ''
+      icp: siteData.icp || '',
+      // 添加验证码相关字段
+      isOpenVerifyArticle: siteData.isOpenVerifyArticle ?? currentSite?.isOpenVerifyArticle ?? false,
+      verificationCode: siteData.verificationCode || currentSite?.verificationCode || '',
+      verificationCodeCreateTime: siteData.verificationCodeCreateTime || currentSite?.verificationCodeCreateTime || 0,
+      verificationCodeExpirationTime: siteData.verificationCodeExpirationTime || currentSite?.verificationCodeExpirationTime || 24
     };
 
     console.log('Prepared update data:', updatedSiteData);
