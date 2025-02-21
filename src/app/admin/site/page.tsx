@@ -37,6 +37,7 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   wechatGroupName?: string; // 添加微信公众号名称
   wechatKeyword?: string; // 添加微信公众号关键词
   googleTagManagerId?: string; // 添加 GTM ID
+  googleAdsenseId?: string; // 添加 AdSense ID
 }
 
 interface FileState {
@@ -46,7 +47,7 @@ interface FileState {
 }
 
 // 默认值
-const defaultSite: SiteWithId = {
+const defaultSite: EditableSite = {
   createdAt: new Date(),
   visitCount: 0,
   likeCount: 0,
@@ -57,6 +58,7 @@ const defaultSite: SiteWithId = {
   wechatGroupName: "", // 添加微信公众号名称
   wechatKeyword: "", // 添加微信公众号关键词
   googleTagManagerId: "", // 添加 GTM ID 默认值
+  googleAdsenseId: "", // 添加 AdSense ID 默认值
   backgroundImage: "",
   title: "",
   description: "",
@@ -145,6 +147,7 @@ export default function SiteManagementPage() {
           wechatGroupName: data.site.wechatGroupName ?? "", // 添加微信公众号名称
           wechatKeyword: data.site.wechatKeyword ?? "", // 添加微信公众号关键词
           googleTagManagerId: data.site.googleTagManagerId ?? "", // 添加 GTM ID
+          googleAdsenseId: data.site.googleAdsenseId ?? "", // 添加 AdSense ID
         };
         console.log("Site with defaults:", siteWithDefaults);
         setSite(siteWithDefaults);
@@ -603,6 +606,18 @@ export default function SiteManagementPage() {
                 onChange={(e) => handleInputChange("googleTagManagerId", e.target.value)}
                 disabled={!isEditing}
                 placeholder="请输入 Google Tag Manager ID"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Google AdSense ID"
+              extra="格式如：6315396465673433"
+            >
+              <Input
+                value={editedSite.googleAdsenseId}
+                onChange={(e) => handleInputChange("googleAdsenseId", e.target.value)}
+                disabled={!isEditing}
+                placeholder="请输入 Google AdSense ID"
               />
             </Form.Item>
           </Form>

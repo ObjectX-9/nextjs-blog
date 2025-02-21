@@ -65,6 +65,7 @@ export async function GET() {
         wechatGroupName: "", // 添加微信公众号名称
         wechatKeyword: "", // 添加微信公众号关键词
         googleTagManagerId: "", // 添加谷歌标签管理器ID
+        googleAdsenseId: "", // 添加谷歌广告 ID
         title: "我的博客",
         description: "这是一个博客网站",
         backgroundImage: "/images/background.jpg",
@@ -197,6 +198,7 @@ export async function POST(request: Request) {
       wechatGroupName: siteData.wechatGroupName || '', // 添加微信公众号名称
       wechatKeyword: siteData.wechatKeyword || '', // 添加微信公众号关键词
       googleTagManagerId: siteData.googleTagManagerId || '', // 添加谷歌标签管理器ID
+      googleAdsenseId: siteData.googleAdsenseId || '', // 添加谷歌广告 ID
       backgroundImage: siteData.backgroundImage || '/images/background.jpg',
       icp: siteData.icp || '',
       // 添加验证码相关字段

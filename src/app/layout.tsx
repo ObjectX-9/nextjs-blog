@@ -8,6 +8,7 @@ import { getDb } from "@/lib/mongodb";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import GoogleTagManagerHead from '@/components/GoogleTagManagerHead';
 import GoogleTagManagerBody from '@/components/GoogleTagManagerBody';
+import GoogleAdsense from '@/components/GoogleAdsense';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,6 +44,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <GoogleTagManagerHead />
+        <GoogleAdsense />
       </head>
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
