@@ -34,10 +34,10 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   verificationCode?: string;
   verificationCodeExpirationTime?: number;
   verificationCodeCreateTime?: number;
-  wechatGroupName?: string; // 添加微信公众号名称
-  wechatKeyword?: string; // 添加微信公众号关键词
-  googleTagManagerId?: string; // 添加 GTM ID
-  googleAdsenseId?: string; // 添加 AdSense ID
+  wechatGroupName?: string;
+  wechatKeyword?: string;
+  googleTagManagerId?: string;
+  googleAdsenseId?: string;
 }
 
 interface FileState {
@@ -47,7 +47,7 @@ interface FileState {
 }
 
 // 默认值
-const defaultSite: EditableSite = {
+const defaultSite: SiteWithId = {
   createdAt: new Date(),
   visitCount: 0,
   likeCount: 0,
@@ -55,10 +55,10 @@ const defaultSite: EditableSite = {
   qrcode: "",
   appreciationCode: "",
   wechatGroup: "",
-  wechatGroupName: "", // 添加微信公众号名称
-  wechatKeyword: "", // 添加微信公众号关键词
-  googleTagManagerId: "", // 添加 GTM ID 默认值
-  googleAdsenseId: "", // 添加 AdSense ID 默认值
+  wechatGroupName: "",
+  wechatKeyword: "",
+  googleTagManagerId: "",
+  googleAdsenseId: "",
   backgroundImage: "",
   title: "",
   description: "",
@@ -77,6 +77,13 @@ const defaultSite: EditableSite = {
   verificationCode: "",
   verificationCodeExpirationTime: 24,
   verificationCodeCreateTime: 0,
+};
+
+// 编辑时使用的默认值
+const defaultEditableSite: EditableSite = {
+  ...defaultSite,
+  visitCount: null,
+  likeCount: null,
 };
 
 // API 相关函数
@@ -119,9 +126,7 @@ export default function SiteManagementPage() {
   const [site, setSite] = useState<SiteWithId>(defaultSite);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const [editedSite, setEditedSite] = useState<EditableSite>(
-    defaultSite as EditableSite
-  );
+  const [editedSite, setEditedSite] = useState<EditableSite>(defaultEditableSite);
   const [messageApi, contextHolder] = message.useMessage();
   const [form] = Form.useForm();
   const [fileState, setFileState] = useState<FileState>({
@@ -144,10 +149,10 @@ export default function SiteManagementPage() {
           verificationCodeExpirationTime:
             data.site.verificationCodeExpirationTime ?? 24,
           verificationCodeCreateTime: data.site.verificationCodeCreateTime ?? 0,
-          wechatGroupName: data.site.wechatGroupName ?? "", // 添加微信公众号名称
-          wechatKeyword: data.site.wechatKeyword ?? "", // 添加微信公众号关键词
-          googleTagManagerId: data.site.googleTagManagerId ?? "", // 添加 GTM ID
-          googleAdsenseId: data.site.googleAdsenseId ?? "", // 添加 AdSense ID
+          wechatGroupName: data.site.wechatGroupName ?? "",
+          wechatKeyword: data.site.wechatKeyword ?? "",
+          googleTagManagerId: data.site.googleTagManagerId ?? "",
+          googleAdsenseId: data.site.googleAdsenseId ?? "",
         };
         console.log("Site with defaults:", siteWithDefaults);
         setSite(siteWithDefaults);
