@@ -42,9 +42,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
           {/* 谷歌分析代码注入 */}
           <GoogleAnalytics />
+          <LayoutWrapper>{children}</LayoutWrapper>
         </SiteProvider>
       </body>
     </html>
