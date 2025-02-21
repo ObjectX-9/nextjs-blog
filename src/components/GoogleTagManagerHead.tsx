@@ -6,7 +6,7 @@ import Script from 'next/script';
 export default function GoogleTagManagerHead() {
   const { site } = useSiteStore();
   
-  if (!site?.googleTagManagerId) return null;
+  if (!site?.isOpenGtm || !site?.googleTagManagerId) return null;
 
   return (
     <Script id="google-tag-manager" strategy="afterInteractive">

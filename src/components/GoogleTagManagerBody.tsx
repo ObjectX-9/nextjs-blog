@@ -5,7 +5,7 @@ import { useSiteStore } from '@/store/site';
 export default function GoogleTagManagerBody() {
   const { site } = useSiteStore();
   
-  if (!site?.googleTagManagerId) return null;
+  if (!site?.isOpenGtm || !site?.googleTagManagerId) return null;
 
   return (
     <noscript

@@ -23,16 +23,17 @@ async function getSiteInfo() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteInfo = await getSiteInfo();
-
+  const db = await getDb();
+  const site = await db.collection("sites").findOne({});
+  
   return {
-    title: siteInfo?.title || "ObjectX's blog",
+    title: site?.title || "ObjectX's blog",
     description:
-      siteInfo?.seo?.description ||
+      site?.seo?.description ||
       "ObjectX's articles about programming and life",
-    keywords: siteInfo?.seo?.keywords || [],
-    other: siteInfo?.googleAdsenseId ? {
-      'google-adsense-account': `ca-pub-${siteInfo.googleAdsenseId}`
+    keywords: site?.seo?.keywords || [],
+    other: (site?.isOpenAdsense && site?.googleAdsenseId) ? {
+      'google-adsense-account': `ca-pub-${site.googleAdsenseId}`
     } : {}
   };
 }

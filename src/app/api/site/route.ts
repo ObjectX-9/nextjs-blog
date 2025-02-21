@@ -64,7 +64,9 @@ export async function GET() {
         wechatGroup: "",
         wechatGroupName: "", // 添加微信公众号名称
         wechatKeyword: "", // 添加微信公众号关键词
+        isOpenGtm: false, // 是否开启 GTM
         googleTagManagerId: "", // 添加谷歌标签管理器ID
+        isOpenAdsense: false, // 是否开启 AdSense
         googleAdsenseId: "", // 添加谷歌广告 ID
         title: "我的博客",
         description: "这是一个博客网站",
@@ -189,16 +191,18 @@ export async function POST(request: Request) {
         description: siteData.seo?.description || '',
       },
       // 确保其他字段都有值
+      wechatGroup: siteData.wechatGroup || '',
+      wechatGroupName: siteData.wechatGroupName || '', // 添加微信公众号名称
+      wechatKeyword: siteData.wechatKeyword || '', // 添加微信公众号关键词
+      isOpenGtm: siteData.isOpenGtm ?? currentSite?.isOpenGtm ?? false, // 是否开启 GTM
+      googleTagManagerId: siteData.googleTagManagerId || '', // 添加谷歌标签管理器ID
+      isOpenAdsense: siteData.isOpenAdsense ?? currentSite?.isOpenAdsense ?? false, // 是否开启 AdSense
+      googleAdsenseId: siteData.googleAdsenseId || '', // 添加谷歌广告 ID
       title: siteData.title || '',
       description: siteData.description || '',
       favicon: siteData.favicon || '',
       qrcode: siteData.qrcode || '',
       appreciationCode: siteData.appreciationCode || '',
-      wechatGroup: siteData.wechatGroup || '',
-      wechatGroupName: siteData.wechatGroupName || '', // 添加微信公众号名称
-      wechatKeyword: siteData.wechatKeyword || '', // 添加微信公众号关键词
-      googleTagManagerId: siteData.googleTagManagerId || '', // 添加谷歌标签管理器ID
-      googleAdsenseId: siteData.googleAdsenseId || '', // 添加谷歌广告 ID
       backgroundImage: siteData.backgroundImage || '/images/background.jpg',
       icp: siteData.icp || '',
       // 添加验证码相关字段

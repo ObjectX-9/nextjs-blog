@@ -38,6 +38,8 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   wechatKeyword?: string;
   googleTagManagerId?: string;
   googleAdsenseId?: string;
+  isOpenGtm?: boolean;
+  isOpenAdsense?: boolean;
 }
 
 interface FileState {
@@ -153,6 +155,8 @@ export default function SiteManagementPage() {
           wechatKeyword: data.site.wechatKeyword ?? "",
           googleTagManagerId: data.site.googleTagManagerId ?? "",
           googleAdsenseId: data.site.googleAdsenseId ?? "",
+          isOpenGtm: data.site.isOpenGtm ?? false,
+          isOpenAdsense: data.site.isOpenAdsense ?? false,
         };
         console.log("Site with defaults:", siteWithDefaults);
         setSite(siteWithDefaults);
@@ -187,6 +191,15 @@ export default function SiteManagementPage() {
             typeof boolValue
           );
           return { ...prev, isOpenVerifyArticle: boolValue };
+        }
+        if (field === "isOpenGtm" || field === "isOpenAdsense") {
+          const boolValue = value === true;
+          console.log(
+            "Setting isOpenGtm or isOpenAdsense to:",
+            boolValue,
+            typeof boolValue
+          );
+          return { ...prev, [field]: boolValue };
         }
         return { ...prev, [field]: value };
       }
@@ -603,27 +616,51 @@ export default function SiteManagementPage() {
         children: (
           <Form layout="vertical" className="space-y-6">
             <Form.Item
-              label="Google Tag Manager ID"
-              extra="格式如：GTM-XXXXXXX"
+              label="Google Tag Manager"
             >
-              <Input
-                value={editedSite.googleTagManagerId}
-                onChange={(e) => handleInputChange("googleTagManagerId", e.target.value)}
-                disabled={!isEditing}
-                placeholder="请输入 Google Tag Manager ID"
-              />
+              <div className="space-y-4">
+                <div>
+                  <Switch
+                    checked={editedSite.isOpenGtm === true}
+                    onChange={(checked) => handleInputChange("isOpenGtm", checked)}
+                    disabled={!isEditing}
+                    className={!isEditing ? "cursor-not-allowed" : ""}
+                  />
+                  <span className="ml-2">启用 Google Tag Manager</span>
+                </div>
+                {editedSite.isOpenGtm && (
+                  <Input
+                    value={editedSite.googleTagManagerId}
+                    onChange={(e) => handleInputChange("googleTagManagerId", e.target.value)}
+                    disabled={!isEditing}
+                    placeholder="请输入 GTM ID，格式如：GTM-XXXXXXX"
+                  />
+                )}
+              </div>
             </Form.Item>
 
             <Form.Item
-              label="Google AdSense ID"
-              extra="格式如：6315396465673433"
+              label="Google AdSense"
             >
-              <Input
-                value={editedSite.googleAdsenseId}
-                onChange={(e) => handleInputChange("googleAdsenseId", e.target.value)}
-                disabled={!isEditing}
-                placeholder="请输入 Google AdSense ID"
-              />
+              <div className="space-y-4">
+                <div>
+                  <Switch
+                    checked={editedSite.isOpenAdsense === true}
+                    onChange={(checked) => handleInputChange("isOpenAdsense", checked)}
+                    disabled={!isEditing}
+                    className={!isEditing ? "cursor-not-allowed" : ""}
+                  />
+                  <span className="ml-2">启用 Google AdSense</span>
+                </div>
+                {editedSite.isOpenAdsense && (
+                  <Input
+                    value={editedSite.googleAdsenseId}
+                    onChange={(e) => handleInputChange("googleAdsenseId", e.target.value)}
+                    disabled={!isEditing}
+                    placeholder="请输入 AdSense ID，格式如：6315396465673433"
+                  />
+                )}
+              </div>
             </Form.Item>
           </Form>
         ),

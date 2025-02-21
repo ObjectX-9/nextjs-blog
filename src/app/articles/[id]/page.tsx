@@ -32,7 +32,6 @@ export default function ArticleDetailPage() {
 
   // 站点配置
   const { site } = useSiteStore();
-  console.log("🚀 ~ ArticleDetailPage ~ site:", site)
 
   // 检测移动端视图
   useEffect(() => {
@@ -488,8 +487,8 @@ export default function ArticleDetailPage() {
                     <div
                       key={index}
                       className={`group flex items-center py-1.5 ${level === 1
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
                         } hover:text-blue-600 cursor-pointer text-sm transition-colors duration-150 ease-in-out`}
                       style={{ paddingLeft: `${(level - 1) * 1}rem` }}
                       onClick={() => {

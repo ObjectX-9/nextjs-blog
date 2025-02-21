@@ -32,7 +32,9 @@ export interface ISite {
   verificationCodeCreateTime?: number;
   verificationCodeExpirationTime?: number; // 文章验证过期时间
   wechatKeyword?: string; // 微信公众号关键词
+  isOpenGtm?: boolean; // 是否开启 GTM
   googleTagManagerId?: string; // 谷歌标签管理器ID
+  isOpenAdsense?: boolean; // 是否开启 AdSense
   googleAdsenseId?: string; // 谷歌广告 ID
 }
 
@@ -66,7 +68,9 @@ const siteSchema = new Schema<ISite>({
   verificationCodeCreateTime: { type: Number },
   verificationCodeExpirationTime: { type: Number },
   wechatKeyword: { type: String },
+  isOpenGtm: { type: Boolean, default: false },
   googleTagManagerId: { type: String },
+  isOpenAdsense: { type: Boolean, default: false },
   googleAdsenseId: { type: String },
 });
 
