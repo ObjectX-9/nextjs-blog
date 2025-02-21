@@ -6,6 +6,7 @@ import "@/styles/notion-scrollbar.css";
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,6 +43,8 @@ export default function RootLayout({
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
           <LayoutWrapper>{children}</LayoutWrapper>
+          {/* 谷歌分析代码注入 */}
+          <GoogleAnalytics />
         </SiteProvider>
       </body>
     </html>
