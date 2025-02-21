@@ -29,15 +29,15 @@ export async function GET() {
     if (site?.isOpenVerifyArticle && isVerificationCodeExpired(site.verificationCodeCreateTime, site.verificationCodeExpirationTime)) {
       const newVerificationCode = generateVerificationCode();
       const createTime = Date.now();
-      
+
       await collection.updateOne(
         { _id: site._id },
-        { 
-          $set: { 
+        {
+          $set: {
             verificationCode: newVerificationCode,
             verificationCodeCreateTime: createTime,
             verificationCodeExpirationTime: site.verificationCodeExpirationTime || 24 // 默认24小时
-          } 
+          }
         }
       );
       site.verificationCode = newVerificationCode;
@@ -64,7 +64,7 @@ export async function GET() {
         wechatGroup: "",
         wechatGroupName: "", // 添加微信公众号名称
         wechatKeyword: "", // 添加微信公众号关键词
-        googleAnalyticsId: "", // 添加谷歌分析ID
+        googleTagManagerId: "", // 添加谷歌标签管理器ID
         title: "我的博客",
         description: "这是一个博客网站",
         backgroundImage: "/images/background.jpg",
@@ -112,7 +112,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const { type } = await request.json()
-    
+
     const db = await getDb();
     const collection = db.collection<ISite>("sites");
 
@@ -196,7 +196,7 @@ export async function POST(request: Request) {
       wechatGroup: siteData.wechatGroup || '',
       wechatGroupName: siteData.wechatGroupName || '', // 添加微信公众号名称
       wechatKeyword: siteData.wechatKeyword || '', // 添加微信公众号关键词
-      googleAnalyticsId: siteData.googleAnalyticsId || '', // 添加谷歌分析ID
+      googleTagManagerId: siteData.googleTagManagerId || '', // 添加谷歌标签管理器ID
       backgroundImage: siteData.backgroundImage || '/images/background.jpg',
       icp: siteData.icp || '',
       // 添加验证码相关字段

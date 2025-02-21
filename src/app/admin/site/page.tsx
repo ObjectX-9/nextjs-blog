@@ -36,7 +36,7 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   verificationCodeCreateTime?: number;
   wechatGroupName?: string; // 添加微信公众号名称
   wechatKeyword?: string; // 添加微信公众号关键词
-  googleAnalyticsId?: string; // 添加谷歌分析ID
+  googleTagManagerId?: string; // 添加 GTM ID
 }
 
 interface FileState {
@@ -56,7 +56,7 @@ const defaultSite: SiteWithId = {
   wechatGroup: "",
   wechatGroupName: "", // 添加微信公众号名称
   wechatKeyword: "", // 添加微信公众号关键词
-  googleAnalyticsId: "", // 添加谷歌分析ID
+  googleTagManagerId: "", // 添加 GTM ID 默认值
   backgroundImage: "",
   title: "",
   description: "",
@@ -144,7 +144,7 @@ export default function SiteManagementPage() {
           verificationCodeCreateTime: data.site.verificationCodeCreateTime ?? 0,
           wechatGroupName: data.site.wechatGroupName ?? "", // 添加微信公众号名称
           wechatKeyword: data.site.wechatKeyword ?? "", // 添加微信公众号关键词
-          googleAnalyticsId: data.site.googleAnalyticsId ?? "", // 添加谷歌分析ID
+          googleTagManagerId: data.site.googleTagManagerId ?? "", // 添加 GTM ID
         };
         console.log("Site with defaults:", siteWithDefaults);
         setSite(siteWithDefaults);
@@ -594,15 +594,15 @@ export default function SiteManagementPage() {
         label: "统计分析",
         children: (
           <Form layout="vertical" className="space-y-6">
-            <Form.Item 
-              label="Google Analytics ID" 
-              extra="格式如：G-XXXXXXXXXX"
+            <Form.Item
+              label="Google Tag Manager ID"
+              extra="格式如：GTM-XXXXXXX"
             >
               <Input
-                value={editedSite.googleAnalyticsId}
-                onChange={(e) => handleInputChange("googleAnalyticsId", e.target.value)}
+                value={editedSite.googleTagManagerId}
+                onChange={(e) => handleInputChange("googleTagManagerId", e.target.value)}
                 disabled={!isEditing}
-                placeholder="请输入 Google Analytics ID"
+                placeholder="请输入 Google Tag Manager ID"
               />
             </Form.Item>
           </Form>

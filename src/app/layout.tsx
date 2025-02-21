@@ -6,7 +6,8 @@ import "@/styles/notion-scrollbar.css";
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
 import LayoutWrapper from "@/components/LayoutWrapper";
-import GoogleAnalytics from '@/components/GoogleAnalytics';
+import GoogleTagManagerHead from '@/components/GoogleTagManagerHead';
+import GoogleTagManagerBody from '@/components/GoogleTagManagerBody';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -40,10 +41,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <GoogleTagManagerHead />
+      </head>
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
-          {/* 谷歌分析代码注入 */}
-          <GoogleAnalytics />
+          <GoogleTagManagerBody />
           <LayoutWrapper>{children}</LayoutWrapper>
         </SiteProvider>
       </body>
