@@ -1,12 +1,15 @@
 'use client';
 
+import { useSiteStore } from '@/store/site';
 import Script from 'next/script';
 
 export default function GoogleAnalytics() {
+  const { site } = useSiteStore();
+
   return (
     <>
       <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-DHP13TRHVQ"
+        src={`https://www.googletagmanager.com/gtag/js?id=${site?.googleAnalyticsId}`}
         strategy="afterInteractive"
       />
       <Script id="google-analytics" strategy="afterInteractive">
@@ -15,7 +18,7 @@ export default function GoogleAnalytics() {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
 
-          gtag('config', 'G-DHP13TRHVQ');
+          gtag('config', '${site?.googleAnalyticsId}');
         `}
       </Script>
     </>

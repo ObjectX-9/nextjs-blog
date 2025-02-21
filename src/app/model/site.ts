@@ -32,6 +32,7 @@ export interface ISite {
   verificationCodeCreateTime?: number;
   verificationCodeExpirationTime?: number; // 文章验证过期时间
   wechatKeyword?: string; // 微信公众号关键词
+  googleAnalyticsId?: string; // 谷歌分析ID
 }
 
 const siteSchema = new Schema<ISite>({
@@ -64,6 +65,7 @@ const siteSchema = new Schema<ISite>({
   verificationCodeCreateTime: { type: Number },
   verificationCodeExpirationTime: { type: Number },
   wechatKeyword: { type: String },
+  googleAnalyticsId: { type: String },
 });
 
 export const Site = models.Site || model<ISite>("Site", siteSchema);

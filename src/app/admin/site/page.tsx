@@ -36,6 +36,7 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   verificationCodeCreateTime?: number;
   wechatGroupName?: string; // 添加微信公众号名称
   wechatKeyword?: string; // 添加微信公众号关键词
+  googleAnalyticsId?: string; // 添加谷歌分析ID
 }
 
 interface FileState {
@@ -55,6 +56,7 @@ const defaultSite: SiteWithId = {
   wechatGroup: "",
   wechatGroupName: "", // 添加微信公众号名称
   wechatKeyword: "", // 添加微信公众号关键词
+  googleAnalyticsId: "", // 添加谷歌分析ID
   backgroundImage: "",
   title: "",
   description: "",
@@ -142,6 +144,7 @@ export default function SiteManagementPage() {
           verificationCodeCreateTime: data.site.verificationCodeCreateTime ?? 0,
           wechatGroupName: data.site.wechatGroupName ?? "", // 添加微信公众号名称
           wechatKeyword: data.site.wechatKeyword ?? "", // 添加微信公众号关键词
+          googleAnalyticsId: data.site.googleAnalyticsId ?? "", // 添加谷歌分析ID
         };
         console.log("Site with defaults:", siteWithDefaults);
         setSite(siteWithDefaults);
@@ -583,6 +586,25 @@ export default function SiteManagementPage() {
                 </Form.Item>
               </>
             )}
+          </Form>
+        ),
+      },
+      {
+        key: "analytics",
+        label: "统计分析",
+        children: (
+          <Form layout="vertical" className="space-y-6">
+            <Form.Item 
+              label="Google Analytics ID" 
+              extra="格式如：G-XXXXXXXXXX"
+            >
+              <Input
+                value={editedSite.googleAnalyticsId}
+                onChange={(e) => handleInputChange("googleAnalyticsId", e.target.value)}
+                disabled={!isEditing}
+                placeholder="请输入 Google Analytics ID"
+              />
+            </Form.Item>
           </Form>
         ),
       },
