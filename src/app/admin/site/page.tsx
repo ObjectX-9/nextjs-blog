@@ -34,7 +34,6 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   isOpenVerifyArticle?: boolean;
   verificationCode?: string;
   verificationCodeExpirationTime?: number;
-  verificationCodeCreateTime?: number;
   wechatGroupName?: string;
   wechatKeyword?: string;
   googleTagManagerId?: string;
@@ -91,7 +90,6 @@ const defaultSite: SiteWithId = {
   isOpenVerifyArticle: false,
   verificationCode: "",
   verificationCodeExpirationTime: 24,
-  verificationCodeCreateTime: 0,
 };
 
 // 编辑时使用的默认值
@@ -199,7 +197,6 @@ export default function SiteManagementPage() {
           verificationCode: data.site.verificationCode ?? "",
           verificationCodeExpirationTime:
             data.site.verificationCodeExpirationTime ?? 24,
-          verificationCodeCreateTime: data.site.verificationCodeCreateTime ?? 0,
           wechatGroupName: data.site.wechatGroupName ?? "",
           wechatKeyword: data.site.wechatKeyword ?? "",
           googleTagManagerId: data.site.googleTagManagerId ?? "",
@@ -362,7 +359,6 @@ export default function SiteManagementPage() {
         verificationCode: editedSite.verificationCode || "",
         verificationCodeExpirationTime:
           editedSite.verificationCodeExpirationTime || 24,
-        verificationCodeCreateTime: editedSite.verificationCodeCreateTime || 0,
         author: {
           ...editedSite.author,
           education: editedSite.author?.education || [],
@@ -627,10 +623,6 @@ export default function SiteManagementPage() {
                     api.generateCaptcha().then((data) => {
                       if (data.success) {
                         handleInputChange("verificationCode", data.captcha.id);
-                        handleInputChange(
-                          "verificationCodeCreateTime",
-                          Date.now()
-                        );
                         fetchCaptchaDetail(data.captcha.id);
                       } else {
                         messageApi.error("生成验证码失败");
@@ -746,7 +738,10 @@ export default function SiteManagementPage() {
                                 </td>
                                 <td className="hidden sm:table-cell px-4 py-3 text-sm">
                                   {captcha.activatedAt
-                                    ? `${editedSite.verificationCodeExpirationTime || 24}小时`
+                                    ? `${
+                                        editedSite.verificationCodeExpirationTime ||
+                                        24
+                                      }小时`
                                     : "5分钟"}
                                 </td>
                                 <td className="px-4 py-3 text-sm">

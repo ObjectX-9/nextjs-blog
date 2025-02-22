@@ -29,7 +29,6 @@ export interface ISite {
   };
   isOpenVerifyArticle?: boolean;
   verificationCode?: string; // 文章验证
-  verificationCodeCreateTime?: number;
   verificationCodeExpirationTime?: number; // 文章验证过期时间
   wechatKeyword?: string; // 微信公众号关键词
   isOpenGtm?: boolean; // 是否开启 GTM
@@ -65,7 +64,6 @@ const siteSchema = new Schema<ISite>({
   },
   isOpenVerifyArticle: { type: Boolean, default: false },
   verificationCode: { type: String },
-  verificationCodeCreateTime: { type: Number },
   verificationCodeExpirationTime: { type: Number },
   wechatKeyword: { type: String },
   isOpenGtm: { type: Boolean, default: false },
