@@ -1,6 +1,7 @@
 import { Form, Input, Upload, Button } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Image from "next/image";
+import { useEffect } from "react";
 import { FileState } from "../types";
 
 interface ImageUploadProps {
@@ -22,6 +23,19 @@ export const ImageUpload = ({
   handleInputChange,
   handleFileSelect,
 }: ImageUploadProps) => {
+  // 获取预览URL，优先使用临时预览URL，如果没有则使用已保存的URL
+  const previewUrl = fileState.previewUrls[field] || value;
+
+  // 在组件卸载时清理预览URL
+  useEffect(() => {
+    return () => {
+      const url = fileState.previewUrls[field];
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [field, fileState.previewUrls]);
+
   return (
     <Form.Item label={label} className="mb-4">
       <Input
@@ -32,11 +46,14 @@ export const ImageUpload = ({
       />
       {isEditing && (
         <Upload
+          accept="image/*"
           beforeUpload={(file) => {
+            console.log('Upload beforeUpload:', file);
             handleFileSelect(field, file);
             return false;
           }}
           showUploadList={false}
+          maxCount={1}
         >
           <Button
             icon={<UploadOutlined />}
@@ -46,10 +63,10 @@ export const ImageUpload = ({
           </Button>
         </Upload>
       )}
-      {value && (
+      {previewUrl && (
         <div className="mt-2">
           <Image
-            src={value}
+            src={previewUrl}
             alt={label}
             width={100}
             height={100}

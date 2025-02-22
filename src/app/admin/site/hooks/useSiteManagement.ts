@@ -109,22 +109,48 @@ export const useSiteManagement = () => {
   }, []);
 
   const handleFileSelect = useCallback(async (field: string, file: File) => {
-    if (!file.type.startsWith("image/")) {
-      messageApi.error("请选择图片文件");
-      return;
-    }
+    console.log('handleFileSelect called with:', field, file);
+    try {
+      if (!file) {
+        console.error('No file selected');
+        messageApi.error('请选择文件');
+        return;
+      }
 
-    setFileState((prev) => ({
-      ...prev,
-      selectedFiles: { ...prev.selectedFiles, [field]: file },
-      previewUrls: {
-        ...prev.previewUrls,
-        [field]: URL.createObjectURL(file),
-      },
-    }));
+      if (!file.type.startsWith("image/")) {
+        console.error('Invalid file type:', file.type);
+        messageApi.error("请选择图片文件");
+        return;
+      }
+
+      // 先清理之前的预览URL（如果存在）
+      setFileState((prev) => {
+        const oldPreviewUrl = prev.previewUrls[field];
+        if (oldPreviewUrl) {
+          URL.revokeObjectURL(oldPreviewUrl);
+        }
+        
+        // 创建新的预览URL
+        const previewUrl = URL.createObjectURL(file);
+        console.log('Created preview URL:', previewUrl);
+
+        return {
+          ...prev,
+          selectedFiles: { ...prev.selectedFiles, [field]: file },
+          previewUrls: {
+            ...prev.previewUrls,
+            [field]: previewUrl,
+          },
+        };
+      });
+    } catch (error) {
+      console.error("处理图片失败:", error);
+      messageApi.error("处理图片时出错");
+    }
   }, [messageApi]);
 
   const uploadFile = useCallback(async (field: string, file: File) => {
+    console.log(`开始上传文件: ${field}, 文件名: ${file.name}, 大小: ${file.size} bytes`);
     try {
       setFileState((prev) => ({
         ...prev,
@@ -132,37 +158,28 @@ export const useSiteManagement = () => {
       }));
 
       const data = await api.uploadFile(file);
+      console.log(`文件上传响应:`, data);
 
-      setEditedSite((prev) => {
-        if (field.startsWith("author.")) {
-          const authorField = field.split(".")[1];
-          return {
-            ...prev,
-            author: {
-              ...prev.author,
-              [authorField]: data.url,
-            },
-          };
-        }
-        return {
-          ...prev,
-          [field]: data.url,
-        };
-      });
+      if (!data.url) {
+        throw new Error('上传响应中没有URL');
+      }
 
       return data.url;
     } catch (error: any) {
-      throw new Error(`上传${field}失败：${error.message}`);
+      console.error(`上传文件失败: ${field}`, error);
+      messageApi.error(`上传${field}失败：${error.message}`);
+      throw error;
     } finally {
       setFileState((prev) => ({
         ...prev,
         isUploading: { ...prev.isUploading, [field]: false },
       }));
     }
-  }, []);
+  }, [messageApi]);
 
   const handleSave = useCallback(async () => {
     try {
+      // 定义需要处理的图片字段
       const imageFields = [
         "favicon",
         "qrcode",
@@ -170,37 +187,87 @@ export const useSiteManagement = () => {
         "wechatGroup",
         "backgroundImage",
         "author.avatar",
-      ];
+      ] as const;
 
-      const uploadPromises = imageFields
-        .filter((field) => fileState.selectedFiles[field])
-        .map((field) => uploadFile(field, fileState.selectedFiles[field]));
+      type ImageField = typeof imageFields[number];
 
-      if (uploadPromises.length > 0) {
-        messageApi.info("正在上传图片...");
-        await Promise.all(uploadPromises);
-      }
+      // 类型保护函数
+      const isValidImageField = (field: string): field is ImageField => {
+        return imageFields.includes(field as ImageField);
+      };
 
+      // 上传所有选中的图片
+      const uploadResults = await Promise.all(
+        (Object.keys(fileState.selectedFiles) as string[])
+          .filter(isValidImageField)
+          .map(async (field) => {
+            try {
+              console.log(`开始上传图片: ${field}`);
+              const url = await uploadFile(field, fileState.selectedFiles[field]);
+              console.log(`图片上传成功: ${field}, url: ${url}`);
+              return { field, url };
+            } catch (error) {
+              console.error(`上传图片失败: ${field}`, error);
+              throw error;
+            }
+          })
+      );
+
+      // 更新 editedSite 中的图片 URL
+      const updatedSite = { ...editedSite };
+      uploadResults.forEach(({ field, url }) => {
+        if (field.startsWith("author.")) {
+          const [_, authorField] = field.split(".");
+          if (authorField === "avatar") {
+            updatedSite.author = {
+              ...updatedSite.author,
+              avatar: url,
+            };
+          }
+        } else {
+          switch (field) {
+            case "favicon":
+              updatedSite.favicon = url;
+              break;
+            case "qrcode":
+              updatedSite.qrcode = url;
+              break;
+            case "appreciationCode":
+              updatedSite.appreciationCode = url;
+              break;
+            case "wechatGroup":
+              updatedSite.wechatGroup = url;
+              break;
+            case "backgroundImage":
+              updatedSite.backgroundImage = url;
+              break;
+          }
+        }
+      });
+
+      // 准备最终的保存数据
       const finalSiteData = {
-        ...editedSite,
-        visitCount: editedSite.visitCount ?? 0,
-        likeCount: editedSite.likeCount ?? 0,
-        isOpenVerifyArticle: editedSite.isOpenVerifyArticle === true,
-        verificationCodeExpirationTime: editedSite.verificationCodeExpirationTime || 24,
+        ...updatedSite,
+        visitCount: updatedSite.visitCount ?? 0,
+        likeCount: updatedSite.likeCount ?? 0,
+        isOpenVerifyArticle: updatedSite.isOpenVerifyArticle === true,
+        verificationCodeExpirationTime: updatedSite.verificationCodeExpirationTime || 24,
         author: {
-          ...editedSite.author,
-          education: editedSite.author?.education || [],
+          ...updatedSite.author,
+          education: updatedSite.author?.education || [],
         },
         seo: {
-          keywords: Array.isArray(editedSite.seo?.keywords) ? editedSite.seo.keywords : [],
-          description: editedSite.seo?.description || "",
+          keywords: Array.isArray(updatedSite.seo?.keywords) ? updatedSite.seo.keywords : [],
+          description: updatedSite.seo?.description || "",
         },
       };
 
+      console.log('Saving site data:', finalSiteData);
       const data = await api.saveSite(finalSiteData);
 
       if (data.success) {
         messageApi.success("网站信息更新成功");
+        // 清理文件状态
         setFileState({
           selectedFiles: {},
           previewUrls: {},
