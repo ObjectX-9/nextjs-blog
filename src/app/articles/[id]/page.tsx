@@ -29,6 +29,7 @@ export default function ArticleDetailPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
+  const [captchaId, setCaptchaId] = useState("");
 
   // 站点配置
   const { site } = useSiteStore();
@@ -113,7 +114,7 @@ export default function ArticleDetailPage() {
         return;
       }
 
-      const storedVerification = localStorage.getItem('article_verification');
+      const storedVerification = localStorage.getItem("article_verification");
       if (storedVerification) {
         const verification: VerificationState = JSON.parse(storedVerification);
         if (verification.expireTime > Date.now()) {
@@ -121,7 +122,7 @@ export default function ArticleDetailPage() {
           setShowVerification(false);
           return;
         } else {
-          localStorage.removeItem('article_verification');
+          localStorage.removeItem("article_verification");
         }
       }
       setShowVerification(true);
@@ -130,6 +131,41 @@ export default function ArticleDetailPage() {
     checkVerification();
   }, [site?.isOpenVerifyArticle]);
 
+  // 获取新的验证码
+  const fetchNewCaptcha = async () => {
+    try {
+      const response = await fetch("/api/captcha", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          target: "article_verification",
+          type: "NUMBER"
+        }),
+      });
+
+      const data = await response.json();
+      console.log("获取验证码响应:", data);
+
+      if (data.success && data.captcha) {
+        setCaptchaId(data.captcha.id);
+        // 显示验证码内容
+        setVerificationCode(data.captcha.code);
+      }
+    } catch (error) {
+      console.error("获取验证码失败:", error);
+      setVerificationError("获取验证码失败，请刷新重试");
+    }
+  };
+
+  // 在显示验证框时获取验证码
+  useEffect(() => {
+    if (showVerification) {
+      fetchNewCaptcha();
+    }
+  }, [showVerification]);
+
   // 验证码校验
   const handleVerification = async () => {
     if (!verificationCode) {
@@ -137,40 +173,58 @@ export default function ArticleDetailPage() {
       return;
     }
 
+    if (!captchaId) {
+      setVerificationError("验证码已失效，请刷新重试");
+      return;
+    }
+
     try {
-      const response = await fetch("/api/site");
+      // 验证验证码
+      const response = await fetch("/api/captcha", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: captchaId,
+          code: verificationCode,
+          target: "article_verification",
+        }),
+      });
+
+      // 打印请求参数和响应，方便调试
+      console.log("请求参数:", {
+        id: captchaId,
+        code: verificationCode,
+        target: "article_verification",
+      });
+
       const data = await response.json();
+      console.log("响应数据:", data);
 
-      console.log("API返回数据:", data); // 查看完整的返回数据
-
-      // 去除空格并转换为大写进行比对
-      const inputCode = verificationCode.trim().toUpperCase();
-      const serverCode = data?.site?.verificationCode?.trim().toUpperCase();
-
-      console.log("API验证码:", serverCode, "输入验证码:", inputCode);
-
-      if (serverCode && inputCode === serverCode) {
+      if (data.success) {
         setIsVerified(true);
         setShowVerification(false);
         setVerificationError("");
+        setCaptchaId("");
+        setVerificationCode("");
 
-        // 存储验证状态
+        // 存储验证状态，24小时有效
         const verification: VerificationState = {
           verified: true,
-          expireTime:
-            Date.now() +
-            (data?.site?.verificationCodeExpirationTime || 24) * 60 * 60 * 1000,
+          expireTime: Date.now() + 24 * 60 * 60 * 1000,
         };
-        localStorage.setItem(
-          'article_verification',
-          JSON.stringify(verification)
-        );
+        localStorage.setItem("article_verification", JSON.stringify(verification));
       } else {
-        setVerificationError("验证码错误，请重试");
+        setVerificationError(data.message || "验证码错误，请重试");
+        // 验证失败时重新获取验证码
+        fetchNewCaptcha();
       }
     } catch (error) {
       console.error("验证失败:", error);
       setVerificationError("验证失败，请重试");
+      // 验证失败时重新获取验证码
+      fetchNewCaptcha();
     }
   };
 
@@ -305,14 +359,18 @@ export default function ArticleDetailPage() {
 
     // 如果未开启验证或已验证，显示全部内容
     if (!site?.isOpenVerifyArticle || isVerified) {
-      return <MarkdownRenderer content={article.content} isMobile={isMobileView} />;
+      return (
+        <MarkdownRenderer content={article.content} isMobile={isMobileView} />
+      );
     }
 
     // 如果需要验证且未验证，只显示部分内容
     const previewContent =
       article.content.split("\n").slice(0, 10).join("\n") +
       "\n\n...\n\n> 请完成验证后继续阅读";
-    return <MarkdownRenderer content={previewContent} isMobile={isMobileView} />;
+    return (
+      <MarkdownRenderer content={previewContent} isMobile={isMobileView} />
+    );
   };
 
   const renderMobileView = () => {
@@ -341,8 +399,9 @@ export default function ArticleDetailPage() {
 
         {/* 固定在顶部的标题和目录 */}
         <div
-          className={`fixed top-0 left-0 right-0 bg-white z-10 transition-transform duration-300 ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-            }`}
+          className={`fixed top-0 left-0 right-0 bg-white z-10 transition-transform duration-300 ${
+            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
+          }`}
         >
           <div className="p-4 border-b">
             <h1 className="text-xl font-bold mb-4 text-center truncate px-12">
@@ -355,8 +414,9 @@ export default function ArticleDetailPage() {
               className="flex items-center text-gray-600 hover:text-black mb-2"
             >
               <svg
-                className={`w-4 h-4 mr-2 transition-transform ${showToc ? "rotate-0" : "-rotate-90"
-                  }`}
+                className={`w-4 h-4 mr-2 transition-transform ${
+                  showToc ? "rotate-0" : "-rotate-90"
+                }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -373,8 +433,9 @@ export default function ArticleDetailPage() {
 
             {/* 文章目录 */}
             <div
-              className={`bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 ${showToc ? "max-h-64" : "max-h-0"
-                }`}
+              className={`bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 ${
+                showToc ? "max-h-64" : "max-h-0"
+              }`}
             >
               <div className="p-4">
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -424,8 +485,9 @@ export default function ArticleDetailPage() {
       <div className="relative min-h-screen w-full">
         {/* 右侧固定目录 */}
         <div
-          className={`fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-lg transition-transform duration-300 ${showSidebar ? "translate-x-0" : "translate-x-full"
-            }`}
+          className={`fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-lg transition-transform duration-300 ${
+            showSidebar ? "translate-x-0" : "translate-x-full"
+          }`}
         >
           <div className="sticky top-0 h-screen overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between">
@@ -454,7 +516,8 @@ export default function ArticleDetailPage() {
                 onClick={() => {
                   const lastCategory = localStorage.getItem("lastCategory");
                   router.push(
-                    `/articles${lastCategory ? `?category=${lastCategory}` : ""
+                    `/articles${
+                      lastCategory ? `?category=${lastCategory}` : ""
                     }`
                   );
                 }}
@@ -486,10 +549,11 @@ export default function ArticleDetailPage() {
                   return (
                     <div
                       key={index}
-                      className={`group flex items-center py-1.5 ${level === 1
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-600"
-                        } hover:text-blue-600 cursor-pointer text-sm transition-colors duration-150 ease-in-out`}
+                      className={`group flex items-center py-1.5 ${
+                        level === 1
+                          ? "text-gray-900 font-medium"
+                          : "text-gray-600"
+                      } hover:text-blue-600 cursor-pointer text-sm transition-colors duration-150 ease-in-out`}
                       style={{ paddingLeft: `${(level - 1) * 1}rem` }}
                       onClick={() => {
                         const element = document.getElementById(
@@ -509,8 +573,9 @@ export default function ArticleDetailPage() {
 
         {/* 主要内容区域 */}
         <div
-          className={`transition-[margin] duration-300 ${showSidebar ? "mr-[20vw]" : "mr-0"
-            } border-r h-screen overflow-y-auto`}
+          className={`transition-[margin] duration-300 ${
+            showSidebar ? "mr-[20vw]" : "mr-0"
+          } border-r h-screen overflow-y-auto`}
         >
           <div className="max-w-4xl mx-auto py-8 px-8 relative">
             {!showSidebar && (

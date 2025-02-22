@@ -20,6 +20,7 @@ import { UploadOutlined } from "@ant-design/icons";
 import { format } from "date-fns";
 import dayjs from "dayjs";
 import Image from "next/image";
+import { Spin } from "antd";
 
 // 类型定义
 interface SiteWithId extends ISite {
@@ -40,6 +41,18 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   googleAdsenseId?: string;
   isOpenGtm?: boolean;
   isOpenAdsense?: boolean;
+}
+
+interface CaptchaDetail {
+  id: string;
+  code?: string;
+  createdAt: Date;
+  expiresAt: Date;
+  isUsed: boolean;
+  isActivated?: boolean;
+  activatedAt?: Date;
+  activationExpiryHours?: number;
+  status?: "valid" | "used" | "expired";
 }
 
 interface FileState {
@@ -121,6 +134,36 @@ const api = {
     if (!response.ok) throw new Error("保存失败");
     return response.json();
   },
+
+  async generateCaptcha() {
+    const response = await fetch("/api/captcha", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "ALPHANUMERIC",
+      }),
+    });
+    if (!response.ok) throw new Error("生成验证码失败");
+    return response.json();
+  },
+
+  async getCaptchaDetail(id: string) {
+    if (!id) return null;
+    const response = await fetch(`/api/captcha/${encodeURIComponent(id)}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "获取验证码详情失败");
+    }
+    return response.json();
+  },
+
+  async getAllCaptchas() {
+    const response = await fetch("/api/captcha");
+    if (!response.ok) throw new Error("获取验证码列表失败");
+    return response.json();
+  },
 };
 
 export default function SiteManagementPage() {
@@ -128,7 +171,8 @@ export default function SiteManagementPage() {
   const [site, setSite] = useState<SiteWithId>(defaultSite);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const [editedSite, setEditedSite] = useState<EditableSite>(defaultEditableSite);
+  const [editedSite, setEditedSite] =
+    useState<EditableSite>(defaultEditableSite);
   const [messageApi, contextHolder] = message.useMessage();
   const [form] = Form.useForm();
   const [fileState, setFileState] = useState<FileState>({
@@ -136,6 +180,11 @@ export default function SiteManagementPage() {
     previewUrls: {},
     isUploading: {},
   });
+  const [captchaDetail, setCaptchaDetail] = useState<CaptchaDetail | null>(
+    null
+  );
+  const [captchas, setCaptchas] = useState<CaptchaDetail[]>([]);
+  const [isLoadingCaptchas, setIsLoadingCaptchas] = useState(false);
 
   // 获取网站信息
   const fetchSite = useCallback(async () => {
@@ -455,7 +504,9 @@ export default function SiteManagementPage() {
               <Form.Item label="微信公众号名称">
                 <Input
                   value={editedSite.wechatGroupName || ""}
-                  onChange={(e) => handleInputChange("wechatGroupName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("wechatGroupName", e.target.value)
+                  }
                   disabled={!isEditing}
                   placeholder="请输入微信公众号名称"
                 />
@@ -463,7 +514,9 @@ export default function SiteManagementPage() {
               <Form.Item label="微信公众号关键词">
                 <Input
                   value={editedSite.wechatKeyword || ""}
-                  onChange={(e) => handleInputChange("wechatKeyword", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("wechatKeyword", e.target.value)
+                  }
                   disabled={!isEditing}
                   placeholder="请输入微信公众号关键词"
                 />
@@ -569,6 +622,21 @@ export default function SiteManagementPage() {
                 onChange={(checked) => {
                   console.log("Switch onChange:", checked, typeof checked);
                   handleInputChange("isOpenVerifyArticle", checked);
+                  if (checked && !editedSite.verificationCode) {
+                    // 如果开启验证且没有验证码，自动生成一个
+                    api.generateCaptcha().then((data) => {
+                      if (data.success) {
+                        handleInputChange("verificationCode", data.captcha.id);
+                        handleInputChange(
+                          "verificationCodeCreateTime",
+                          Date.now()
+                        );
+                        fetchCaptchaDetail(data.captcha.id);
+                      } else {
+                        messageApi.error("生成验证码失败");
+                      }
+                    });
+                  }
                 }}
                 disabled={!isEditing}
                 className={!isEditing ? "cursor-not-allowed" : ""}
@@ -582,18 +650,7 @@ export default function SiteManagementPage() {
 
             {editedSite.isOpenVerifyArticle && (
               <>
-                <Form.Item label="验证码">
-                  <Input
-                    value={editedSite.verificationCode}
-                    onChange={(e) =>
-                      handleInputChange("verificationCode", e.target.value)
-                    }
-                    disabled={!isEditing}
-                    placeholder="验证码会在过期时自动重新生成"
-                  />
-                </Form.Item>
-
-                <Form.Item label="验证码过期时间（小时）">
+                <Form.Item label="设置验证码过期时间（小时）">
                   <InputNumber
                     min={1}
                     max={720}
@@ -605,6 +662,104 @@ export default function SiteManagementPage() {
                     placeholder="默认24小时"
                   />
                 </Form.Item>
+
+                <Form.Item label="已生成的验证码列表">
+                  <div className="bg-white rounded-lg border">
+                    {isLoadingCaptchas ? (
+                      <div className="p-4 text-center">
+                        <Spin tip="加载中..." />
+                      </div>
+                    ) : captchas.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                验证码ID
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                验证码内容
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                创建时间
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                激活时间
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                过期时间
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                有效期
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                状态
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {captchas.map((captcha) => (
+                              <tr key={captcha.id}>
+                                <td className="px-4 py-3 text-sm font-mono">
+                                  {captcha.id}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-mono">
+                                  {captcha.code}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {format(
+                                    captcha.createdAt,
+                                    "yyyy-MM-dd HH:mm:ss"
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {captcha.activatedAt
+                                    ? format(
+                                        captcha.activatedAt,
+                                        "yyyy-MM-dd HH:mm:ss"
+                                      )
+                                    : "-"}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {format(
+                                    captcha.expiresAt,
+                                    "yyyy-MM-dd HH:mm:ss"
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {captcha.activatedAt
+                                    ? `${captcha.activationExpiryHours}小时`
+                                    : "5分钟"}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs ${
+                                      captcha.status === "valid"
+                                        ? "bg-green-100 text-green-800"
+                                        : captcha.status === "used"
+                                        ? "bg-gray-100 text-gray-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {captcha.status === "valid"
+                                      ? "有效"
+                                      : captcha.status === "used"
+                                      ? "已使用"
+                                      : "已过期"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        暂无验证码记录
+                      </div>
+                    )}
+                  </div>
+                </Form.Item>
               </>
             )}
           </Form>
@@ -615,14 +770,14 @@ export default function SiteManagementPage() {
         label: "统计分析",
         children: (
           <Form layout="vertical" className="space-y-6">
-            <Form.Item
-              label="Google Tag Manager"
-            >
+            <Form.Item label="Google Tag Manager">
               <div className="space-y-4">
                 <div>
                   <Switch
                     checked={editedSite.isOpenGtm === true}
-                    onChange={(checked) => handleInputChange("isOpenGtm", checked)}
+                    onChange={(checked) =>
+                      handleInputChange("isOpenGtm", checked)
+                    }
                     disabled={!isEditing}
                     className={!isEditing ? "cursor-not-allowed" : ""}
                   />
@@ -631,7 +786,9 @@ export default function SiteManagementPage() {
                 {editedSite.isOpenGtm && (
                   <Input
                     value={editedSite.googleTagManagerId}
-                    onChange={(e) => handleInputChange("googleTagManagerId", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("googleTagManagerId", e.target.value)
+                    }
                     disabled={!isEditing}
                     placeholder="请输入 GTM ID，格式如：GTM-XXXXXXX"
                   />
@@ -639,14 +796,14 @@ export default function SiteManagementPage() {
               </div>
             </Form.Item>
 
-            <Form.Item
-              label="Google AdSense"
-            >
+            <Form.Item label="Google AdSense">
               <div className="space-y-4">
                 <div>
                   <Switch
                     checked={editedSite.isOpenAdsense === true}
-                    onChange={(checked) => handleInputChange("isOpenAdsense", checked)}
+                    onChange={(checked) =>
+                      handleInputChange("isOpenAdsense", checked)
+                    }
                     disabled={!isEditing}
                     className={!isEditing ? "cursor-not-allowed" : ""}
                   />
@@ -655,7 +812,9 @@ export default function SiteManagementPage() {
                 {editedSite.isOpenAdsense && (
                   <Input
                     value={editedSite.googleAdsenseId}
-                    onChange={(e) => handleInputChange("googleAdsenseId", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("googleAdsenseId", e.target.value)
+                    }
                     disabled={!isEditing}
                     placeholder="请输入 AdSense ID，格式如：6315396465673433"
                   />
@@ -666,8 +825,78 @@ export default function SiteManagementPage() {
         ),
       },
     ],
-    [editedSite, isEditing, handleInputChange, renderImageUpload]
+    [
+      editedSite,
+      isEditing,
+      handleInputChange,
+      renderImageUpload,
+      captchas,
+      isLoadingCaptchas,
+    ]
   );
+
+  // 获取验证码详情
+  const fetchCaptchaDetail = useCallback(
+    async (id: string) => {
+      try {
+        const data = await api.getCaptchaDetail(id);
+        if (data.success && data.captcha) {
+          setCaptchaDetail({
+            id: data.captcha.id,
+            code: data.captcha.code,
+            createdAt: new Date(data.captcha.createdAt),
+            expiresAt: new Date(data.captcha.expiresAt),
+            isUsed: data.captcha.isUsed,
+          });
+        }
+      } catch (error) {
+        console.error("获取验证码详情失败:", error);
+        messageApi.error("获取验证码详情失败");
+      }
+    },
+    [messageApi]
+  );
+
+  // 当验证码ID变化时获取详情
+  useEffect(() => {
+    if (editedSite.verificationCode) {
+      fetchCaptchaDetail(editedSite.verificationCode);
+    } else {
+      setCaptchaDetail(null);
+    }
+  }, [editedSite.verificationCode, fetchCaptchaDetail]);
+
+  // 获取所有验证码
+  const fetchAllCaptchas = useCallback(async () => {
+    try {
+      setIsLoadingCaptchas(true);
+      const data = await api.getAllCaptchas();
+      if (data.success) {
+        setCaptchas(
+          data.captchas.map((captcha: any) => ({
+            ...captcha,
+            createdAt: new Date(captcha.createdAt),
+            expiresAt: new Date(captcha.expiresAt),
+            activatedAt: captcha.activatedAt
+              ? new Date(captcha.activatedAt)
+              : undefined,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("获取验证码列表失败:", error);
+      messageApi.error("获取验证码列表失败");
+    } finally {
+      setIsLoadingCaptchas(false);
+    }
+  }, [messageApi]);
+
+  // 当验证设置改变时刷新验证码列表
+  useEffect(() => {
+    if (activeTab === "verification") {
+      fetchAllCaptchas();
+    }
+  }, [activeTab, fetchAllCaptchas]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
