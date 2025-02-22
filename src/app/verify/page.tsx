@@ -20,62 +20,62 @@ export default function VerifyPage() {
   const [error, setError] = useState<string | null>(null);
 
   // 获取验证码信息
-  useEffect(() => {
-    const fetchCaptchaInfo = async () => {
-      setIsLoading(true);
-      setError(null);
+  const fetchCaptchaInfo = async () => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        // 先尝试获取可用的验证码
-        const response = await fetch("/api/captcha/available", {
-          method: "GET",
+    try {
+      // 先尝试获取可用的验证码
+      const response = await fetch("/api/captcha/available", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success && data.captcha) {
+        // 如果有可用的验证码，直接使用
+        setCaptchaInfo({
+          id: data.captcha.id,
+          expiresAt: new Date(data.captcha.expiresAt),
+          code: data.captcha.code,
+        });
+      } else {
+        // 如果没有可用的验证码，创建新的
+        const newCaptchaResponse = await fetch("/api/captcha", {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
-          }
+          },
+          body: JSON.stringify({
+            type: "ALPHANUMERIC",
+            target: "verify-page",
+          }),
         });
 
-        const data = await response.json();
-        
-        if (response.ok && data.success && data.captcha) {
-          // 如果有可用的验证码，直接使用
-          setCaptchaInfo({
-            id: data.captcha.id,
-            expiresAt: new Date(data.captcha.expiresAt),
-            code: data.captcha.code,
-          });
-        } else {
-          // 如果没有可用的验证码，创建新的
-          const newCaptchaResponse = await fetch("/api/captcha", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              type: "ALPHANUMERIC",
-              target: "verify-page",
-            }),
-          });
-
-          const newData = await newCaptchaResponse.json();
-          if (!newCaptchaResponse.ok || !newData.success) {
-            throw new Error(newData.message || "生成验证码失败");
-          }
-
-          setCaptchaInfo({
-            id: newData.captcha.id,
-            expiresAt: new Date(newData.captcha.expiresAt),
-            code: newData.captcha.code,
-          });
+        const newData = await newCaptchaResponse.json();
+        if (!newCaptchaResponse.ok || !newData.success) {
+          throw new Error(newData.message || "生成验证码失败");
         }
-      } catch (error) {
-        console.error("获取验证码信息失败:", error);
-        setError(error instanceof Error ? error.message : "获取验证码信息失败");
-        setCaptchaInfo(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
+        setCaptchaInfo({
+          id: newData.captcha.id,
+          expiresAt: new Date(newData.captcha.expiresAt),
+          code: newData.captcha.code,
+        });
+      }
+    } catch (error) {
+      console.error("获取验证码信息失败:", error);
+      setError(error instanceof Error ? error.message : "获取验证码信息失败");
+      setCaptchaInfo(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCaptchaInfo();
   }, []);
 
@@ -112,6 +112,8 @@ export default function VerifyPage() {
 
       if (remaining <= 0) {
         setRemainingTime("已过期");
+        // 验证码过期时，自动获取新的验证码
+        fetchCaptchaInfo();
         return;
       }
 
