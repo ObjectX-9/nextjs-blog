@@ -196,13 +196,13 @@ export default function ArticleDetailPage() {
       }
 
       // 验证码状态正常，继续验证
-      const response = await fetch("/api/verify", {
-        method: "POST",
+      const response = await fetch(`/api/captcha/${captchaId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          captchaId,
+          id: captchaId,
           code: verificationCode,
           target: "article_verification",
         }),

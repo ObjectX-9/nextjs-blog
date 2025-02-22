@@ -67,3 +67,60 @@ export async function GET(
     );
   }
 }
+
+// 验证验证码
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { code, target } = await request.json();
+    const db = await getDb();
+
+    // 先查找验证码
+    const now = new Date();
+    const captcha = await db.collection<Captcha>("captchas").findOne({
+      id: params.id,
+      target: target,
+      isUsed: false,
+      expiresAt: { $gt: now },
+      code: code.toUpperCase(),
+    });
+
+    if (!captcha) {
+      return NextResponse.json(
+        { success: false, message: "验证码无效或已过期" },
+        { status: 400 }
+      );
+    }
+
+    // 更新验证码状态
+    const expiresAt = new Date(
+      now.getTime() + (captcha.activationExpiryHours || 24) * 60 * 60 * 1000
+    );
+
+    await db.collection<Captcha>("captchas").updateOne(
+      { id: params.id },
+      {
+        $set: {
+          isUsed: true,
+          isActivated: true,
+          activatedAt: now,
+          expiresAt: expiresAt
+        }
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: "验证成功",
+      expireTime: expiresAt.getTime()
+    });
+  } catch (error) {
+    console.error("Error verifying captcha:", error);
+    return NextResponse.json(
+      { success: false, message: "验证过程出错，请稍后重试" },
+      { status: 500 }
+    );
+  }
+}

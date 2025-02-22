@@ -107,60 +107,6 @@ export async function GET(request: Request) {
   }
 }
 
-// 验证验证码
-export async function PUT(request: Request) {
-  try {
-    const { id, code, target } = await request.json();
-    const db = await getDb();
-
-    // 先查找验证码
-    const now = new Date();
-    const captcha = await db.collection<Captcha>("captchas").findOne({
-      id: id,
-      target: target,
-      isUsed: false,
-      expiresAt: { $gt: now },
-      code: code.toUpperCase(),
-    });
-
-    if (!captcha) {
-      return NextResponse.json(
-        { success: false, message: "验证码无效或已过期" },
-        { status: 400 }
-      );
-    }
-
-    // 更新验证码状态
-    const result = await db.collection<Captcha>("captchas").findOneAndUpdate(
-      {
-        id: id,
-        target: target,
-        isUsed: false,
-        expiresAt: { $gt: now },
-        code: code.toUpperCase(),
-      },
-      {
-        $set: {
-          isUsed: true,
-          isActivated: true,
-          activatedAt: now,
-          // 更新过期时间为激活后的指定小时数
-          expiresAt: new Date(
-            now.getTime() +
-              (captcha.activationExpiryHours || 24) * 60 * 60 * 1000
-          ),
-        },
-      },
-      { returnDocument: "before" }
-    );
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error verifying captcha:", error);
-    return NextResponse.json({ error: "验证码验证失败" }, { status: 500 });
-  }
-}
-
 // 删除过期验证码（定期清理）
 export async function DELETE() {
   try {
