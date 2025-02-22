@@ -32,7 +32,6 @@ interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   visitCount: number | null;
   likeCount: number | null;
   isOpenVerifyArticle?: boolean;
-  verificationCode?: string;
   verificationCodeExpirationTime?: number;
   wechatGroupName?: string;
   wechatKeyword?: string;
@@ -88,7 +87,6 @@ const defaultSite: SiteWithId = {
     description: "",
   },
   isOpenVerifyArticle: false,
-  verificationCode: "",
   verificationCodeExpirationTime: 24,
 };
 
@@ -172,7 +170,6 @@ export default function SiteManagementPage() {
   const [editedSite, setEditedSite] =
     useState<EditableSite>(defaultEditableSite);
   const [messageApi, contextHolder] = message.useMessage();
-  const [form] = Form.useForm();
   const [fileState, setFileState] = useState<FileState>({
     selectedFiles: {},
     previewUrls: {},
@@ -194,7 +191,6 @@ export default function SiteManagementPage() {
         const siteWithDefaults = {
           ...data.site,
           isOpenVerifyArticle: data.site.isOpenVerifyArticle ?? false,
-          verificationCode: data.site.verificationCode ?? "",
           verificationCodeExpirationTime:
             data.site.verificationCodeExpirationTime ?? 24,
           wechatGroupName: data.site.wechatGroupName ?? "",
@@ -356,7 +352,6 @@ export default function SiteManagementPage() {
         visitCount: editedSite.visitCount ?? 0,
         likeCount: editedSite.likeCount ?? 0,
         isOpenVerifyArticle: editedSite.isOpenVerifyArticle === true,
-        verificationCode: editedSite.verificationCode || "",
         verificationCodeExpirationTime:
           editedSite.verificationCodeExpirationTime || 24,
         author: {
@@ -618,11 +613,10 @@ export default function SiteManagementPage() {
                 onChange={(checked) => {
                   console.log("Switch onChange:", checked, typeof checked);
                   handleInputChange("isOpenVerifyArticle", checked);
-                  if (checked && !editedSite.verificationCode) {
+                  if (checked) {
                     // 如果开启验证且没有验证码，自动生成一个
                     api.generateCaptcha().then((data) => {
                       if (data.success) {
-                        handleInputChange("verificationCode", data.captcha.id);
                         fetchCaptchaDetail(data.captcha.id);
                       } else {
                         messageApi.error("生成验证码失败");
@@ -875,15 +869,6 @@ export default function SiteManagementPage() {
     },
     [messageApi]
   );
-
-  // 当验证码ID变化时获取详情
-  useEffect(() => {
-    if (editedSite.verificationCode) {
-      fetchCaptchaDetail(editedSite.verificationCode);
-    } else {
-      setCaptchaDetail(null);
-    }
-  }, [editedSite.verificationCode, fetchCaptchaDetail]);
 
   // 获取所有验证码
   const fetchAllCaptchas = useCallback(async () => {

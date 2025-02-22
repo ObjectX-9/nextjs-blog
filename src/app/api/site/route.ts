@@ -78,7 +78,6 @@ export async function GET() {
           description: "博客描述",
         },
         isOpenVerifyArticle: false,
-        verificationCode: "",
         verificationCodeExpirationTime: 24, // 默认24小时
       };
 
@@ -210,8 +209,6 @@ export async function POST(request: Request) {
         siteData.isOpenVerifyArticle ??
         currentSite?.isOpenVerifyArticle ??
         false,
-      verificationCode:
-        siteData.verificationCode || currentSite?.verificationCode || "",
       verificationCodeExpirationTime:
         siteData.verificationCodeExpirationTime ||
         currentSite?.verificationCodeExpirationTime ||
