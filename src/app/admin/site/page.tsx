@@ -650,7 +650,7 @@ export default function SiteManagementPage() {
 
             {editedSite.isOpenVerifyArticle && (
               <>
-                <Form.Item label="设置验证码过期时间（小时）">
+                <Form.Item label="验证码激活有效期（小时）">
                   <InputNumber
                     min={1}
                     max={720}
@@ -661,6 +661,9 @@ export default function SiteManagementPage() {
                     disabled={!isEditing}
                     placeholder="默认24小时"
                   />
+                  <div className="text-gray-400 text-sm mt-1">
+                    设置验证码激活后的有效时长，超过该时长需要重新验证
+                  </div>
                 </Form.Item>
 
                 <Form.Item label="已生成的验证码列表">
@@ -701,14 +704,22 @@ export default function SiteManagementPage() {
                             {captchas.map((captcha) => (
                               <tr key={captcha.id} className="hover:bg-gray-50">
                                 <td className="hidden sm:table-cell px-4 py-3 text-sm font-mono">
-                                  <div className="max-w-[120px] overflow-hidden overflow-ellipsis whitespace-nowrap" title={captcha.id}>
+                                  <div
+                                    className="max-w-[120px] overflow-hidden overflow-ellipsis whitespace-nowrap"
+                                    title={captcha.id}
+                                  >
                                     {captcha.id}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 text-sm font-mono">
                                   <div>
-                                    <div className="sm:hidden text-xs text-gray-500 mb-1">验证码：</div>
-                                    <div className="max-w-[120px] overflow-hidden overflow-ellipsis whitespace-nowrap" title={captcha.code}>
+                                    <div className="sm:hidden text-xs text-gray-500 mb-1">
+                                      验证码：
+                                    </div>
+                                    <div
+                                      className="max-w-[120px] overflow-hidden overflow-ellipsis whitespace-nowrap"
+                                      title={captcha.code}
+                                    >
                                       {captcha.code}
                                     </div>
                                   </div>
@@ -735,12 +746,14 @@ export default function SiteManagementPage() {
                                 </td>
                                 <td className="hidden sm:table-cell px-4 py-3 text-sm">
                                   {captcha.activatedAt
-                                    ? `${captcha.activationExpiryHours}小时`
+                                    ? `${editedSite.verificationCodeExpirationTime || 24}小时`
                                     : "5分钟"}
                                 </td>
                                 <td className="px-4 py-3 text-sm">
                                   <div>
-                                    <div className="sm:hidden text-xs text-gray-500 mb-1">状态：</div>
+                                    <div className="sm:hidden text-xs text-gray-500 mb-1">
+                                      状态：
+                                    </div>
                                     <span
                                       className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium ${
                                         captcha.status === "valid"
@@ -749,7 +762,7 @@ export default function SiteManagementPage() {
                                           ? "bg-gray-50 text-gray-700"
                                           : "bg-red-50 text-red-700"
                                       }`}
-                                      style={{ minWidth: '60px' }}
+                                      style={{ minWidth: "60px" }}
                                     >
                                       {captcha.status === "valid"
                                         ? "有效"

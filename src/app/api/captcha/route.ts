@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { Captcha, CaptchaType } from "@/app/model/captcha";
+import { ISite } from "@/app/model/site";
+
+// 获取站点设置
+async function getSiteSettings() {
+  const db = await getDb();
+  const site = await db.collection<ISite>("sites").findOne({});
+  return site || { verificationCodeExpirationTime: 24 }; // 默认24小时
+}
 
 // 生成验证码
 function generateCode(type: CaptchaType): string {
@@ -39,6 +47,9 @@ export async function POST(request: Request) {
       });
     }
 
+    // 获取站点设置
+    const site = await getSiteSettings();
+
     // 创建新验证码
     const now = new Date();
     const captcha: Captcha = {
@@ -49,7 +60,7 @@ export async function POST(request: Request) {
       isUsed: false,
       target: data.target,
       isActivated: false,
-      activationExpiryHours: data.activationExpiryHours || 24, // 默认24小时
+      activationExpiryHours: site.verificationCodeExpirationTime || 24, // 使用站点设置的有效期
     };
 
     // 使用原子操作插入新验证码

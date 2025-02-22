@@ -59,23 +59,26 @@ export async function POST(request: Request) {
     }
 
     // 更新验证码状态为已使用
+    const activationExpiryHours = captcha.activationExpiryHours || 24; // 使用验证码自身的有效期设置
+    const expiresAt = new Date(Date.now() + activationExpiryHours * 60 * 60 * 1000);
+
     await db.collection<Captcha>("captchas").updateOne(
       { id: captchaId },
       {
         $set: {
           isUsed: true,
-          usedAt: new Date()
+          usedAt: new Date(),
+          isActivated: true,
+          activatedAt: new Date(),
+          expiresAt: expiresAt
         }
       }
     );
 
-    // 计算验证状态的过期时间（24小时后）
-    const expireTime = Date.now() + 24 * 60 * 60 * 1000;
-
     return NextResponse.json({
       success: true,
       message: "验证成功",
-      expireTime
+      expireTime: expiresAt.getTime()
     });
   } catch (error) {
     console.error("验证码验证失败:", error);
