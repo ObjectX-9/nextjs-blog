@@ -6,35 +6,26 @@ import "@/styles/notion-scrollbar.css";
 import SiteProvider from "@/components/providers/SiteProvider";
 import { getDb } from "@/lib/mongodb";
 import LayoutWrapper from "@/components/LayoutWrapper";
-import GoogleTagManagerHead from '@/components/GoogleTagManagerHead';
-import GoogleTagManagerBody from '@/components/GoogleTagManagerBody';
+import GoogleTagManagerHead from "@/components/GoogleTagManagerHead";
+import GoogleTagManagerBody from "@/components/GoogleTagManagerBody";
 
 const inter = Inter({ subsets: ["latin"] });
-
-async function getSiteInfo() {
-  try {
-    const db = await getDb();
-    const siteInfo = await db.collection("sites").findOne();
-    return siteInfo;
-  } catch (error) {
-    console.error("Error fetching site info:", error);
-    return null;
-  }
-}
 
 export async function generateMetadata(): Promise<Metadata> {
   const db = await getDb();
   const site = await db.collection("sites").findOne({});
-  
+
   return {
     title: site?.title || "ObjectX's blog",
     description:
-      site?.seo?.description ||
-      "ObjectX's articles about programming and life",
+      site?.seo?.description || "ObjectX's articles about programming and life",
     keywords: site?.seo?.keywords || [],
-    other: (site?.isOpenAdsense && site?.googleAdsenseId) ? {
-      'google-adsense-account': `ca-pub-${site.googleAdsenseId}`
-    } : {}
+    other:
+      site?.isOpenAdsense && site?.googleAdsenseId
+        ? {
+            "google-adsense-account": `ca-pub-${site.googleAdsenseId}`,
+          }
+        : {},
   };
 }
 

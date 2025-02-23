@@ -3,25 +3,6 @@ import { getDb } from "@/lib/mongodb";
 import { ISite } from "@/app/model/site";
 import { IEducation } from "@/app/model/education";
 
-// 生成随机验证码
-function generateVerificationCode(length: number = 6): string {
-  return Math.random()
-    .toString(36)
-    .substring(2, 2 + length)
-    .toUpperCase();
-}
-
-// 检查验证码是否过期
-function isVerificationCodeExpired(
-  createTime?: number,
-  expirationHours?: number
-): boolean {
-  if (!createTime || !expirationHours) return true;
-  const now = Date.now();
-  const expirationTime = createTime + expirationHours * 60 * 60 * 1000;
-  return now > expirationTime;
-}
-
 // Get site information
 export async function GET() {
   try {
@@ -272,10 +253,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-function validateSiteData(site: Partial<ISite>): string[] {
-  const errors: string[] = [];
-  // 所有字段均可为空，无需验证
-  return errors;
 }

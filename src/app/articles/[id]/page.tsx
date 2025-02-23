@@ -152,7 +152,12 @@ export default function ArticleDetailPage() {
       const data = await response.json();
       console.log("🚀 ~ handleVerification ~ data:", data);
 
-      if (data.success && data.captcha) {
+      if (
+        data.success &&
+        data.captcha &&
+        !data.captcha?.isUsed &&
+        !data.captcha?.isActivated
+      ) {
         // 更新验证码状态为激活
         const activateResponse = await fetch(
           `/api/captcha/${data.captcha._id}`,
@@ -166,7 +171,7 @@ export default function ArticleDetailPage() {
               target: "article_verification",
               isActivated: true,
               activatedAt: new Date().toISOString(),
-              activationExpiryHours: 24, // 设置24小时的激活有效期
+              activationExpiryHours: site?.verificationCodeExpirationTime || 24, // 设置24小时的激活有效期
             }),
           }
         );
