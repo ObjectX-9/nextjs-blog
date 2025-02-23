@@ -1,10 +1,5 @@
 export interface Captcha {
   /**
-   * 验证码的唯一标识符
-   */
-  id: string;
-
-  /**
    * 验证码内容
    */
   code: string;

@@ -29,7 +29,6 @@ export default function ArticleDetailPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
-  const [captchaId, setCaptchaId] = useState("");
 
   // 站点配置
   const { site } = useSiteStore();
@@ -131,41 +130,6 @@ export default function ArticleDetailPage() {
     checkVerification();
   }, [site?.isOpenVerifyArticle]);
 
-  // 获取新的验证码
-  const fetchNewCaptcha = async () => {
-    try {
-      const response = await fetch("/api/captcha", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          target: "article_verification",
-          type: "NUMBER"
-        }),
-      });
-
-      const data = await response.json();
-      console.log("获取验证码响应:", data);
-
-      if (data.success && data.captcha) {
-        setCaptchaId(data.captcha.id);
-        // 不自动填入验证码内容
-        setVerificationCode("");
-      }
-    } catch (error) {
-      console.error("获取验证码失败:", error);
-      setVerificationError("获取验证码失败，请刷新重试");
-    }
-  };
-
-  // 在显示验证框时获取验证码
-  useEffect(() => {
-    if (showVerification) {
-      fetchNewCaptcha();
-    }
-  }, [showVerification]);
-
   // 验证码校验
   const handleVerification = async () => {
     if (!verificationCode) {
@@ -174,59 +138,62 @@ export default function ArticleDetailPage() {
     }
 
     try {
-      // 先检查验证码状态
-      const checkResponse = await fetch(`/api/captcha/${captchaId}`);
-      const checkData = await checkResponse.json();
-      
-      if (!checkData.success) {
-        setVerificationError(checkData.message || "验证码检查失败");
-        return;
-      }
-
-      if (checkData.captcha.status === 'expired') {
-        setVerificationError("验证码已过期，请刷新重试");
-        fetchNewCaptcha(); // 自动获取新验证码
-        return;
-      }
-
-      if (checkData.captcha.status === 'used') {
-        setVerificationError("验证码已使用，请刷新重试");
-        fetchNewCaptcha(); // 自动获取新验证码
-        return;
-      }
-
-      // 验证码状态正常，继续验证
-      const response = await fetch(`/api/captcha/${captchaId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: captchaId,
-          code: verificationCode,
-          target: "article_verification",
-        }),
-      });
+      // 通过验证码查询状态
+      const response = await fetch(
+        `/api/captcha/available?code=${verificationCode}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = await response.json();
+      console.log("🚀 ~ handleVerification ~ data:", data);
 
-      if (data.success) {
+      if (data.success && data.captcha) {
+        // 更新验证码状态为激活
+        const activateResponse = await fetch(
+          `/api/captcha/${data.captcha._id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              code: data.captcha.code, // 使用从查询结果中获取的code
+              target: "article_verification",
+              isActivated: true,
+              activatedAt: new Date().toISOString(),
+              activationExpiryHours: 24, // 设置24小时的激活有效期
+            }),
+          }
+        );
+
+        const activateData = await activateResponse.json();
+        console.log("🚀 ~ handleVerification ~ activateData:", activateData);
+        if (!activateData.success) {
+          setVerificationError("验证码状态更新失败，请重试");
+          return;
+        }
+
         setIsVerified(true);
         setShowVerification(false);
         setVerificationError("");
-        setCaptchaId("");
         setVerificationCode("");
 
         // 存储验证状态
         const verification: VerificationState = {
           verified: true,
-          expireTime: data.expireTime,
+          expireTime: activateData.expireTime,
         };
-        localStorage.setItem("article_verification", JSON.stringify(verification));
+        localStorage.setItem(
+          "article_verification",
+          JSON.stringify(verification)
+        );
       } else {
-        setVerificationError(data.message || "验证失败，请重试");
-        // 验证失败时获取新验证码
-        fetchNewCaptcha();
+        setVerificationError(data.message || "验证码无效，请重试");
       }
     } catch (error) {
       console.error("验证过程出错:", error);

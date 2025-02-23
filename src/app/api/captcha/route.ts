@@ -53,7 +53,6 @@ export async function POST(request: Request) {
     // 创建新验证码
     const now = new Date();
     const captcha: Captcha = {
-      id: new ObjectId().toString(),
       code: generateCode(data.type || CaptchaType.NUMBER),
       createdAt: now,
       expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5分钟有效期

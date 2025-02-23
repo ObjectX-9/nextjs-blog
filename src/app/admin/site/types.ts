@@ -19,7 +19,7 @@ export interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
 }
 
 export interface CaptchaDetail {
-  id: string;
+  _id: string;
   code?: string;
   createdAt: Date;
   expiresAt: Date;

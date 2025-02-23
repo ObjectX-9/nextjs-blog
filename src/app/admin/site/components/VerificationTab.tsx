@@ -100,13 +100,13 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {captchas.map((captcha) => (
-                        <tr key={captcha.id} className="hover:bg-gray-50">
+                        <tr key={captcha._id} className="hover:bg-gray-50">
                           <td className="hidden sm:table-cell px-4 py-3 text-sm font-mono">
                             <div
                               className="max-w-[120px] overflow-hidden overflow-ellipsis whitespace-nowrap"
-                              title={captcha.id}
+                              title={captcha._id}
                             >
-                              {captcha.id}
+                              {captcha._id}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm font-mono">
@@ -127,7 +127,10 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
                           </td>
                           <td className="hidden lg:table-cell px-4 py-3 text-sm">
                             {captcha.activatedAt
-                              ? format(captcha.activatedAt, "yyyy-MM-dd HH:mm:ss")
+                              ? format(
+                                  captcha.activatedAt,
+                                  "yyyy-MM-dd HH:mm:ss"
+                                )
                               : "-"}
                           </td>
                           <td className="hidden md:table-cell px-4 py-3 text-sm">
@@ -136,7 +139,8 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
                           <td className="hidden sm:table-cell px-4 py-3 text-sm">
                             {captcha.activatedAt
                               ? `${
-                                  editedSite.verificationCodeExpirationTime || 24
+                                  editedSite.verificationCodeExpirationTime ||
+                                  24
                                 }小时`
                               : "5分钟"}
                           </td>

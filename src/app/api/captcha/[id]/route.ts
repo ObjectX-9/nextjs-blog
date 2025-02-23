@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { Captcha } from "@/app/model/captcha";
+import { ObjectId } from "mongodb";
 
 export async function GET(
   request: Request,
@@ -16,7 +17,7 @@ export async function GET(
 
     const db = await getDb();
     const captcha = await db.collection<Captcha>("captchas").findOne({
-      id: params.id
+      _id: new ObjectId(params.id),
     });
 
     if (!captcha) {
@@ -28,22 +29,25 @@ export async function GET(
 
     // 检查验证码状态
     const now = new Date();
-    let status = 'valid';
+    let status = "valid";
     let expiresAt = captcha.expiresAt;
 
     // 如果验证码已激活，使用激活后的过期时间
     if (captcha.isActivated && captcha.activatedAt) {
-      const activationExpiryTime = new Date(captcha.activatedAt.getTime() + (captcha.activationExpiryHours || 24) * 60 * 60 * 1000);
+      const activationExpiryTime = new Date(
+        captcha.activatedAt.getTime() +
+          (captcha.activationExpiryHours || 24) * 60 * 60 * 1000
+      );
       expiresAt = activationExpiryTime;
     }
 
     // 判断状态
     if (captcha.isUsed) {
-      status = 'used';
+      status = "used";
     } else if (expiresAt < now) {
-      status = 'expired';
+      status = "expired";
     }
-    
+
     // 返回验证码信息（不包含验证码内容）
     const { code, ...captchaWithoutCode } = captcha;
     return NextResponse.json({
@@ -55,9 +59,9 @@ export async function GET(
         // 如果验证码已激活，返回激活信息
         ...(captcha.isActivated && {
           activatedAt: captcha.activatedAt,
-          activationExpiryHours: captcha.activationExpiryHours
-        })
-      }
+          activationExpiryHours: captcha.activationExpiryHours,
+        }),
+      },
     });
   } catch (error) {
     console.error("Error fetching captcha:", error);
@@ -73,19 +77,16 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  console.log("🚀 ~ params:", params);
   try {
-    const { code, target } = await request.json();
     const db = await getDb();
 
     // 先查找验证码
     const now = new Date();
     const captcha = await db.collection<Captcha>("captchas").findOne({
-      id: params.id,
-      target: target,
-      isUsed: false,
-      expiresAt: { $gt: now },
-      code: code.toUpperCase(),
+      _id: new ObjectId(params.id),
     });
+    console.log("🚀 ~ captcha:", captcha);
 
     if (!captcha) {
       return NextResponse.json(
@@ -100,21 +101,21 @@ export async function PUT(
     );
 
     await db.collection<Captcha>("captchas").updateOne(
-      { id: params.id },
+      { _id: new ObjectId(params.id) },
       {
         $set: {
           isUsed: true,
           isActivated: true,
           activatedAt: now,
-          expiresAt: expiresAt
-        }
+          expiresAt: expiresAt,
+        },
       }
     );
 
     return NextResponse.json({
       success: true,
       message: "验证成功",
-      expireTime: expiresAt.getTime()
+      expireTime: expiresAt.getTime(),
     });
   } catch (error) {
     console.error("Error verifying captcha:", error);
