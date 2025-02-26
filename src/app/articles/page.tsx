@@ -32,7 +32,7 @@ export default function ArticlesPage() {
   }, []);
 
   const fetchAllArticles = useCallback(async () => {
-    const response = await fetch('/api/articles');
+    const response = await fetch('/api/articles?status=published');
     if (!response.ok) {
       throw new Error('获取文章列表失败');
     }
