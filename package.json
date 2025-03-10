@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "prod": "next build && next start",
-    "testCap": "node ./testCap.js"
+    "testCap": "node ./testCap.js &"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
