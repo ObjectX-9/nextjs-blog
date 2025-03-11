@@ -1,11 +1,16 @@
-const http = require("http");
+// 导入http模块
+const http = require('http');
 
+// 创建一个HTTP服务器
 const server = http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Hello, World!");
+  // 设置响应头
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+
+  // 发送响应数据
+  res.end('Hello, World!\n');
 });
 
-const PORT = 3000;
-server.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+// 监听80端口
+server.listen(80, () => {
+  console.log('Server is listening on port 80');
 });
