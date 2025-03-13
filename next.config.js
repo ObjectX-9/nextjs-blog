@@ -27,6 +27,22 @@ const nextConfig = {
       {
         protocol: "http",
         hostname: "**.aliyuncs.com",
+      },
+      {
+        protocol: "https",
+        hostname: "object-x.com.cn",
+      },
+      {
+        protocol: "https",
+        hostname: "object-x.net.cn",
+      },
+      {
+        protocol: "http",
+        hostname: "object-x.com.cn",
+      },
+      {
+        protocol: "http",
+        hostname: "object-x.net.cn",
       }
     ],
   },
