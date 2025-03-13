@@ -7,6 +7,8 @@ const nextConfig = {
       "avatars.githubusercontent.com",
       "next-blog.oss-cn-beijing.aliyuncs.com",
       "object-x.com.cn",
+      "object-x.net.cn",
+      "tnyvhnnczwcz.sealoshzh.site",
       "p0-xtjj-private.juejin.cn",
     ],
     remotePatterns: [
