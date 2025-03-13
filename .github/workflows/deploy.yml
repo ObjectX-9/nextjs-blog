@@ -1,51 +1,79 @@
-name: Docker Build and Deploy to Aliyun
+# name: Deploy Next.js Blog to Aliyun ACR
 
-on:
-  push:
-    branches:
-      - master  # 在主分支推送时触发
+# env:
+#   JWT_SECRET: ${{ secrets.JWT_SECRET }}
+#   ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+#   ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+#   OSS_BUCKET: ${{ secrets.OSS_BUCKET }}
+#   OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+#   OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+#   OSS_REGION: ${{ secrets.OSS_REGION }}
+#   MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# on:
+#   push:
+#     branches:
+#       - master  # 监听 master 分支的 push 事件
 
-    steps:
-      # 获取代码
-      - name: Checkout code
-        uses: actions/checkout@v2
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
 
-      # 设置 Docker 构建环境
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+#     steps:
+#       - name: 🛠️ 检出代码
+#         uses: actions/checkout@v3
 
-      # 登录 Docker Hub 或 阿里云 ACR
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
-        with:
-          registry: registry.cn-hangzhou.aliyuncs.com
-          username: ${{ secrets.ALIYUN_USERNAME }}
-          password: ${{ secrets.ALIYUN_PASSWORD }}
+#       - name: 🔥 设置 Docker Buildx
+#         uses: docker/setup-buildx-action@v2
 
-      # 构建 Docker 镜像
-      - name: Build Docker image
-        run: |
-          docker build -t registry.cn-hangzhou.aliyuncs.com/your-repo/your-image:${{ github.sha }} .
+#       - name: 🔑 登录阿里云 ACR
+#         run: |
+#           echo "${{ secrets.ALIYUN_PASSWORD }}" | docker login crpi-cf03hdggev5ayd17.cn-beijing.personal.cr.aliyuncs.com -u "${{ secrets.ALIYUN_USERNAME }}" --password-stdin
 
-      # 推送镜像到阿里云 ACR
-      - name: Push Docker image to Aliyun
-        run: |
-          docker push registry.cn-hangzhou.aliyuncs.com/your-repo/your-image:${{ github.sha }}
+#       - name: 🏗️ 构建 Docker 镜像（传递环境变量）
+#         run: |
+#           docker build \
+#             --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
+#             --build-arg ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+#             --build-arg ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }} \
+#             --build-arg OSS_BUCKET=${{ secrets.OSS_BUCKET }} \
+#             --build-arg OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }} \
+#             --build-arg OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }} \
+#             --build-arg OSS_REGION=${{ secrets.OSS_REGION }} \
+#             --build-arg MONGODB_URI=${{ secrets.MONGODB_URI }} \
+#             -t blog:latest .
 
-      # 使用 SSH 登录服务器并启动 Docker 容器
-      - name: SSH and deploy on server
-        uses: appleboy/ssh-action@v0.1.0
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: 22
-          script: |
-            docker pull registry.cn-hangzhou.aliyuncs.com/your-repo/your-image:${{ github.sha }}
-            docker stop your-container-name || true
-            docker rm your-container-name || true
-            docker run -d -p 8080:3000 --name your-container-name registry.cn-hangzhou.aliyuncs.com/your-repo/your-image:${{ github.sha }}
+#       - name: 🏷️ 标记（Tag）Docker 镜像
+#         run: |
+#           docker tag blog:latest crpi-cf03hdggev5ayd17.cn-beijing.personal.cr.aliyuncs.com/objectx9/blog:latest
+
+#       - name: 🚀 推送镜像到阿里云 ACR
+#         run: |
+#           docker push crpi-cf03hdggev5ayd17.cn-beijing.personal.cr.aliyuncs.com/objectx9/blog:latest
+
+#   deploy:
+#     runs-on: ubuntu-latest
+#     needs: build-and-push
+#     steps:
+#       - name: 🚀 连接服务器并部署
+#         uses: appleboy/ssh-action@v0.1.7
+#         with:
+#           host: ${{ secrets.VPS_HOST }}  # 服务器 IP
+#           username: ${{ secrets.VPS_USER }}  # SSH 用户名
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}  # SSH 私钥（更安全）
+#           script: |
+#             docker login crpi-cf03hdggev5ayd17.cn-beijing.personal.cr.aliyuncs.com -u "${{ secrets.ALIYUN_USERNAME }}" -p "${{ secrets.ALIYUN_PASSWORD }}"
+#             docker pull crpi-cf03hdggev5ayd17.cn-beijing.personal.cr.aliyuncs.com/objectx9/blog:latest
+#             docker stop blog || true
+#             docker rm -f blog || true
+#             docker run -d --rm \
+#               --name blog -p 3000:3000 \
+#               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+#               -e ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" \
+#               -e ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}" \
+#               -e OSS_BUCKET="${{ secrets.OSS_BUCKET }}" \
+#               -e OSS_ACCESS_KEY_SECRET="${{ secrets.OSS_ACCESS_KEY_SECRET }}" \
+#               -e OSS_ACCESS_KEY_ID="${{ secrets.OSS_ACCESS_KEY_ID }}" \
+#               -e OSS_REGION="${{ secrets.OSS_REGION }}" \
+#               -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
+#               crpi-cf03hdggev5ayd17.cn-beijing.personal.cr.aliyuncs.com/objectx9/blog:latest
