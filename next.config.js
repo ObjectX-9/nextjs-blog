@@ -8,7 +8,7 @@ const nextConfig = {
       "next-blog.oss-cn-beijing.aliyuncs.com",
       "object-x.com.cn",
       "object-x.net.cn",
-      "tnyvhnnczwcz.sealoshzh.site",
+      "sealoshzh.site",
       "p0-xtjj-private.juejin.cn",
     ],
     remotePatterns: [
