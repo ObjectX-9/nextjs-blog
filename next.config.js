@@ -1,62 +1,60 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      "images.unsplash.com",
-      "iad.microlink.io",
-      "avatars.githubusercontent.com",
-      "next-blog.oss-cn-beijing.aliyuncs.com",
-      "object-x.com.cn",
-      "object-x.net.cn",
-      "sealoshzh.site",
-      "p0-xtjj-private.juejin.cn",
-    ],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "github.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.aliyuncs.com",
-      },
-      {
-        protocol: "http",
-        hostname: "**.aliyuncs.com",
-      },
-      {
-        protocol: "https",
-        hostname: "object-x.com.cn",
-      },
-      {
-        protocol: "https",
-        hostname: "object-x.net.cn",
-      },
-      {
-        protocol: "http",
-        hostname: "object-x.com.cn",
-      },
-      {
-        protocol: "http",
-        hostname: "object-x.net.cn",
-      }
-    ],
+    unoptimized: true, // 关闭 Next.js 的图片优化
+    // domains: [
+    //   "images.unsplash.com",
+    //   "iad.microlink.io",
+    //   "avatars.githubusercontent.com",
+    //   "next-blog.oss-cn-beijing.aliyuncs.com",
+    //   "object-x.com.cn",
+    //   "object-x.net.cn",
+    //   "sealoshzh.site",
+    //   "p0-xtjj-private.juejin.cn",
+    // ],
+    // remotePatterns: [
+    //   {
+    //     protocol: "https",
+    //     hostname: "github.com",
+    //   },
+    //   {
+    //     protocol: "https",
+    //     hostname: "**.githubusercontent.com",
+    //   },
+    //   {
+    //     protocol: "https",
+    //     hostname: "**.aliyuncs.com",
+    //   },
+    //   {
+    //     protocol: "http",
+    //     hostname: "**.aliyuncs.com",
+    //   },
+    //   {
+    //     protocol: "https",
+    //     hostname: "object-x.com.cn",
+    //   },
+    //   {
+    //     protocol: "https",
+    //     hostname: "object-x.net.cn",
+    //   },
+    //   {
+    //     protocol: "http",
+    //     hostname: "object-x.com.cn",
+    //   },
+    //   {
+    //     protocol: "http",
+    //     hostname: "object-x.net.cn",
+    //   },
+    // ],
   },
-  minimumCacheTTL: 60,
-  dangerouslyAllowSVG: true,
-  contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   transpilePackages: ["antd", "@ant-design/icons"],
   compiler: {
     // 生产环境移除 console
     removeConsole:
       process.env.NODE_ENV === "production"
         ? {
-          exclude: ["error"], // 保留 console.error
-        }
+            exclude: ["error"], // 保留 console.error
+          }
         : false,
   },
   async headers() {
