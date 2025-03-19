@@ -14,7 +14,17 @@ const inter = Inter({ subsets: ["latin"] });
 export async function generateMetadata(): Promise<Metadata> {
   const db = await getDb();
   const site = await db.collection("sites").findOne({});
-
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'ObjectX 博客-一个专注前端 & Ai的网站',
+    url: 'https://object-x.net.cn',
+    logo: site?.logo || 'https://object-x.net.cn/logo.png',
+    sameAs: [
+      site?.social?.github || 'https://github.com/objectx',
+      // 其他社交媒体链接
+    ]
+  };
   return {
     title: site?.title || "ObjectX's blog",
     description:
@@ -26,12 +36,14 @@ export async function generateMetadata(): Promise<Metadata> {
       description: site?.seo?.description || "ObjectX's articles about programming and life",
       type: "website",
     },
-    other:
-      site?.isOpenAdsense && site?.googleAdsenseId
+    other: {
+      ...site?.isOpenAdsense && site?.googleAdsenseId
         ? {
             "google-adsense-account": `ca-pub-${site.googleAdsenseId}`,
           }
         : {},
+      'script:ld+json': JSON.stringify(jsonLd),
+    },
   };
 }
 
