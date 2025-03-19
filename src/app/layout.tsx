@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
       site?.seo?.description || "ObjectX's articles about programming and life",
     keywords: site?.seo?.keywords || [],
     openGraph: {
-      title: site?.title || "ObjectX's blog2132132132",
+      title: 'ObjectX 博客’ 一个专注前端 & Ai的网站,',
       siteName: "ObjectX 博客",
       description: site?.seo?.description || "ObjectX's articles about programming and life",
       type: "website",
