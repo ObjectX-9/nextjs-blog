@@ -39,13 +39,32 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
       ...site?.isOpenAdsense && site?.googleAdsenseId
         ? {
-            "google-adsense-account": `ca-pub-${site.googleAdsenseId}`,
-          }
+          "google-adsense-account": `ca-pub-${site.googleAdsenseId}`,
+        }
         : {},
       'script:ld+json': JSON.stringify(jsonLd),
     },
   };
 }
+
+const jsonLdData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "如何优化 Next.js 网站的 SEO",
+  "author": {
+    "@type": "Person",
+    "name": "ObjectX"
+  },
+  "datePublished": "2025-03-18",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ObjectX 博客",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://example.com/logo.png"
+    }
+  }
+};
 
 export default function RootLayout({
   children,
@@ -56,6 +75,10 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <GoogleTagManagerHead />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
+        />
       </head>
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
