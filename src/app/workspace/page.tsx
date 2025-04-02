@@ -5,6 +5,7 @@ import { ItemType, Table } from "@/components/Table";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useLocalCache } from "@/app/hooks/useLocalCache";
+import { WorkspaceSkeleton } from "@/components/workspace/WorkspaceSkeleton";
 
 // 缓存键常量
 const CACHE_KEYS = {
@@ -18,6 +19,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5分钟
 export default function Workspace() {
   const [workspaceItems, setWorkspaceItems] = useState<ItemType[]>([]);
   const [bgImages, setBgImages] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { getFromCache, setCache } = useLocalCache(CACHE_DURATION);
 
   // 获取站点信息
@@ -64,9 +66,12 @@ export default function Workspace() {
 
   useEffect(() => {
     const fetchWorkspaceItems = async () => {
+      setIsLoading(true);
+      
       const cached = getFromCache<ItemType[]>(CACHE_KEYS.WORKSPACE_ITEMS);
       if (cached) {
         setWorkspaceItems(cached);
+        setIsLoading(false);
         return;
       }
 
@@ -84,6 +89,8 @@ export default function Workspace() {
         }
       } catch (error) {
         console.error("Error fetching workspace items:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -106,6 +113,14 @@ export default function Workspace() {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
+        <WorkspaceSkeleton />
+      </main>
+    );
+  }
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
