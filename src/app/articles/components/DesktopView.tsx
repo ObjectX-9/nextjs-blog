@@ -1,5 +1,7 @@
 import { Article, ArticleCategory } from '@/app/model/article';
 import { ArticleSkeletonDesktop } from './Skeletons';
+import Link from 'next/link';
+import { RssIcon } from '@/components/icons/RssIcon';
 
 interface DesktopViewProps {
   categories: ArticleCategory[];
@@ -24,7 +26,17 @@ export const DesktopView = ({
     <div className="w-[22vw] border-r bg-white">
       <div className="sticky top-0 h-screen overflow-y-auto">
         <nav className="p-4">
-          <h2 className="text-lg font-bold mb-4">技术文档</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold">技术文档</h2>
+            <Link 
+              href="/api/rss?type=articles"
+              target="_blank"
+              className="text-orange-500 hover:text-orange-600"
+              title="订阅全部文章"
+            >
+              <RssIcon className="w-4 h-4" isSelected={false} />
+            </Link>
+          </div>
           {categories.map((category) => (
             <button
               key={category._id}
@@ -54,12 +66,26 @@ export const DesktopView = ({
                     </span>
                   </div>
                 </div>
-                <span className={`text-sm ${selectedCategory === category._id
-                  ? 'text-white/60'
-                  : 'text-gray-400'
-                  }`}>
-                  {categoryCounts[category._id!] || 0} 篇
-                </span>
+
+                <div className="flex items-center">
+                  <span className={`text-sm ${selectedCategory === category._id
+                    ? 'text-white/60'
+                    : 'text-gray-400'
+                    }`}>
+                    {categoryCounts[category._id!] || 0} 篇
+                  </span>
+                  {selectedCategory === category._id && (
+                    <Link 
+                      href={`/api/rss?type=articles&categoryId=${category._id}`}
+                      target="_blank"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-orange-500 hover:text-orange-600 ml-2"
+                      title={`订阅 ${category.name} 分类`}
+                    >
+                      <RssIcon className="w-3 h-3" isSelected={true} />
+                    </Link>
+                  )}
+                </div>
               </div>
             </button>
           ))}
@@ -70,9 +96,22 @@ export const DesktopView = ({
     <div className="flex-1 border-r pl-8 bg-white">
       <div className="sticky top-0 h-screen overflow-y-auto">
         <nav className="p-4">
-          <h2 className="text-lg font-bold mb-4">
-            {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold">
+              {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
+            </h2>
+            {selectedCategory && (
+              <Link 
+                href={`/api/rss?type=articles&categoryId=${selectedCategory}`}
+                target="_blank"
+                className="text-black hover:text-orange-600"
+                title="订阅当前分类"
+              >
+                <RssIcon className="w-4 h-4" isSelected={false} />
+              </Link>
+            )}
+          </div>
+
           {loading ? (
             <ArticleSkeletonDesktop />
           ) : filteredArticles.length > 0 ? (

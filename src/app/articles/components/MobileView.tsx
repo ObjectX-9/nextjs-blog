@@ -1,5 +1,7 @@
 import { Article, ArticleCategory } from '@/app/model/article';
 import { ArticleSkeleton } from './Skeletons';
+import Link from 'next/link';
+import { RssIcon } from '@/components/icons/RssIcon';
 
 interface MobileViewProps {
   currentView: 'categories' | 'articles';
@@ -28,7 +30,17 @@ export const MobileView = ({
     >
       <div className="flex flex-col h-full">
         <div className="p-4 border-b">
-          <h2 className="text-lg font-bold">技术文档分类</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold">技术文档分类</h2>
+            <Link 
+              href="/api/rss?type=articles"
+              target="_blank"
+              className="text-orange-500"
+              title="订阅全部文章"
+            >
+              <RssIcon className="w-4 h-4" isSelected={false} />
+            </Link>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 pt-0">
@@ -38,8 +50,17 @@ export const MobileView = ({
                 onClick={() => handleCategorySelect(category._id!)}
                 className="w-full text-left p-3 border-b last:border-b-0 relative group hover:bg-gray-50"
               >
-                <div className="flex items-center min-h-[40px]">
+                <div className="flex items-center justify-between min-h-[40px]">
                   <span className="text-base font-medium truncate">{category.name}</span>
+                  <Link 
+                    href={`/api/rss?type=articles&categoryId=${category._id}`}
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-orange-500"
+                    title={`订阅 ${category.name} 分类`}
+                  >
+                    <RssIcon className="w-3 h-3" isSelected={false} />
+                  </Link>
                 </div>
               </button>
             ))}
@@ -71,9 +92,21 @@ export const MobileView = ({
       </button>
 
       <div className="p-4 pt-16">
-        <h2 className="text-lg font-bold mb-4">
-          {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold">
+            {categories.find(c => c._id === selectedCategory)?.name || '所有文章'}
+          </h2>
+          {selectedCategory && (
+            <Link 
+              href={`/api/rss?type=articles&categoryId=${selectedCategory}`}
+              target="_blank"
+              className="text-orange-500"
+              title="订阅当前分类"
+            >
+              <RssIcon className="w-4 h-4" isSelected={false} />
+            </Link>
+          )}
+        </div>
         {loading ? (
           <ArticleSkeleton />
         ) : filteredArticles.length > 0 ? (

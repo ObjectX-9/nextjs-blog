@@ -55,14 +55,14 @@ function setCache(key: string, data: any): void {
 // Mobile card view component
 const MobileCard = ({ friend }: { friend: FriendWithId }) => (
   <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex items-center p-3 gap-4">
-    <div className="relative h-16 w-16 flex-shrink-0">
+    <Link href={friend.link} target="_blank" className="relative h-16 w-16 flex-shrink-0">
       <Image
         src={friend.avatar}
         alt={friend.name}
         fill
         className="object-cover rounded-full"
       />
-    </div>
+    </Link>
     <div className="flex-grow min-w-0">
       <h3 className="font-medium text-base mb-0.5 truncate">{friend.name}</h3>
       <p className="text-gray-600 text-sm mb-1 truncate">{friend.title} | {friend.description}</p>
@@ -109,21 +109,23 @@ const DesktopView = ({
           onMouseEnter={() => setHoveredName(friend.name)}
           onMouseLeave={() => setHoveredName(null)}
         >
-          <Image
-            key={`image-${friend.name}-${index}`}
-            src={friend.avatar}
-            alt={friend.name}
-            fill
-            className={`object-cover transition-transform duration-300 ${hoveredName === friend.name ? "scale-125 brightness-75" : ""
-              }`}
-            style={
-              {
-                "--is": `--${friend.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}-avatar`,
-              } as any
-            }
-          />
+          <Link href={friend.link} target="_blank">
+            <Image
+              key={`image-${friend.name}-${index}`}
+              src={friend.avatar}
+              alt={friend.name}
+              fill
+              className={`object-cover transition-transform duration-300 ${hoveredName === friend.name ? "scale-125 brightness-75" : ""
+                }`}
+              style={
+                {
+                  "--is": `--${friend.name
+                    .toLowerCase()
+                    .replace(/\s+/g, "-")}-avatar`,
+                } as any
+              }
+            />
+          </Link>
         </li>
       ))}
     </ul>
