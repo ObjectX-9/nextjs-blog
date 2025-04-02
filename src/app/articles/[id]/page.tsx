@@ -7,6 +7,13 @@ import "@/styles/markdown.css";
 import { useParams, useRouter } from "next/navigation";
 import { useSiteStore } from "@/store/site";
 import Image from "next/image";
+import { useLocalCache } from "@/app/hooks/useLocalCache";
+
+// 缓存键常量
+const CACHE_KEYS = {
+  LAST_CATEGORY: 'lastCategory',
+  ARTICLE_VERIFICATION: 'article_verification'
+};
 
 interface VerificationState {
   verified: boolean;
@@ -32,6 +39,7 @@ export default function ArticleDetailPage() {
 
   // 站点配置
   const { site } = useSiteStore();
+  const { getFromCache, setCache, clearCache } = useLocalCache();
 
   // 检测移动端视图
   useEffect(() => {
@@ -80,12 +88,32 @@ export default function ArticleDetailPage() {
     const fetchArticle = async () => {
       try {
         setLoading(true);
+        // 检查缓存中是否有文章数据
+        const cacheKey = `article_${params.id}`;
+        const cachedArticle = getFromCache<Article>(cacheKey);
+        
+        if (cachedArticle) {
+          setArticle(cachedArticle);
+          setLoading(false);
+          
+          // 后台更新浏览量，不影响用户体验
+          fetch(`/api/articles/${params.id}/view`, {
+            method: "POST",
+          }).catch(err => console.error("更新浏览量失败:", err));
+          
+          return;
+        }
+        
+        // 没有缓存，从API获取
         const response = await fetch(`/api/articles?id=${params.id}`);
         if (!response.ok) {
           throw new Error("获取文章失败");
         }
         const data = await response.json();
         setArticle(data);
+        
+        // 缓存文章数据，设置较长的缓存时间（30分钟）
+        setCache(cacheKey, data, 30 * 60 * 1000);
 
         // 增加浏览量
         await fetch(`/api/articles/${params.id}/view`, {
@@ -101,7 +129,7 @@ export default function ArticleDetailPage() {
     if (params.id) {
       fetchArticle();
     }
-  }, [params.id]);
+  }, [params.id, getFromCache, setCache]);
 
   // 验证码相关状态
   useEffect(() => {
@@ -113,15 +141,15 @@ export default function ArticleDetailPage() {
         return;
       }
 
-      const storedVerification = localStorage.getItem("article_verification");
+      const storedVerification = getFromCache<VerificationState>(CACHE_KEYS.ARTICLE_VERIFICATION);
       if (storedVerification) {
-        const verification: VerificationState = JSON.parse(storedVerification);
+        const verification: VerificationState = storedVerification;
         if (verification.expireTime > Date.now()) {
           setIsVerified(true);
           setShowVerification(false);
           return;
         } else {
-          localStorage.removeItem("article_verification");
+          clearCache(CACHE_KEYS.ARTICLE_VERIFICATION);
         }
       }
       setShowVerification(true);
@@ -193,10 +221,7 @@ export default function ArticleDetailPage() {
           verified: true,
           expireTime: activateData.expireTime,
         };
-        localStorage.setItem(
-          "article_verification",
-          JSON.stringify(verification)
-        );
+        setCache(CACHE_KEYS.ARTICLE_VERIFICATION, verification);
       } else {
         setVerificationError(data.message || "验证码无效，请重试");
       }
@@ -377,9 +402,8 @@ export default function ArticleDetailPage() {
 
         {/* 固定在顶部的标题和目录 */}
         <div
-          className={`fixed top-0 left-0 right-0 bg-white z-10 transition-transform duration-300 ${
-            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-          }`}
+          className={`fixed top-0 left-0 right-0 bg-white z-10 transition-transform duration-300 ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"
+            }`}
         >
           <div className="p-4 border-b">
             <h1 className="text-xl font-bold mb-4 text-center truncate px-12">
@@ -392,9 +416,8 @@ export default function ArticleDetailPage() {
               className="flex items-center text-gray-600 hover:text-black mb-2"
             >
               <svg
-                className={`w-4 h-4 mr-2 transition-transform ${
-                  showToc ? "rotate-0" : "-rotate-90"
-                }`}
+                className={`w-4 h-4 mr-2 transition-transform ${showToc ? "rotate-0" : "-rotate-90"
+                  }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -411,9 +434,8 @@ export default function ArticleDetailPage() {
 
             {/* 文章目录 */}
             <div
-              className={`bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 ${
-                showToc ? "max-h-64" : "max-h-0"
-              }`}
+              className={`bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 ${showToc ? "max-h-64" : "max-h-0"
+                }`}
             >
               <div className="p-4">
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -463,9 +485,8 @@ export default function ArticleDetailPage() {
       <div className="relative min-h-screen w-full">
         {/* 右侧固定目录 */}
         <div
-          className={`fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-lg transition-transform duration-300 ${
-            showSidebar ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-lg transition-transform duration-300 ${showSidebar ? "translate-x-0" : "translate-x-full"
+            }`}
         >
           <div className="sticky top-0 h-screen overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between">
@@ -492,10 +513,9 @@ export default function ArticleDetailPage() {
             <div className="p-6 border-b">
               <button
                 onClick={() => {
-                  const lastCategory = localStorage.getItem("lastCategory");
+                  const lastCategory = getFromCache<string>(CACHE_KEYS.LAST_CATEGORY);
                   router.push(
-                    `/articles${
-                      lastCategory ? `?category=${lastCategory}` : ""
+                    `/articles${lastCategory ? `?category=${lastCategory}` : ""
                     }`
                   );
                 }}
@@ -527,11 +547,10 @@ export default function ArticleDetailPage() {
                   return (
                     <div
                       key={index}
-                      className={`group flex items-center py-1.5 ${
-                        level === 1
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      } hover:text-blue-600 cursor-pointer text-sm transition-colors duration-150 ease-in-out`}
+                      className={`group flex items-center py-1.5 ${level === 1
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        } hover:text-blue-600 cursor-pointer text-sm transition-colors duration-150 ease-in-out`}
                       style={{ paddingLeft: `${(level - 1) * 1}rem` }}
                       onClick={() => {
                         const element = document.getElementById(
@@ -551,9 +570,8 @@ export default function ArticleDetailPage() {
 
         {/* 主要内容区域 */}
         <div
-          className={`transition-[margin] duration-300 ${
-            showSidebar ? "mr-[20vw]" : "mr-0"
-          } border-r h-screen overflow-y-auto`}
+          className={`transition-[margin] duration-300 ${showSidebar ? "mr-[20vw]" : "mr-0"
+            } border-r h-screen overflow-y-auto`}
         >
           <div className="max-w-4xl mx-auto py-8 px-8 relative">
             {!showSidebar && (

@@ -23,8 +23,8 @@ export function useLocalCache(cacheDuration = DEFAULT_CACHE_DURATION) {
       const cached = localStorage.getItem(key);
       if (!cached) return null;
 
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp > cacheDuration) {
+      const { data, timestamp, expiry } = JSON.parse(cached);
+      if (Date.now() - timestamp > (expiry || cacheDuration)) {
         localStorage.removeItem(key);
         return null;
       }
@@ -40,8 +40,9 @@ export function useLocalCache(cacheDuration = DEFAULT_CACHE_DURATION) {
    * 将数据存入缓存
    * @param key 缓存键名
    * @param data 要缓存的数据
+   * @param duration 可选的缓存时间（毫秒），覆盖默认值
    */
-  const setCache = useCallback(<T>(key: string, data: T): void => {
+  const setCache = useCallback(<T>(key: string, data: T, duration?: number): void => {
     if (typeof window === "undefined") return;
     
     try {
@@ -50,12 +51,13 @@ export function useLocalCache(cacheDuration = DEFAULT_CACHE_DURATION) {
         JSON.stringify({
           data,
           timestamp: Date.now(),
+          expiry: duration || cacheDuration
         })
       );
     } catch (error) {
       console.error(`写入缓存出错 (${key}):`, error);
     }
-  }, []);
+  }, [cacheDuration]);
 
   /**
    * 清除指定键的缓存

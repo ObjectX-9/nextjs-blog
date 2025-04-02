@@ -6,6 +6,14 @@ import { Article, ArticleCategory } from '@/app/model/article';
 import { ArticleSkeleton, ArticleSkeletonDesktop, CategorySkeleton } from './components/Skeletons';
 import { MobileView } from './components/MobileView';
 import { DesktopView } from './components/DesktopView';
+import { useLocalCache } from '@/app/hooks/useLocalCache';
+
+// 缓存键常量
+const CACHE_KEYS = {
+  LAST_CATEGORY: 'lastCategory',
+  ARTICLES: 'cachedArticles',
+  CATEGORIES: 'cachedCategories',
+};
 
 export default function ArticlesPage() {
   const router = useRouter();
@@ -17,6 +25,7 @@ export default function ArticlesPage() {
   const [isMobileView, setIsMobileView] = useState(false);
   const [currentView, setCurrentView] = useState<'categories' | 'articles'>('categories');
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const { getFromCache, setCache } = useLocalCache();
 
   useEffect(() => {
     const checkMobileView = () => {
@@ -32,16 +41,38 @@ export default function ArticlesPage() {
   }, []);
 
   const fetchAllArticles = useCallback(async () => {
+    // 先检查缓存
+    const cachedArticles = getFromCache<Article[]>(CACHE_KEYS.ARTICLES);
+    if (cachedArticles && cachedArticles.length > 0) {
+      console.log('使用缓存的文章数据');
+      setAllArticles(cachedArticles);
+      return cachedArticles;
+    }
+
+    console.log('从API获取文章数据');
     const response = await fetch('/api/articles?status=published');
     if (!response.ok) {
       throw new Error('获取文章列表失败');
     }
     const data = await response.json();
     const sortedArticles = sortArticles(data.articles || []);
+
+    // 缓存结果
+    setCache(CACHE_KEYS.ARTICLES, sortedArticles);
     setAllArticles(sortedArticles);
-  }, []);
+    return sortedArticles;
+  }, [getFromCache, setCache]);
 
   const fetchCategories = useCallback(async () => {
+    // 先检查缓存
+    const cachedCategories = getFromCache<ArticleCategory[]>(CACHE_KEYS.CATEGORIES);
+    if (cachedCategories && cachedCategories.length > 0) {
+      console.log('使用缓存的分类数据');
+      setCategories(cachedCategories);
+      return cachedCategories;
+    }
+
+    console.log('从API获取分类数据');
     const response = await fetch('/api/articles/categories');
     if (!response.ok) {
       throw new Error('获取分类列表失败');
@@ -59,8 +90,12 @@ export default function ArticlesPage() {
       }
       return a.name.localeCompare(b.name);
     });
+
+    // 缓存结果
+    setCache(CACHE_KEYS.CATEGORIES, sortedCategories);
     setCategories(sortedCategories);
-  }, []);
+    return sortedCategories;
+  }, [getFromCache, setCache]);
 
   useEffect(() => {
     if (allArticles.length && categories.length) {
@@ -76,17 +111,25 @@ export default function ArticlesPage() {
     const init = async () => {
       try {
         setLoading(true);
-        await fetchAllArticles();
-        await fetchCategories();
+
+        // 并行获取数据
+        const [articlesResult, categoriesResult] = await Promise.all([
+          fetchAllArticles(),
+          fetchCategories()
+        ]);
 
         const urlParams = new URLSearchParams(window.location.search);
         const categoryFromUrl = urlParams.get('category');
         if (categoryFromUrl) {
           setSelectedCategory(categoryFromUrl);
         } else {
-          const lastCategory = localStorage.getItem('lastCategory');
+          const lastCategory = getFromCache<string>(CACHE_KEYS.LAST_CATEGORY);
           if (lastCategory) {
             setSelectedCategory(lastCategory);
+          } else if (categoriesResult && categoriesResult.length > 0) {
+            // 如果没有上次选择的分类，默认选择第一个分类
+            setSelectedCategory(categoriesResult[0]._id!);
+            setCache(CACHE_KEYS.LAST_CATEGORY, categoriesResult[0]._id!);
           }
         }
       } catch (error) {
@@ -97,8 +140,7 @@ export default function ArticlesPage() {
     };
 
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchAllArticles, fetchCategories, getFromCache, setCache]);
 
   useEffect(() => {
     if (selectedCategory) {
@@ -126,7 +168,13 @@ export default function ArticlesPage() {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    localStorage.setItem('lastCategory', categoryId);
+    setCache(CACHE_KEYS.LAST_CATEGORY, categoryId);
+
+    // 更新 URL 参数，不影响页面刷新
+    const url = new URL(window.location.href);
+    url.searchParams.set('category', categoryId);
+    window.history.replaceState({}, '', url.toString());
+
     if (isMobileView) {
       setCurrentView('articles');
     }
