@@ -2,6 +2,16 @@ import { useState, useCallback } from "react";
 import { message } from "antd";
 import { SiteWithId, EditableSite, CaptchaDetail, FileState } from "../types";
 import { api } from "../api";
+import { useLocalCache } from "../../../hooks/useLocalCache";
+
+// 缓存键常量
+const CACHE_KEYS = {
+  SITE_INFO: 'admin_site_info',
+  CAPTCHAS: 'admin_captchas',
+};
+
+// 缓存时间常量（30分钟）
+const CACHE_DURATION = 30 * 60 * 1000;
 
 // 默认值
 export const defaultSite: SiteWithId = {
@@ -55,10 +65,23 @@ export const useSiteManagement = () => {
   });
   const [captchas, setCaptchas] = useState<CaptchaDetail[]>([]);
   const [isLoadingCaptchas, setIsLoadingCaptchas] = useState(false);
+  
+  // 使用本地缓存钩子
+  const { getFromCache, setCache, clearCache } = useLocalCache(CACHE_DURATION);
 
   // 获取网站信息
   const fetchSite = useCallback(async () => {
     try {
+      // 先尝试从缓存获取
+      const cachedSite = getFromCache<SiteWithId>(CACHE_KEYS.SITE_INFO);
+      if (cachedSite) {
+        console.log('从缓存获取网站信息');
+        setSite(cachedSite);
+        setEditedSite(cachedSite as EditableSite);
+        return;
+      }
+
+      console.log('从API获取网站信息');
       const data = await api.fetchSite();
       if (data.success && data.site) {
         const siteWithDefaults = {
@@ -74,12 +97,15 @@ export const useSiteManagement = () => {
         };
         setSite(siteWithDefaults);
         setEditedSite(siteWithDefaults as EditableSite);
+        
+        // 缓存网站信息
+        setCache(CACHE_KEYS.SITE_INFO, siteWithDefaults);
       }
     } catch (error) {
       console.error("获取网站信息失败:", error);
       messageApi.error("获取网站信息失败");
     }
-  }, [messageApi]);
+  }, [messageApi, getFromCache, setCache]);
 
   const handleInputChange = useCallback((field: string, value: any) => {
     setEditedSite((prev) => {
@@ -189,6 +215,8 @@ export const useSiteManagement = () => {
         "wechatGroup",
         "backgroundImage",
         "author.avatar",
+        "workspaceBgUrl1",
+        "workspaceBgUrl2",
       ] as const;
 
       type ImageField = typeof imageFields[number];
@@ -243,6 +271,12 @@ export const useSiteManagement = () => {
             case "backgroundImage":
               updatedSite.backgroundImage = url;
               break;
+            case "workspaceBgUrl1":
+              updatedSite.workspaceBgUrl1 = url;
+              break;
+            case "workspaceBgUrl2":
+              updatedSite.workspaceBgUrl2 = url;
+              break;
           }
         }
       });
@@ -276,6 +310,9 @@ export const useSiteManagement = () => {
           isUploading: {},
         });
         setIsEditing(false);
+        
+        // 清除缓存，确保下次获取最新数据
+        clearCache(CACHE_KEYS.SITE_INFO);
         await fetchSite();
       } else if (data.errors) {
         messageApi.error(data.errors.join("、"));
@@ -284,7 +321,7 @@ export const useSiteManagement = () => {
       console.error("更新网站信息失败:", error);
       messageApi.error(error.message || "更新网站信息失败");
     }
-  }, [editedSite, fileState.selectedFiles, uploadFile, messageApi, fetchSite]);
+  }, [editedSite, fileState.selectedFiles, uploadFile, messageApi, fetchSite, clearCache]);
 
   const handleCancel = useCallback(() => {
     setEditedSite(site as EditableSite);
@@ -299,16 +336,30 @@ export const useSiteManagement = () => {
   const fetchAllCaptchas = useCallback(async () => {
     try {
       setIsLoadingCaptchas(true);
+      
+      // 先尝试从缓存获取
+      const cachedCaptchas = getFromCache<CaptchaDetail[]>(CACHE_KEYS.CAPTCHAS);
+      if (cachedCaptchas) {
+        console.log('从缓存获取验证码列表');
+        setCaptchas(cachedCaptchas);
+        setIsLoadingCaptchas(false);
+        return;
+      }
+      
+      console.log('从API获取验证码列表');
       const data = await api.getAllCaptchas();
       if (data.success) {
-        setCaptchas(
-          data.captchas.map((captcha: any) => ({
-            ...captcha,
-            createdAt: new Date(captcha.createdAt),
-            expiresAt: new Date(captcha.expiresAt),
-            activatedAt: captcha.activatedAt ? new Date(captcha.activatedAt) : undefined,
-          }))
-        );
+        const formattedCaptchas = data.captchas.map((captcha: any) => ({
+          ...captcha,
+          createdAt: new Date(captcha.createdAt),
+          expiresAt: new Date(captcha.expiresAt),
+          activatedAt: captcha.activatedAt ? new Date(captcha.activatedAt) : undefined,
+        }));
+        
+        setCaptchas(formattedCaptchas);
+        
+        // 缓存验证码列表（使用较短的缓存时间，因为验证码可能会频繁变化）
+        setCache(CACHE_KEYS.CAPTCHAS, formattedCaptchas, 5 * 60 * 1000); // 5分钟
       }
     } catch (error) {
       console.error("获取验证码列表失败:", error);
@@ -316,7 +367,7 @@ export const useSiteManagement = () => {
     } finally {
       setIsLoadingCaptchas(false);
     }
-  }, [messageApi]);
+  }, [messageApi, getFromCache, setCache]);
 
   return {
     site,
