@@ -12,9 +12,10 @@ import { Education } from "@/components/HomePage/Education";
 import { WebRunInfo } from '@/components/HomePage/WebRunInfo'
 import { WebControlInfo } from '@/components/HomePage/WebControlInfo'
 import { calculateDuration } from "@/utils/time";
+import { createCachedFetcher } from "@/utils/serverCache";
 
-// 服务端组件
-async function getSocialLinks() {
+// 使用缓存包装数据获取函数
+const getSocialLinks = createCachedFetcher(async () => {
   try {
     const db = await getDb();
     const socialLinks = await db
@@ -26,9 +27,9 @@ async function getSocialLinks() {
     console.error("Error fetching social links:", error);
     return [];
   }
-}
+});
 
-async function getWorkExperiences() {
+const getWorkExperiences = createCachedFetcher(async () => {
   try {
     const db = await getDb();
     const workExperiences = await db
@@ -41,9 +42,9 @@ async function getWorkExperiences() {
     console.error("Error fetching work experiences:", error);
     return [];
   }
-}
+});
 
-async function getArticles() {
+const getArticles = createCachedFetcher(async () => {
   try {
     const db = await getDb();
     const articles = await db
@@ -56,13 +57,14 @@ async function getArticles() {
     console.error("Error fetching articles:", error);
     return [] as (Article & { _id?: any })[];
   }
-}
+});
 
 export default async function App() {
-  const socialLinks = await getSocialLinks();
-  const workExperiences = await getWorkExperiences();
-  const articles = await getArticles();
-
+  const [socialLinks, workExperiences, articles] = await Promise.all([
+    getSocialLinks(),
+    getWorkExperiences(),
+    getArticles()
+  ]);
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
       <HomeHeader />

@@ -8,6 +8,8 @@ import { getDb } from "@/lib/mongodb";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import GoogleTagManagerHead from "@/components/GoogleTagManagerHead";
 import GoogleTagManagerBody from "@/components/GoogleTagManagerBody";
+import Loading from "./Loading";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -83,7 +85,11 @@ export default function RootLayout({
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
           <GoogleTagManagerBody />
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <LayoutWrapper>
+            <Suspense fallback={<Loading />}>
+              {children}
+            </Suspense>
+          </LayoutWrapper>
         </SiteProvider>
       </body>
     </html>
