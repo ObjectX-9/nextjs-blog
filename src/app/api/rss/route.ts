@@ -3,6 +3,9 @@ import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import RSS from "rss";
 
+// 使用force-dynamic确保路由在运行时动态生成，而不是尝试静态生成
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

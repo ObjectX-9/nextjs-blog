@@ -1,0 +1,29 @@
+# 排除环境变量文件
+.env
+.env.local
+.env.development
+.env.production
+
+# 排除 node_modules
+node_modules
+
+# 排除版本控制文件
+.git
+.gitignore
+
+# 排除构建输出
+# .next  # 注释掉，允许复制 .next 目录
+out
+build
+dist
+
+# 排除日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 排除其他不需要的文件
+README.md
+LICENSE
+.DS_Store

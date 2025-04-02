@@ -298,16 +298,44 @@ export default function InspirationPage() {
       if (!scrollContainer) return;
 
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      
+      // 添加日志帮助调试
+      console.log('Scroll detected:', {
+        scrollTop,
+        clientHeight,
+        scrollHeight,
+        threshold: scrollHeight - 100,
+        current: scrollTop + clientHeight,
+        hasMore,
+        isLoadingMore
+      });
 
-      // 当滚动到距离底部50px时触发加载
-      if (scrollTop + clientHeight >= scrollHeight - 50 && hasMore && !isLoadingMore) {
+      // 增加触发阈值，从50px改为100px，使其更容易触发
+      if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !isLoadingMore) {
+        console.log('触发加载更多');
         loadMoreInspirations();
       }
     };
 
-    scrollContainer?.addEventListener("scroll", handleScroll);
-    return () => scrollContainer?.removeEventListener("scroll", handleScroll);
-  }, [hasMore, isLoadingMore, loadMoreInspirations]);
+    // 确保滚动容器存在
+    if (scrollContainer) {
+      console.log('添加滚动监听器');
+      scrollContainer.addEventListener("scroll", handleScroll);
+      
+      // 初始检查，如果内容不足以滚动，但有更多数据，则直接加载
+      if (scrollContainer.scrollHeight <= scrollContainer.clientHeight && hasMore && !isLoadingMore && inspirations.length > 0) {
+        console.log('内容不足以滚动，直接加载更多');
+        loadMoreInspirations();
+      }
+    }
+
+    return () => {
+      if (scrollContainer) {
+        console.log('移除滚动监听器');
+        scrollContainer.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMoreInspirations, inspirations.length]);
 
   const handleLike = useCallback(
     async (inspirationId: string) => {
@@ -390,6 +418,15 @@ export default function InspirationPage() {
       <div
         ref={scrollContainerRef}
         className="h-full overflow-y-auto px-4 py-4 sm:py-16"
+        onScroll={(e) => {
+          // 添加额外的滚动事件处理，以防主滚动监听器失效
+          const target = e.currentTarget;
+          const { scrollTop, scrollHeight, clientHeight } = target;
+          if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !isLoadingMore) {
+            console.log('onScroll事件触发加载更多');
+            loadMoreInspirations();
+          }
+        }}
       >
         <div className="w-full max-w-3xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-6">

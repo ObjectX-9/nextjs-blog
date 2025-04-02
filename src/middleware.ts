@@ -22,6 +22,14 @@ const excludedActions = [
   "/stats", // 统计
 ];
 
+// 公开的API路径（不需要管理员权限）
+const publicApiPaths = [
+  "/api/articles/[id]/like",
+  "/api/inspirations/[id]/stats",
+  "/api/demos/[id]",
+  "/api/site",
+];
+
 // 需要管理员权限的操作
 const adminOnlyPaths = [
   {
@@ -62,6 +70,24 @@ export async function middleware(request: NextRequest) {
 
   // 检查是否是公开路径
   if (publicPaths.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next();
+  }
+  
+  // 检查是否是点赞或统计相关的API（不需要管理员权限）
+  // 处理动态路径，如 /api/articles/123/like
+  const isPublicApi = publicApiPaths.some(path => {
+    // 替换动态路径参数 [id] 为正则表达式
+    const pathRegex = new RegExp(
+      "^" + path.replace(/\[id\]/g, "[^/]+") + "$"
+    );
+    return pathRegex.test(pathname) || 
+           // 特殊处理点赞和统计路径
+           (pathname.includes("/like") || 
+            (pathname.includes("/stats") && method === "POST") ||
+            (pathname === "/api/site" && method === "PATCH"));
+  });
+  
+  if (isPublicApi) {
     return NextResponse.next();
   }
 
