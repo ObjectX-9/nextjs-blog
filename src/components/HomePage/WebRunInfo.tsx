@@ -1,15 +1,18 @@
 "use client";
 
 import { useSiteStore } from "@/store/site";
-import { useEffect, useState, useRef, useMemo } from "react";
-import { Heart, Eye, Timer, QrCode, X } from "lucide-react";
+import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
+import { Heart, Eye, QrCode, X } from "lucide-react";
 import Image from "next/image";
+import React from "react";
+import StatIndicator from "./StatIndicator";
+import Divider from "./Divider";
 
 const VISIT_KEY = "site_visited_date";
 const LIKE_KEY = "site_liked";
 
 // 图片预览组件
-const ImagePreview = ({
+const ImagePreview = memo(({
   src,
   alt,
   onClose,
@@ -41,10 +44,12 @@ const ImagePreview = ({
       </div>
     </div>
   );
-};
+});
+
+ImagePreview.displayName = 'ImagePreview';
 
 // Web端二维码展示组件
-const QrcodePopover = ({
+const QrcodePopover = memo(({
   site,
   onClose,
 }: {
@@ -56,9 +61,9 @@ const QrcodePopover = ({
     alt: string;
   } | null>(null);
 
-  const handleImageClick = (src: string, alt: string) => {
+  const handleImageClick = useCallback((src: string, alt: string) => {
     setPreviewImage({ src, alt });
-  };
+  }, []);
 
   return (
     <div className="fixed md:absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-2xl z-[100]">
@@ -144,30 +149,32 @@ const QrcodePopover = ({
       )}
     </div>
   );
-};
+});
+
+QrcodePopover.displayName = 'QrcodePopover';
 
 // 移动端二维码展示组件
-const QrcodeModal = ({ site, onClose }: { site: any; onClose: () => void }) => {
+const QrcodeModal = memo(({ site, onClose }: { site: any; onClose: () => void }) => {
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
   } | null>(null);
 
-  const handleModalClick = (e: React.MouseEvent) => {
+  const handleModalClick = useCallback((e: React.MouseEvent) => {
     // 点击背景时关闭
     if (e.target === e.currentTarget) {
       onClose();
     }
-  };
+  }, [onClose]);
 
-  const handleCloseClick = (e: React.MouseEvent) => {
+  const handleCloseClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡
     onClose();
-  };
+  }, [onClose]);
 
-  const handleImageClick = (src: string, alt: string) => {
+  const handleImageClick = useCallback((src: string, alt: string) => {
     setPreviewImage({ src, alt });
-  };
+  }, []);
 
   return (
     <div
@@ -264,22 +271,28 @@ const QrcodeModal = ({ site, onClose }: { site: any; onClose: () => void }) => {
       )}
     </div>
   );
-};
+});
+
+QrcodeModal.displayName = 'QrcodeModal';
 
 export const WebRunInfo = () => {
   const { site, updateVisitCount, updateLikeCount } = useSiteStore();
-  const [runningTime, setRunningTime] = useState("");
-  const [isLiking, setIsLiking] = useState(false);
-  const [hasLiked, setHasLiked] = useState(false);
-  const [showQrcode, setShowQrcode] = useState(false);
+
+  const [state, setState] = useState({
+    isLiking: false,
+    hasLiked: false,
+    showQrcode: false,
+    isMobile: false
+  });
+
   const qrcodeRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout>();
-  const [isMobile, setIsMobile] = useState(false);
 
+  // 检测移动设备
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setState(prev => ({ ...prev, isMobile: window.innerWidth < 768 }));
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -291,37 +304,17 @@ export const WebRunInfo = () => {
     };
   }, []);
 
+  // 检查点赞状态
   useEffect(() => {
     try {
       const likedStatus = localStorage.getItem(LIKE_KEY) === "true";
-      setHasLiked(likedStatus);
+      setState(prev => ({ ...prev, hasLiked: likedStatus }));
     } catch (error) {
       console.error("Error getting liked status:", error);
     }
   }, []);
 
-  useEffect(() => {
-    const calculateRunningTime = () => {
-      const now = new Date();
-      const createdAt = site?.createdAt
-        ? new Date(site.createdAt)
-        : new Date("2024-01-01");
-      const diff = now.getTime() - createdAt.getTime();
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(
-        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-      );
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-      setRunningTime(`${days}天${hours}时${minutes}分`);
-    };
-
-    calculateRunningTime();
-    const timer = setInterval(calculateRunningTime, 60000);
-    return () => clearInterval(timer);
-  }, [site?.createdAt]);
-
+  // 更新访问量
   useEffect(() => {
     const checkAndUpdateVisit = async () => {
       try {
@@ -337,10 +330,8 @@ export const WebRunInfo = () => {
         } else {
           try {
             const { date, timestamp } = JSON.parse(lastVisitData);
-            if (
-              date !== today ||
-              currentTime - timestamp > 12 * 60 * 60 * 1000
-            ) {
+            // 如果是新的一天或者距离上次访问超过12小时
+            if (date !== today || currentTime - timestamp > 12 * 60 * 60 * 1000) {
               shouldUpdate = true;
             }
           } catch {
@@ -370,123 +361,113 @@ export const WebRunInfo = () => {
     return () => clearTimeout(timeoutId);
   }, [updateVisitCount]);
 
-  const handleLike = async () => {
-    if (isLiking || hasLiked) return;
-    setIsLiking(true);
+  // 处理点赞
+  const handleLike = useCallback(async () => {
+    if (state.isLiking || state.hasLiked) return;
+
+    setState(prev => ({ ...prev, isLiking: true }));
     try {
       await updateLikeCount();
       localStorage.setItem(LIKE_KEY, "true");
-      setHasLiked(true);
+      setState(prev => ({ ...prev, hasLiked: true, isLiking: false }));
     } catch (error) {
       console.error("Error liking site:", error);
-    } finally {
-      setIsLiking(false);
+      setState(prev => ({ ...prev, isLiking: false }));
     }
-  };
+  }, [state.isLiking, state.hasLiked, updateLikeCount]);
 
-  const handleMouseEnter = () => {
-    if (!isMobile) {
+  // 处理鼠标进入
+  const handleMouseEnter = useCallback(() => {
+    if (!state.isMobile) {
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
-      setShowQrcode(true);
+      setState(prev => ({ ...prev, showQrcode: true }));
     }
-  };
+  }, [state.isMobile]);
 
-  const handleMouseLeave = (e: React.MouseEvent) => {
-    if (!isMobile && !popoverRef.current?.contains(e.relatedTarget as Node)) {
+  // 处理鼠标离开
+  const handleMouseLeave = useCallback((e: React.MouseEvent) => {
+    if (!state.isMobile && !popoverRef.current?.contains(e.relatedTarget as Node)) {
       closeTimeoutRef.current = setTimeout(() => {
-        setShowQrcode(false);
+        setState(prev => ({ ...prev, showQrcode: false }));
       }, 2000);
     }
-  };
+  }, [state.isMobile]);
 
-  const handlePopoverMouseLeave = (e: React.MouseEvent) => {
-    if (!isMobile && !qrcodeRef.current?.contains(e.relatedTarget as Node)) {
+  // 处理弹出框鼠标离开
+  const handlePopoverMouseLeave = useCallback((e: React.MouseEvent) => {
+    if (!state.isMobile && !qrcodeRef.current?.contains(e.relatedTarget as Node)) {
       closeTimeoutRef.current = setTimeout(() => {
-        setShowQrcode(false);
+        setState(prev => ({ ...prev, showQrcode: false }));
       }, 2000);
     }
-  };
+  }, [state.isMobile]);
 
-  const handlePopoverMouseEnter = () => {
+  // 处理弹出框鼠标进入
+  const handlePopoverMouseEnter = useCallback(() => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
     }
-  };
+  }, []);
 
-  const handleQrcodeClick = (e: React.MouseEvent) => {
+  // 处理二维码点击
+  const handleQrcodeClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡
-    if (isMobile) setShowQrcode(true);
-  };
+    if (state.isMobile) setState(prev => ({ ...prev, showQrcode: true }));
+  }, [state.isMobile]);
 
+  // 点击外部关闭二维码
   useEffect(() => {
-    if (!isMobile) {
+    if (!state.isMobile) {
       const handleClickOutside = (event: MouseEvent) => {
         if (
           qrcodeRef.current &&
           !qrcodeRef.current.contains(event.target as Node)
         ) {
-          setShowQrcode(false);
+          setState(prev => ({ ...prev, showQrcode: false }));
         }
       };
       document.addEventListener("mousedown", handleClickOutside);
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isMobile]);
+  }, [state.isMobile]);
 
+  // 计算二维码数量
   const qrcodeCount = useMemo(() => {
     return [site?.qrcode, site?.appreciationCode, site?.wechatGroup].filter(
       Boolean
     ).length;
   }, [site?.qrcode, site?.appreciationCode, site?.wechatGroup]);
 
-  const hasAnyQrcode = qrcodeCount > 0;
+  // 判断是否有任何二维码
+  const hasAnyQrcode = useMemo(() => qrcodeCount > 0, [qrcodeCount]);
 
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center gap-2 md:overflow-visible py-1">
-      <div
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 ${
-          hasLiked
-            ? "bg-gray-200 cursor-not-allowed"
-            : "bg-[#ff7e95]/20 cursor-pointer hover:bg-[#ff7e95]/30 hover:scale-105"
-        } transition-all duration-200`}
+      <StatIndicator
+        icon={<Heart />}
+        label="喜欢"
+        value={site?.likeCount || 0}
+        bgColor={state.hasLiked ? "bg-gray-200" : "bg-[#ff7e95]/20 hover:bg-[#ff7e95]/30"}
+        iconColor={state.hasLiked ? "fill-[#ff7e95] text-[#ff7e95]" : "text-[#ff7e95]"}
         onClick={handleLike}
-        title={hasLiked ? "您已经点过赞啦" : "点赞支持一下"}
-      >
-        <Heart
-          className={`w-4 h-4 ${
-            hasLiked ? "fill-[#ff7e95] text-[#ff7e95]" : "text-[#ff7e95]"
-          } translate-y-[1px]`}
-        />
-        <span className="text-sm whitespace-nowrap">喜欢本站</span>
-        <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
-          {site?.likeCount || 0}
-        </span>
-      </div>
+        isDisabled={state.hasLiked}
+        title={state.hasLiked ? "您已经点过赞啦" : "点赞支持一下"}
+      />
 
-      <span className="text-gray-300 flex items-center">|</span>
+      <Divider />
 
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-[#48bfaf]/20">
-        <Eye className="w-4 h-4 text-[#48bfaf] translate-y-[1px]" />
-        <span className="text-sm whitespace-nowrap">访问量</span>
-        <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
-          {site?.visitCount || 0}
-        </span>
-      </div>
+      <StatIndicator
+        icon={<Eye />}
+        label="访问量"
+        value={site?.visitCount || 0}
+        bgColor="bg-[#48bfaf]/20"
+        iconColor="text-[#48bfaf]"
+      />
 
-      <span className="text-gray-300 flex items-center">|</span>
-
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-gray-500/20">
-        <Timer className="w-4 h-4 text-gray-500 translate-y-[1px]" />
-        <span className="text-sm whitespace-nowrap">运行时间</span>
-        <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm whitespace-nowrap">
-          {runningTime}
-        </span>
-      </div>
-
-      <span className="text-gray-300 flex items-center">|</span>
+      <Divider />
 
       {hasAnyQrcode && (
         <div
@@ -497,17 +478,17 @@ export const WebRunInfo = () => {
           onClick={handleQrcodeClick}
           style={{ zIndex: 9 }}
         >
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-gray-600 bg-purple-500/20 cursor-pointer hover:bg-purple-500/30 hover:scale-105 transition-all duration-200">
-            <QrCode className="w-4 h-4 text-purple-500 translate-y-[1px]" />
-            <span className="text-sm whitespace-nowrap">关注我</span>
-            <span className="bg-white/50 px-1.5 py-0.5 rounded text-sm min-w-[2rem] text-center">
-              {qrcodeCount}
-            </span>
-          </div>
+          <StatIndicator
+            icon={<QrCode />}
+            label="关注我"
+            value={qrcodeCount}
+            bgColor="bg-purple-500/20 hover:bg-purple-500/30"
+            iconColor="text-purple-500"
+          />
 
-          {showQrcode &&
-            (isMobile ? (
-              <QrcodeModal site={site} onClose={() => setShowQrcode(false)} />
+          {state.showQrcode &&
+            (state.isMobile ? (
+              <QrcodeModal site={site} onClose={() => setState(prev => ({ ...prev, showQrcode: false }))} />
             ) : (
               <div
                 ref={popoverRef}
@@ -516,7 +497,7 @@ export const WebRunInfo = () => {
               >
                 <QrcodePopover
                   site={site}
-                  onClose={() => setShowQrcode(false)}
+                  onClose={() => setState(prev => ({ ...prev, showQrcode: false }))}
                 />
               </div>
             ))}

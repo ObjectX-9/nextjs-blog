@@ -2,14 +2,15 @@ import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
 import { Article } from "./model/article";
-import HomeHeader from "@/components/HomeHeader";
-import AuthorIntro from "@/components/AuthorIntro";
-import { ListSection } from "@/components/ListSection";
-import { Section } from "@/components/Section";
-import { SocialLinks } from "@/components/SocialLinks";
-import { WorkExperience } from "@/components/WorkExperience";
-import { Education } from "@/components/Education";
-import { WebRunInfo } from '@/components/WebRunInfo'
+import HomeHeader from "@/components/HomePage/HomeHeader";
+import AuthorIntro from "@/components/HomePage/AuthorIntro";
+import { ListSection } from "@/components/HomePage/ListSection";
+import { Section } from "@/components/HomePage/Section";
+import { SocialLinks } from "@/components/HomePage/SocialLinks";
+import { WorkExperience } from "@/components/HomePage/WorkExperience";
+import { Education } from "@/components/HomePage/Education";
+import { WebRunInfo } from '@/components/HomePage/WebRunInfo'
+import { WebControlInfo } from '@/components/HomePage/WebControlInfo'
 import { calculateDuration } from "@/utils/time";
 
 // 服务端组件
@@ -73,9 +74,14 @@ export default async function App() {
             <SocialLinks links={socialLinks} />
           </Section>
 
-          <Section title="网站信息">
+          <Section title="运行信息">
             <WebRunInfo />
           </Section>
+
+          <Section title="网站信息">
+            <WebControlInfo />
+          </Section>
+
           <Section title="教育经历">
             <Education />
           </Section>

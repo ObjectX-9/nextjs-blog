@@ -1,6 +1,6 @@
 import Link from "next/link";
-import LikeButton from "./LikeButton";
 import ViewCounter from "./ViewCounter";
+import LikeButton from "./LikeButton";
 
 interface ListItem {
   _id?: string;
@@ -67,8 +67,8 @@ export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
                         <div className="w-4 h-4 flex items-center justify-start">
                           <LikeButton articleId={item._id?.toString() || ""} initialLikes={item.likes!} />
                         </div>
-                        <div className="w-4 h-4 flex items-center justify-start">
-                          <ViewCounter articleId={item._id?.toString() || ""} initialViews={item.views!} />
+                        <div className="w-4 h-4 flex items-center justify-start cursor-default pointer-events-none">
+                          <ViewCounter initialViews={item.views!} />
                         </div>
                       </div>
                     </div>
