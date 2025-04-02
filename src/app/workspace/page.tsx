@@ -4,51 +4,23 @@ import { useState, useEffect } from "react";
 import { ItemType, Table } from "@/components/Table";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useLocalCache } from "@/app/hooks/useLocalCache";
 
-// Cache management functions
+// 缓存键常量
 const CACHE_KEYS = {
   WORKSPACE_ITEMS: "workspace_items",
-  UNSPLASH_IMAGES: "workspace_unsplash_images",
 };
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-function getFromCache<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
-  const cached = localStorage.getItem(key);
-  if (!cached) return null;
-
-  try {
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function setCache(key: string, data: any): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(
-    key,
-    JSON.stringify({
-      data,
-      timestamp: Date.now(),
-    })
-  );
-}
+// 缓存时间设置
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟
 
 export default function Workspace() {
   const [workspaceItems, setWorkspaceItems] = useState<ItemType[]>([]);
   const [imgList] = useState<string[]>(["/example1.jpg", "/example2.jpg"]);
+  const { getFromCache, setCache } = useLocalCache(CACHE_DURATION);
 
-  // Fetch workspace items with cache
   useEffect(() => {
     const fetchWorkspaceItems = async () => {
-      // Try to get from cache first
       const cached = getFromCache<ItemType[]>(CACHE_KEYS.WORKSPACE_ITEMS);
       if (cached) {
         setWorkspaceItems(cached);
@@ -57,7 +29,6 @@ export default function Workspace() {
 
       try {
         const response = await fetch("/api/workspaceItems", {
-          // Add cache control headers
           headers: {
             "Cache-Control": "no-store",
             Pragma: "no-cache",
@@ -74,32 +45,7 @@ export default function Workspace() {
     };
 
     fetchWorkspaceItems();
-  }, []);
-
-  // Fetch Unsplash images with cache
-  // useEffect(() => {
-  //   const fetchUnsplashImages = async () => {
-  //     // Try to get from cache first
-  //     const cached = getFromCache<string[]>(CACHE_KEYS.UNSPLASH_IMAGES);
-  //     if (cached) {
-  //       setImgList(cached);
-  //       return;
-  //     }
-
-  //     try {
-  //       const data = await getExampleImgSrc();
-  //       if (data && data.urls) {
-  //         const newImages = [data.urls.regular, data.urls.regular];
-  //         setImgList(newImages);
-  //         setCache(CACHE_KEYS.UNSPLASH_IMAGES, newImages);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching Unsplash images:", error);
-  //     }
-  //   };
-
-  //   fetchUnsplashImages();
-  // }, []);
+  }, [getFromCache, setCache]);
 
   const fields = [
     { key: "product", label: "产品" },
@@ -146,12 +92,3 @@ export default function Workspace() {
     </main>
   );
 }
-
-const getExampleImgSrc = async () => {
-  // remember add you unsplash key
-  return await fetch("https://api.unsplash.com/photos/random", {}).then(
-    (res) => {
-      return res.json();
-    }
-  );
-};

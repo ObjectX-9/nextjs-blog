@@ -5,6 +5,7 @@ import "react-photo-album/styles.css";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { IPhotoDB } from "@/app/model/photo";
+import { useLocalCache } from "@/app/hooks/useLocalCache";
 
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -16,63 +17,32 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-// Cache management
+// 缓存键常量
 const CACHE_KEYS = {
   PHOTOS: 'album_photos',
   LAST_FETCH: 'album_last_fetch',
 };
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-function getFromCache<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
-  const cached = localStorage.getItem(key);
-  if (!cached) return null;
-
-  try {
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function setCache(key: string, data: any): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(
-    key,
-    JSON.stringify({
-      data,
-      timestamp: Date.now(),
-    })
-  );
-}
-
-function shouldFetchData(): boolean {
-  const lastFetch = localStorage.getItem(CACHE_KEYS.LAST_FETCH);
-  if (!lastFetch) return true;
-  
-  try {
-    const timestamp = JSON.parse(lastFetch).timestamp;
-    return Date.now() - timestamp > 30000; // 30 seconds
-  } catch {
-    return true;
-  }
-}
-
-function updateLastFetchTime(): void {
-  setCache(CACHE_KEYS.LAST_FETCH, null);
-}
+// 缓存时间设置
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟
+const REFRESH_INTERVAL = 30000; // 30秒
 
 export default function Album() {
   const [index, setIndex] = useState(-1);
   const [photos, setPhotos] = useState<IPhotoDB[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { getFromCache, setCache } = useLocalCache(CACHE_DURATION);
+
+  const shouldFetchData = (): boolean => {
+    const lastFetch = getFromCache<{timestamp: number}>(CACHE_KEYS.LAST_FETCH);
+    if (!lastFetch) return true;
+    return Date.now() - lastFetch.timestamp > REFRESH_INTERVAL;
+  };
+
+  const updateLastFetchTime = (): void => {
+    setCache(CACHE_KEYS.LAST_FETCH, { timestamp: Date.now() });
+  };
 
   const fetchPhotos = async (force: boolean = false) => {
     if (!force && !shouldFetchData()) {
@@ -115,7 +85,7 @@ export default function Album() {
     fetchPhotos(true);
 
     // 每30秒尝试刷新一次
-    const interval = setInterval(() => fetchPhotos(false), 30000);
+    const interval = setInterval(() => fetchPhotos(false), REFRESH_INTERVAL);
     
     return () => clearInterval(interval);
   }, []);
