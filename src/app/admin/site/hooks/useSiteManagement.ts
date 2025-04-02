@@ -32,6 +32,8 @@ export const defaultSite: SiteWithId = {
   },
   isOpenVerifyArticle: false,
   verificationCodeExpirationTime: 24,
+  workspaceBgUrl1: "",
+  workspaceBgUrl2: "",
 };
 
 // 编辑时使用的默认值
@@ -129,7 +131,7 @@ export const useSiteManagement = () => {
         if (oldPreviewUrl) {
           URL.revokeObjectURL(oldPreviewUrl);
         }
-        
+
         // 创建新的预览URL
         const previewUrl = URL.createObjectURL(file);
         console.log('Created preview URL:', previewUrl);

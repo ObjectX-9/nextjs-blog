@@ -39,6 +39,11 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       </Form.Item>
 
       {renderImageUpload("backgroundImage", "首页背景图", editedSite.backgroundImage)}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {renderImageUpload("workspaceBgUrl1", "工作室背景图1", editedSite.workspaceBgUrl1 || "")}
+        {renderImageUpload("workspaceBgUrl2", "工作室背景图2", editedSite.workspaceBgUrl2 || "")}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {renderImageUpload("qrcode", "二维码", editedSite.qrcode)}

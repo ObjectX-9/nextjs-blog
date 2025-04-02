@@ -60,6 +60,8 @@ export async function GET() {
         },
         isOpenVerifyArticle: false,
         verificationCodeExpirationTime: 24, // 默认24小时
+        workspaceBgUrl1: "",
+        workspaceBgUrl2: "",
       };
 
       const result = await collection.insertOne(defaultSite);
@@ -152,15 +154,15 @@ export async function POST(request: Request) {
         description: siteData.author?.description || "",
         education: Array.isArray(siteData.author?.education)
           ? siteData.author.education.map((edu: IEducation) => ({
-              school: edu.school || "",
-              major: edu.major || "",
-              degree: edu.degree || "",
-              certifications: Array.isArray(edu.certifications)
-                ? edu.certifications
-                : [],
-              startDate: edu.startDate || "",
-              endDate: edu.endDate || "",
-            }))
+            school: edu.school || "",
+            major: edu.major || "",
+            degree: edu.degree || "",
+            certifications: Array.isArray(edu.certifications)
+              ? edu.certifications
+              : [],
+            startDate: edu.startDate || "",
+            endDate: edu.endDate || "",
+          }))
           : currentSite?.author?.education || [],
       },
       seo: {
@@ -194,6 +196,8 @@ export async function POST(request: Request) {
         siteData.verificationCodeExpirationTime ||
         currentSite?.verificationCodeExpirationTime ||
         24,
+      workspaceBgUrl1: siteData.workspaceBgUrl1 || "",
+      workspaceBgUrl2: siteData.workspaceBgUrl2 || "",
     };
 
     console.log("Prepared update data:", updatedSiteData);

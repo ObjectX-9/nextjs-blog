@@ -13,6 +13,8 @@ export interface ISite {
   title: string; // 网站标题
   description: string; // 网站描述
   backgroundImage: string; // 首页背景图链接
+  workspaceBgUrl1: string; // 工作室背景图链接
+  workspaceBgUrl2: string; // 工作室背景图链接
   author: {
     // 作者信息
     name: string;
@@ -68,6 +70,8 @@ const siteSchema = new Schema<ISite>({
   googleTagManagerId: { type: String },
   isOpenAdsense: { type: Boolean, default: false },
   googleAdsenseId: { type: String },
+  workspaceBgUrl1: { type: String, required: true },
+  workspaceBgUrl2: { type: String, required: true },
 });
 
 export const Site = models.Site || model<ISite>("Site", siteSchema);
