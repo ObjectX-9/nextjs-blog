@@ -85,40 +85,53 @@ export default function ArticleDetailPage() {
 
   // 加载文章
   useEffect(() => {
+    // 创建一个浏览量更新标识符
+    const viewUpdateId = `view_updated_${params.id}_${Date.now()}`;
+
     const fetchArticle = async () => {
       try {
         setLoading(true);
         // 检查缓存中是否有文章数据
         const cacheKey = `article_${params.id}`;
         const cachedArticle = getFromCache<Article>(cacheKey);
-        
-        if (cachedArticle) {
-          setArticle(cachedArticle);
-          setLoading(false);
-          
-          // 后台更新浏览量，不影响用户体验
-          fetch(`/api/articles/${params.id}/view`, {
-            method: "POST",
-          }).catch(err => console.error("更新浏览量失败:", err));
-          
-          return;
-        }
-        
-        // 没有缓存，从API获取
-        const response = await fetch(`/api/articles?id=${params.id}`);
-        if (!response.ok) {
-          throw new Error("获取文章失败");
-        }
-        const data = await response.json();
-        setArticle(data);
-        
-        // 缓存文章数据，设置较长的缓存时间（30分钟）
-        setCache(cacheKey, data, 30 * 60 * 1000);
 
-        // 增加浏览量
-        await fetch(`/api/articles/${params.id}/view`, {
-          method: "POST",
-        });
+        let articleData = cachedArticle;
+
+        if (!articleData) {
+          // 没有缓存，从API获取
+          const response = await fetch(`/api/articles?id=${params.id}`);
+          if (!response.ok) {
+            throw new Error("获取文章失败");
+          }
+          articleData = await response.json();
+
+          // 缓存文章数据，设置较长的缓存时间（30分钟）
+          setCache(cacheKey, articleData, 30 * 60 * 1000);
+        }
+
+        // 设置文章数据
+        setArticle(articleData);
+
+        // 检查是否已经更新过浏览量
+        const hasViewBeenUpdated = sessionStorage.getItem(viewUpdateId);
+
+        if (!hasViewBeenUpdated) {
+          // 标记为已更新，防止重复更新
+          sessionStorage.setItem(viewUpdateId, 'true');
+
+          // 延迟更新浏览量，确保在单独的事件循环中执行
+          setTimeout(() => {
+            fetch(`/api/articles/${params.id}/view`, {
+              method: "POST",
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            }).catch(err => console.error("更新浏览量失败:", err));
+          }, 500);
+        }
+
       } catch (error) {
         console.error("获取文章失败:", error);
       } finally {
@@ -129,6 +142,11 @@ export default function ArticleDetailPage() {
     if (params.id) {
       fetchArticle();
     }
+
+    // 清理函数
+    return () => {
+      // 在组件卸载时不需要清理sessionStorage，因为它是基于会话的
+    };
   }, [params.id, getFromCache, setCache]);
 
   // 验证码相关状态
