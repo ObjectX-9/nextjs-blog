@@ -135,19 +135,10 @@ export default function Bookmarks() {
     }
   }, [selectedCategory, getFromCache, setCache]);
 
-  // 初始加载和定时刷新分类
+  // 初始加载
   useEffect(() => {
-    console.log("Initial categories fetch");
     setIsLoading(true);
     fetchCategories();
-
-    // 每30秒刷新一次分类
-    const categoryInterval = setInterval(() => {
-      console.log("Refreshing categories");
-      fetchCategories();
-    }, 30000);
-
-    return () => clearInterval(categoryInterval);
   }, [fetchCategories]);
 
   // 提取获取书签的函数
@@ -214,13 +205,6 @@ export default function Bookmarks() {
   useEffect(() => {
     if (selectedCategory) {
       fetchBookmarks(selectedCategory);
-
-      // 每30秒刷新一次当前分类的书签
-      const bookmarkInterval = setInterval(() => {
-        fetchBookmarks(selectedCategory);
-      }, 30000);
-
-      return () => clearInterval(bookmarkInterval);
     }
   }, [selectedCategory, fetchBookmarks]);
 
