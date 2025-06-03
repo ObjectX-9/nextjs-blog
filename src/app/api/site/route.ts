@@ -139,65 +139,65 @@ export async function POST(request: Request) {
     const { _id, ...siteDataWithoutId } = siteData;
 
     const updatedSiteData = {
-      ...siteDataWithoutId,
-      // 使用传入的访问量和点赞数，如果没有则使用当前值或默认值0
+      ...currentSite, // 首先保留所有现有数据
+      ...siteDataWithoutId, // 然后用新数据覆盖
+      // 确保关键字段不会被意外覆盖
       visitCount: siteDataWithoutId.visitCount ?? currentSite?.visitCount ?? 0,
       likeCount: siteDataWithoutId.likeCount ?? currentSite?.likeCount ?? 0,
       createdAt: siteDataWithoutId.createdAt
         ? new Date(siteDataWithoutId.createdAt)
         : currentSite?.createdAt || new Date(),
-      // 确保嵌套对象存在
+      // 确保嵌套对象存在并保留现有数据
       author: {
-        name: siteData.author?.name || "",
-        avatar: siteData.author?.avatar || "",
-        bio: siteData.author?.bio || "",
-        description: siteData.author?.description || "",
+        ...(currentSite?.author || {}),
+        ...(siteData.author || {}),
+        name: siteData.author?.name || currentSite?.author?.name || "",
+        avatar: siteData.author?.avatar || currentSite?.author?.avatar || "",
+        bio: siteData.author?.bio || currentSite?.author?.bio || "",
+        description: siteData.author?.description || currentSite?.author?.description || "",
         education: Array.isArray(siteData.author?.education)
           ? siteData.author.education.map((edu: IEducation) => ({
-            school: edu.school || "",
-            major: edu.major || "",
-            degree: edu.degree || "",
-            certifications: Array.isArray(edu.certifications)
-              ? edu.certifications
-              : [],
-            startDate: edu.startDate || "",
-            endDate: edu.endDate || "",
-          }))
+              school: edu.school || "",
+              major: edu.major || "",
+              degree: edu.degree || "",
+              certifications: Array.isArray(edu.certifications)
+                ? edu.certifications
+                : [],
+              startDate: edu.startDate || "",
+              endDate: edu.endDate || "",
+            }))
           : currentSite?.author?.education || [],
       },
       seo: {
+        ...(currentSite?.seo || {}),
+        ...(siteData.seo || {}),
         keywords: Array.isArray(siteData.seo?.keywords)
           ? siteData.seo.keywords
-          : [],
-        description: siteData.seo?.description || "",
+          : currentSite?.seo?.keywords || [],
+        description: siteData.seo?.description || currentSite?.seo?.description || "",
       },
-      // 确保其他字段都有值
-      wechatGroup: siteData.wechatGroup || "",
-      wechatGroupName: siteData.wechatGroupName || "", // 添加微信公众号名称
-      wechatKeyword: siteData.wechatKeyword || "", // 添加微信公众号关键词
-      isOpenGtm: siteData.isOpenGtm ?? currentSite?.isOpenGtm ?? false, // 是否开启 GTM
-      googleTagManagerId: siteData.googleTagManagerId || "", // 添加谷歌标签管理器ID
-      isOpenAdsense:
-        siteData.isOpenAdsense ?? currentSite?.isOpenAdsense ?? false, // 是否开启 AdSense
-      googleAdsenseId: siteData.googleAdsenseId || "", // 添加谷歌广告 ID
-      title: siteData.title || "",
-      description: siteData.description || "",
-      favicon: siteData.favicon || "",
-      qrcode: siteData.qrcode || "",
-      appreciationCode: siteData.appreciationCode || "",
-      backgroundImage: siteData.backgroundImage || "/images/background.jpg",
-      icp: siteData.icp || "",
-      // 添加验证码相关字段
-      isOpenVerifyArticle:
-        siteData.isOpenVerifyArticle ??
-        currentSite?.isOpenVerifyArticle ??
-        false,
+      // 确保其他字段都保留现有值
+      wechatGroup: siteData.wechatGroup || currentSite?.wechatGroup || "",
+      wechatGroupName: siteData.wechatGroupName || currentSite?.wechatGroupName || "",
+      wechatKeyword: siteData.wechatKeyword || currentSite?.wechatKeyword || "",
+      isOpenGtm: siteData.isOpenGtm ?? currentSite?.isOpenGtm ?? false,
+      googleTagManagerId: siteData.googleTagManagerId || currentSite?.googleTagManagerId || "",
+      isOpenAdsense: siteData.isOpenAdsense ?? currentSite?.isOpenAdsense ?? false,
+      googleAdsenseId: siteData.googleAdsenseId || currentSite?.googleAdsenseId || "",
+      title: siteData.title || currentSite?.title || "",
+      description: siteData.description || currentSite?.description || "",
+      favicon: siteData.favicon || currentSite?.favicon || "",
+      qrcode: siteData.qrcode || currentSite?.qrcode || "",
+      appreciationCode: siteData.appreciationCode || currentSite?.appreciationCode || "",
+      backgroundImage: siteData.backgroundImage || currentSite?.backgroundImage || "/images/background.jpg",
+      icp: siteData.icp || currentSite?.icp || "",
+      isOpenVerifyArticle: siteData.isOpenVerifyArticle ?? currentSite?.isOpenVerifyArticle ?? false,
       verificationCodeExpirationTime:
         siteData.verificationCodeExpirationTime ||
         currentSite?.verificationCodeExpirationTime ||
         24,
-      workspaceBgUrl1: siteData.workspaceBgUrl1 || "",
-      workspaceBgUrl2: siteData.workspaceBgUrl2 || "",
+      workspaceBgUrl1: siteData.workspaceBgUrl1 || currentSite?.workspaceBgUrl1 || "",
+      workspaceBgUrl2: siteData.workspaceBgUrl2 || currentSite?.workspaceBgUrl2 || "",
     };
 
     console.log("Prepared update data:", updatedSiteData);
