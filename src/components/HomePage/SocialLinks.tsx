@@ -13,9 +13,13 @@ interface SocialLinksProps {
 }
 
 export const SocialLinks = ({ links }: SocialLinksProps) => {
+  if (!links || links.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-wrap gap-1">
-      {links.map((link, index) => (
+      {links?.map((link, index) => (
         <React.Fragment key={link.name}>
           <a
             href={link.url}

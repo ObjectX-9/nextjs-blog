@@ -219,7 +219,7 @@ export default function ProjectsAdmin() {
               setNewCategory({ ...newCategory, description: e.target.value })
             }
           />
-          <Button type="primary" icon={<PlusOutlined />}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCategory}>
             添加分类
           </Button>
         </Space.Compact>
@@ -404,7 +404,7 @@ export default function ProjectsAdmin() {
         ]}
         width={720}
         className="top-[50px]"
-        maskStyle={{
+        style={{
           background: "rgba(0, 0, 0, 0.45)",
           backdropFilter: "blur(2px)",
         }}
@@ -564,7 +564,7 @@ export default function ProjectsAdmin() {
         ]}
         width={520}
         className="top-[50px]"
-        maskStyle={{
+        style={{
           background: "rgba(0, 0, 0, 0.45)",
           backdropFilter: "blur(2px)",
         }}

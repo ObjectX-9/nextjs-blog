@@ -71,6 +71,8 @@ export async function GET(request: Request) {
     const status = searchParams.get("status");
     const id = searchParams.get("id");
     const categoryId = searchParams.get("categoryId");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
     const db = await getDb();
 
     // 如果有 ID，获取单篇文章
@@ -98,13 +100,36 @@ export async function GET(request: Request) {
       query.categoryId = categoryId;
     }
 
+    // 计算跳过的文档数量
+    const skip = (page - 1) * limit;
+
+    // 获取总数量（用于判断是否还有更多数据）
+    const total = await db.collection<IArticleDB>("articles").countDocuments(query);
+
+    // 获取分页数据，使用强排序确保一致性
     const articles = await db
       .collection<IArticleDB>("articles")
       .find(query)
-      .sort({ order: 1, updatedAt: -1 })
+      .sort({ 
+        createdAt: -1,  // 按创建时间降序
+        _id: -1         // 确保排序稳定性
+      })
+      .skip(skip)
+      .limit(limit)
       .toArray();
 
-    return NextResponse.json({ articles: articles.map(toArticle) });
+    // 添加调试信息
+    console.log(`第${page}页文章 (跳过${skip}条):`);
+
+    return NextResponse.json({ 
+      articles: articles.map(toArticle),
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: skip + articles.length < total
+      }
+    });
   } catch (error: any) {
     console.error("Error fetching articles:", error);
     return NextResponse.json(
