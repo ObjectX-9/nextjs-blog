@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Article } from "@/app/model/article";
 import { MarkdownRenderer } from "@/components/customMdRender/core/MarkdownRenderer";
 import "@/styles/markdown.css";
@@ -40,6 +40,8 @@ export default function ArticleDetailPage() {
   // 站点配置
   const { site } = useSiteStore();
   const { getFromCache, setCache, clearCache } = useLocalCache();
+
+  const hasUpdatedView = useRef(false);
 
   // 检测移动端视图
   useEffect(() => {
@@ -85,9 +87,6 @@ export default function ArticleDetailPage() {
 
   // 加载文章
   useEffect(() => {
-    // 创建一个浏览量更新标识符
-    const viewUpdateId = `view_updated_${params.id}_${Date.now()}`;
-
     const fetchArticle = async () => {
       try {
         setLoading(true);
@@ -112,14 +111,10 @@ export default function ArticleDetailPage() {
         // 设置文章数据
         setArticle(articleData);
 
-        // 检查是否已经更新过浏览量
-        const hasViewBeenUpdated = sessionStorage.getItem(viewUpdateId);
+        // 使用 ref 来防止重复更新
+        if (!hasUpdatedView.current) {
+          hasUpdatedView.current = true;
 
-        if (!hasViewBeenUpdated) {
-          // 标记为已更新，防止重复更新
-          sessionStorage.setItem(viewUpdateId, 'true');
-
-          // 延迟更新浏览量，确保在单独的事件循环中执行
           setTimeout(() => {
             fetch(`/api/articles/${params.id}/view`, {
               method: "POST",

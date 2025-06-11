@@ -1,4 +1,5 @@
 import Image from "next/image";
+import React from "react";
 
 interface SocialLink {
   name: string;
@@ -15,9 +16,8 @@ export const SocialLinks = ({ links }: SocialLinksProps) => {
   return (
     <div className="flex flex-wrap gap-1">
       {links.map((link, index) => (
-        <>
+        <React.Fragment key={link.name}>
           <a
-            key={link.name}
             href={link.url}
             className="flex items-center gap-1 px-2 py-1 rounded text-gray-600 hover:text-gray-900"
             style={{ backgroundColor: link.bgColor }}
@@ -36,7 +36,7 @@ export const SocialLinks = ({ links }: SocialLinksProps) => {
           {index !== links.length - 1 && (
             <span className="text-gray-300 flex items-center">|</span>
           )}
-        </>
+        </React.Fragment>
       ))}
     </div>
   );

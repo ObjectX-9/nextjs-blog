@@ -1,63 +1,59 @@
 import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { getDb } from "@/lib/mongodb";
-import { Article } from "./model/article";
-import HomeHeader from "@/components/HomePage/HomeHeader";
-import AuthorIntro from "@/components/HomePage/AuthorIntro";
-import { ListSection } from "@/components/HomePage/ListSection";
-import { Section } from "@/components/HomePage/Section";
-import { SocialLinks } from "@/components/HomePage/SocialLinks";
-import { WorkExperience } from "@/components/HomePage/WorkExperience";
-import { Education } from "@/components/HomePage/Education";
-import { WebRunInfo } from '@/components/HomePage/WebRunInfo'
-import { WebControlInfo } from '@/components/HomePage/WebControlInfo'
-import { calculateDuration } from "@/utils/time";
-import { createCachedFetcher } from "@/utils/serverCache";
+import { Article, ArticleStatus } from "./model/article";
+import HomePageClient from "@/components/HomePage/HomePageClient";
+import { WithId } from "mongodb";
+
+// 序列化MongoDB对象，移除复杂类型
+const serializeData = (data: WithId<IWorkExperience>[] | WithId<ISocialLink>[] | WithId<Article>[]) => {
+  return JSON.parse(JSON.stringify(data));
+};
 
 // 使用缓存包装数据获取函数
-const getSocialLinks = createCachedFetcher(async () => {
+const getSocialLinks = async () => {
   try {
     const db = await getDb();
     const socialLinks = await db
       .collection<ISocialLink>("socialLinks")
       .find()
       .toArray();
-    return socialLinks;
+    return serializeData(socialLinks);
   } catch (error) {
     console.error("Error fetching social links:", error);
     return [];
   }
-});
+};
 
-const getWorkExperiences = createCachedFetcher(async () => {
+const getWorkExperiences = async () => {
   try {
     const db = await getDb();
     const workExperiences = await db
       .collection<IWorkExperience>("workExperiences")
       .find()
-      .sort({ startDate: -1 }) // Sort by start date in descending order
+      .sort({ startDate: -1 }) 
       .toArray();
-    return workExperiences;
+    return serializeData(workExperiences);
   } catch (error) {
     console.error("Error fetching work experiences:", error);
     return [];
   }
-});
+};
 
-const getArticles = createCachedFetcher(async () => {
+const getArticles = async () => {
   try {
     const db = await getDb();
     const articles = await db
       .collection<Article>("articles")
-      .find()
+      .find({ status: ArticleStatus.PUBLISHED })
       .sort({ createdAt: -1 })
       .toArray();
-    return articles as (Article & { _id?: any })[];
+    return serializeData(articles) as (Article & { _id?: string })[];
   } catch (error) {
     console.error("Error fetching articles:", error);
-    return [] as (Article & { _id?: any })[];
+    return [] as (Article & { _id?: string })[];
   }
-});
+};
 
 export default async function App() {
   const [socialLinks, workExperiences, articles] = await Promise.all([
@@ -65,41 +61,12 @@ export default async function App() {
     getWorkExperiences(),
     getArticles()
   ]);
+
   return (
-    <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
-      <HomeHeader />
-
-      <div className="w-full max-w-3xl my-0 mx-auto mt-24">
-        <AuthorIntro />
-        <div className="max-w-2xl">
-          <Section title="社交账号">
-            <SocialLinks links={socialLinks} />
-          </Section>
-
-          <Section title="运行信息">
-            <WebRunInfo />
-          </Section>
-
-          <Section title="网站信息">
-            <WebControlInfo />
-          </Section>
-
-          <Section title="教育经历">
-            <Education />
-          </Section>
-          <Section title="工作经历">
-            <WorkExperience
-              experiences={workExperiences}
-              calculateDuration={calculateDuration}
-            />
-          </Section>
-        </div>
-      </div>
-      <ListSection
-        title="📚 技术文章"
-        titleLink="/articles"
-        items={articles}
-      />
-    </main>
+    <HomePageClient
+      socialLinks={socialLinks}
+      workExperiences={workExperiences}
+      articles={articles}
+    />
   );
 }
