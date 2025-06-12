@@ -15,14 +15,15 @@ import { WebControlInfo } from '@/components/HomePage/WebControlInfo'
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { calculateDuration } from "@/utils/time";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { get, throttle } from "lodash-es";
+import Loading from "@/app/Loading";
+import { request } from '@/utils/request';
 
 interface HomePageClientProps {
   
 }
 
-export default function HomePageClient({
- 
-}: HomePageClientProps) {
+export default function HomePageClient({}: HomePageClientProps) {
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
   const [workExperiences, setWorkExperiences] = useState<IWorkExperience[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -33,17 +34,21 @@ export default function HomePageClient({
   const mainRef = useRef<HTMLElement>(null);
 
   const fetchSocialLinks = async () => {
-    const response = await fetch('/api/social-links');
-    const data = await response.json();
-    console.log('✅ ✅ ✅ ~  social links data:', data);
-    setSocialLinks(data.socialLinks as ISocialLink[]);
+    try {
+      const response = await request.get<{socialLinks: ISocialLink[]}>('social-links');
+      setSocialLinks(response.data.socialLinks);
+    } catch (error) {
+      console.error('获取社交链接失败:', error);
+    }
   }
 
   const fetchWorkExperiences = async () => {
-    const response = await fetch('/api/work-experiences');
-    const data = await response.json();
-    console.log('✅ ✅ ✅ ~  work experiences data:', data);
-    setWorkExperiences(data);
+    try {
+      const response = await request.get<{workExperiences: IWorkExperience[]}>('work-experience');
+      setWorkExperiences(response.data.workExperiences);
+    } catch (error) {
+      console.error('获取工作经历失败:', error);
+    }
   }
 
   const fetchArticles = async (pageNum: number = 1, isLoadMore: boolean = false) => {
@@ -52,9 +57,13 @@ export default function HomePageClient({
     }
     
     try {
-      const response = await fetch(`/api/articles?page=${pageNum}&limit=20&status=published`);
-      const data = await response.json();
-      console.log('✅ ✅ ✅ ~  articles data:', data);
+      const response = await request.get<{articles: Article[], pagination: any}>('articles', {
+        page: pageNum,
+        limit: 20,
+        status: 'published'
+      });
+      
+      const data = response.data;
       
       if (isLoadMore) {
         // 追加新数据，但要去重
@@ -68,7 +77,7 @@ export default function HomePageClient({
         });
       } else {
         // 设置初始数据
-        setArticles(data.articles as Article[]);
+        setArticles(data.articles);
       }
       
       // 使用API返回的分页信息
@@ -117,28 +126,24 @@ export default function HomePageClient({
       
       // 当滚动到距离底部100px时触发加载更多
       if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !loadingMore) {
-        console.log('✅ 触底加载更多');
         loadMoreArticles();
       }
     };
 
     // 添加初始化时的高度检查
-    const checkInitialHeight = () => {
-      const scrollHeight = mainElement.scrollHeight;
-      const clientHeight = mainElement.clientHeight;
-      console.log('初始高度检查', { scrollHeight, clientHeight, needsMoreContent: scrollHeight <= clientHeight });
-      
-      // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
-      if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
-        console.log('📏 内容高度不够，自动加载更多');
-        loadMoreArticles();
-      }
-    };
+    const checkInitialHeight = throttle(() => {
+        const scrollHeight = mainElement.scrollHeight;
+        const clientHeight = mainElement.clientHeight;
+        
+        // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
+        if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
+          loadMoreArticles();
+        }
+      }, 100);
 
     mainElement.addEventListener('scroll', handleScroll, { passive: true });
     
-    // 检查初始高度
-    setTimeout(checkInitialHeight, 100);
+    checkInitialHeight();
     
     return () => mainElement.removeEventListener('scroll', handleScroll);
   }, [loadMoreArticles, hasMore, loadingMore, articles.length]);
@@ -166,93 +171,7 @@ export default function HomePageClient({
   // 显示基础数据loading状态
   if (basicDataLoading) {
     return (
-      <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
-        <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse mb-24"></div>
-
-        <div className="w-full max-w-3xl my-0 mx-auto">
-          {/* 作者介绍骨架屏 */}
-          <div className="animate-pulse mb-8">
-            <div className="flex items-center mb-4">
-              <div className="h-20 w-20 bg-gray-200 rounded-full mr-4"></div>
-              <div className="space-y-2">
-                <div className="h-6 bg-gray-200 rounded w-32"></div>
-                <div className="h-4 bg-gray-200 rounded w-48"></div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-            </div>
-          </div>
-
-          <div className="max-w-2xl">
-            {/* 社交账号骨架屏 */}
-            <div className="mb-8 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-              <div className="flex flex-wrap gap-2">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-8 w-24 bg-gray-200 rounded-full"></div>
-                ))}
-              </div>
-            </div>
-
-            {/* 运行信息骨架屏 */}
-            <div className="mb-8 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-
-            {/* 网站信息骨架屏 */}
-            <div className="mb-8 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </div>
-            </div>
-
-            {/* 教育经历骨架屏 */}
-            <div className="mb-8 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-              <div className="space-y-4">
-                <div className="h-16 bg-gray-200 rounded"></div>
-                <div className="h-16 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-
-            {/* 工作经历骨架屏 */}
-            <div className="mb-8 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-              <div className="space-y-4">
-                <div className="h-24 bg-gray-200 rounded"></div>
-                <div className="h-24 bg-gray-200 rounded"></div>
-                <div className="h-24 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-
-            {/* 技术文章骨架屏 */}
-            <div className="animate-pulse mt-8">
-              <div className="h-6 bg-gray-200 rounded w-32 mb-6"></div>
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex space-x-3">
-                    <div className="h-16 w-16 bg-gray-200 rounded"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
+      <Loading/>
     );
   }
 
@@ -303,18 +222,6 @@ export default function HomePageClient({
             <LoadingSpinner className="w-5 h-5" />
             <span>加载更多文章中...</span>
           </div>
-        </div>
-      )}
-      
-      {/* 手动加载更多按钮 */}
-      {!loadingMore && hasMore && articles.length > 0 && (
-        <div className="w-full max-w-3xl my-0 mx-auto mt-4 mb-8 flex justify-center">
-          <button
-            onClick={loadMoreArticles}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            手动加载更多 ({articles.length} 篇)
-          </button>
         </div>
       )}
       

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { ISite } from '@/app/model/site'
+import { request } from '@/utils/request'
 
 interface SiteStore {
   site: ISite | null
@@ -18,12 +19,13 @@ export const useSiteStore = create<SiteStore>((set) => ({
   fetchSite: async () => {
     try {
       set({ loading: true, error: null })
-      const response = await fetch('/api/site', {
+      const response = await request.get<{ success: boolean, site: ISite, error?: string }>('site', {}, {
         headers: {
           'Cache-Control': 'no-cache'
         }
-      })
-      const data = await response.json()
+      });
+
+      const data = response.data;
       if (data.success) {
         set({ site: data.site })
       } else {
@@ -38,14 +40,8 @@ export const useSiteStore = create<SiteStore>((set) => ({
 
   updateVisitCount: async () => {
     try {
-      const response = await fetch('/api/site', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type: 'visit' }),
-      })
-      const data = await response.json()
+      const response = await request.patch<{ success: boolean, site: ISite }>('site', { type: 'visit' });
+      const data = response.data;
       if (data.success) {
         set({ site: data.site })
       }
@@ -56,14 +52,8 @@ export const useSiteStore = create<SiteStore>((set) => ({
 
   updateLikeCount: async () => {
     try {
-      const response = await fetch('/api/site', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type: 'like' }),
-      })
-      const data = await response.json()
+      const response = await request.patch<{ success: boolean, site: ISite }>('site', { type: 'like' });
+      const data = response.data;
       if (data.success) {
         set({ site: data.site })
       }

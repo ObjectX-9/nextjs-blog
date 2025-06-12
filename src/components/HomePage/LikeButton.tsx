@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { message } from 'antd';
 import { debounce } from 'lodash-es';
+import { request } from '@/utils/request';
 
 function useLocalStorage<T>(key: string, initialValue: T) {
   // 获取值
@@ -85,21 +86,12 @@ export default function LikeButton({ articleId, initialLikes }: LikeButtonProps)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
 
-      const response = await fetch(`/api/articles/${articleId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await request.post<{likes: number}>(`articles/${articleId}/like`, {}, {
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, likes: data.likes };
-      } else {
-        const errorText = await response.text();
-        return { success: false, error: errorText };
-      }
+      return { success: true, likes: response.data.likes };
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return { success: false, error: '请求超时' };

@@ -4,5 +4,10 @@
   "files.associations": {
     "*.css": "tailwindcss"
   },
-  "cSpell.words": ["qrcode"]
+  "cSpell.words": [
+    "qrcode"
+  ],
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  }
 }
