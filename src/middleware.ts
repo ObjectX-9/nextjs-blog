@@ -2,185 +2,111 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyToken } from "./utils/auth";
 
-// 简单的内存缓存实现速率限制
+// 限流缓存
 const rateLimit = new Map<string, { count: number; timestamp: number }>();
 
-// 不需要限制的API路径
-const excludedPaths = [
-  "/api/articles/", // 文章基础路径
-  "/api/inspirations/", // 灵感基础路径
-  "/api/demos/", // 示例基础路径
-  "/like", // 点赞
-  "/view", // 浏览
-  "/stats", // 统计
+// 权限规则定义
+type RouteRule = {
+  path: string;
+  methods?: string[];
+  public?: boolean;
+  adminOnly?: boolean;
+  rateLimit?: boolean;
+};
+
+// 路由权限配置
+const routeRules: RouteRule[] = [
+  { path: "/api/auth", public: true },
+  { path: "/api/auth/login", public: true },
+  { path: "/api/articles/[id]/like", public: true },
+  { path: "/api/inspirations/[id]/stats", public: true },
+  { path: "/api/demos/[id]", public: true },
+  { path: "/api/site", public: true, methods: ["PATCH"] },
+
+  { path: "/api/site", adminOnly: true, methods: ["POST", "PUT", "DELETE"] },
+  { path: "/api/articles", adminOnly: true, methods: ["POST", "PUT", "DELETE"] },
+  { path: "/api/inspirations", adminOnly: true, methods: ["POST", "PUT", "DELETE"] },
+  { path: "/api/demos", adminOnly: true, methods: ["POST", "PUT", "DELETE"] },
+
+  { path: "/api/articles", rateLimit: true },
+  { path: "/api/inspirations", rateLimit: true },
+  { path: "/api/demos", rateLimit: true },
 ];
 
-// 不需要限制的操作类型
-const excludedActions = [
-  "/like", // 点赞
-  "/view", // 浏览
-  "/stats", // 统计
-];
+// 路径匹配工具
+function matchRoute(pathname: string, method: string) {
+  return routeRules.find((rule) => {
+    const regex = new RegExp("^" + rule.path.replace(/\[id\]/g, "[^/]+") + "$");
+    return regex.test(pathname) && (!rule.methods || rule.methods.includes(method));
+  });
+}
 
-// 公开的API路径（不需要管理员权限）
-const publicApiPaths = [
-  "/api/articles/[id]/like",
-  "/api/inspirations/[id]/stats",
-  "/api/demos/[id]",
-  "/api/site",
-];
+// 限流检查
+function checkRateLimit(ip: string, limit = 300, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const current = rateLimit.get(ip) || { count: 0, timestamp: now };
 
-// 需要管理员权限的操作
-const adminOnlyPaths = [
-  {
-    path: "/api/site",
-    methods: ["POST", "PUT", "DELETE"], // 只允许 GET 和 PATCH
-  },
-  {
-    path: "/api/articles",
-    methods: ["POST", "PUT", "DELETE"],
-  },
-  {
-    path: "/api/inspirations",
-    methods: ["POST", "PUT", "DELETE"],
-  },
-  {
-    path: "/api/demos",
-    methods: ["POST", "PUT", "DELETE"],
-  },
-];
+  if (now - current.timestamp > windowMs) {
+    current.count = 0;
+    current.timestamp = now;
+  }
 
-// 不需要验证的路径
-const publicPaths = [
-  "/api/auth/login",
-  "/api/auth", // GET 检查登录状态
-];
+  current.count++;
+  rateLimit.set(ip, current);
+
+  return current.count > limit;
+}
 
 export async function middleware(request: NextRequest) {
-  // 本地开发环境跳过验证
+  const { pathname } = request.nextUrl;
+  const method = request.method;
+
+  // 开发环境跳过所有检查
   if (process.env.NODE_ENV === "development") {
     return NextResponse.next();
   }
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
-  const isLoginPage = request.nextUrl.pathname === "/login";
-  const pathname = request.nextUrl.pathname;
-  const method = request.method;
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isLoginPage = pathname === "/login";
+  const isApiRoute = pathname.startsWith("/api");
 
-  // 检查是否是公开路径
-  if (publicPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next();
-  }
-  
-  // 检查是否是点赞或统计相关的API（不需要管理员权限）
-  // 处理动态路径，如 /api/articles/123/like
-  const isPublicApi = publicApiPaths.some(path => {
-    // 替换动态路径参数 [id] 为正则表达式
-    const pathRegex = new RegExp(
-      "^" + path.replace(/\[id\]/g, "[^/]+") + "$"
-    );
-    return pathRegex.test(pathname) || 
-           // 特殊处理点赞和统计路径
-           (pathname.includes("/like") || 
-            (pathname.includes("/stats") && method === "POST") ||
-            (pathname === "/api/site" && method === "PATCH"));
-  });
-  
-  if (isPublicApi) {
-    return NextResponse.next();
-  }
-
-  // 验证 token
+  const route = matchRoute(pathname, method);
   const token = request.cookies.get("admin_token")?.value;
   const isValidToken = token ? await verifyToken(token) : null;
 
-  // 检查是否需要管理员权限
-  if (isApiRoute) {
-    const adminPath = adminOnlyPaths.find(
-      (item) => pathname.startsWith(item.path) && item.methods.includes(method)
-    );
+  // 公开路径直接放行
+  if (route?.public) {
+    return NextResponse.next();
+  }
 
-    if (adminPath && !isValidToken) {
-      return new NextResponse(
-        JSON.stringify({
-          error: "需要管理员权限",
-        }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
+  // 管理员权限校验
+  if (route?.adminOnly && !isValidToken) {
+    return new NextResponse(JSON.stringify({ error: "需要管理员权限" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-    // 检查是否是需要排除的路径（仅对非管理员操作）
-    const isExcludedPath =
-      // 检查是否包含基础路径
-      excludedPaths.some((path) => pathname.includes(path)) &&
-      // 检查是否以指定操作结尾
-      (excludedActions.some((action) => pathname.endsWith(action)) ||
-        // 或者是站点统计的 PATCH 请求
-        (pathname === "/api/site" && method === "PATCH"));
-
-    // 如果不是排除的路径，则应用速率限制
-    if (!isExcludedPath) {
-      const ip = request.ip || "unknown";
-      const now = Date.now();
-      const windowMs = 60 * 1000; // 1分钟窗口
-      const maxRequests = 300; // 每分钟最大请求数
-
-      const current = rateLimit.get(ip) || { count: 0, timestamp: now };
-
-      // 重置计数器
-      if (now - current.timestamp > windowMs) {
-        current.count = 0;
-        current.timestamp = now;
-      }
-
-      current.count++;
-      rateLimit.set(ip, current);
-
-      // 超出限制
-      if (current.count > maxRequests) {
-        return new NextResponse(
-          JSON.stringify({
-            error: "请求太频繁，请稍后再试",
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Retry-After": "60",
-            },
-          }
-        );
-      }
-    }
-
-    // API 认证检查
-    if (pathname.startsWith("/api/admin") && !isValidToken) {
-      return new NextResponse(
-        JSON.stringify({
-          error: "未授权访问",
-        }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+  // 限流检查（仅限部分需要限流的接口）
+  if (route?.rateLimit) {
+    const ip = request.ip || "unknown";
+    if (checkRateLimit(ip)) {
+      return new NextResponse(JSON.stringify({ error: "请求太频繁，请稍后再试" }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": "60",
+        },
+      });
     }
   }
 
-  // 管理路由保护
+  // 后台管理页面需要登录
   if (isAdminRoute && !isValidToken) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 已登录用户重定向
+  // 已登录用户访问登录页，跳转后台首页
   if (isLoginPage && isValidToken) {
     return NextResponse.redirect(new URL("/admin/bookmarks", request.url));
   }
@@ -188,6 +114,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// 匹配所有 API 和 admin 路由
 export const config = {
   matcher: ["/admin/:path*", "/login", "/api/:path*"],
 };
