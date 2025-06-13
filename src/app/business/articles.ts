@@ -52,7 +52,9 @@ class ArticlesBusiness {
    * 获取单篇文章
    */
   async getArticle(id: string): Promise<Article> {
-    const response = await request.get<Article>(`articles/${id}`);
+    const response = await request.get<Article>(`articles`, {
+      id,
+    });
     return response.data;
   }
 

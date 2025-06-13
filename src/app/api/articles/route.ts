@@ -53,7 +53,6 @@ export const POST = withErrorHandler(async (request: Request) => {
  */
 export const GET = withErrorHandler<[Request], Article | PaginatedArticles>(async (request: Request) => {
   const params = createApiParams(request);
-
   // 获取参数
   const id = params.getObjectId("id");
   const status = params.getString("status");
@@ -64,7 +63,6 @@ export const GET = withErrorHandler<[Request], Article | PaginatedArticles>(asyn
   // 如果有 ID，获取单篇文章
   if (id) {
     const article = await articleDb.findById(id);
-
     if (!article) {
       throw ApiErrors.ARTICLE_NOT_FOUND();
     }
