@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
 
 /**
  * 统一的API响应数据结构
@@ -10,6 +11,45 @@ export interface ApiResponse<T = any> {
     data?: T;
     error?: string;
     timestamp?: number;
+}
+
+/**
+ * MongoDB文档接口
+ */
+export interface MongoDocument {
+    _id?: ObjectId;
+    [key: string]: any;
+}
+
+/**
+ * 数据转换工具函数
+ * 将MongoDB文档转换为前端可用的数据格式
+ */
+export function toFrontend<T extends MongoDocument>(doc: T): Omit<T, '_id'> & { _id: string } {
+    if (!doc) return doc as any;
+    const { _id, ...rest } = doc;
+    return {
+        ...rest,
+        _id: _id?.toString() || '',
+    } as Omit<T, '_id'> & { _id: string };
+}
+
+/**
+ * 数据转换工具函数
+ * 将前端数据转换为MongoDB文档格式
+ */
+export function toMongo<T extends { _id?: string }>(data: T): Omit<T, '_id'> {
+    if (!data) return data as any;
+    const { _id, ...rest } = data;
+    return rest as Omit<T, '_id'>;
+}
+
+/**
+ * 批量转换MongoDB文档为前端数据
+ */
+export function toFrontendList<T extends MongoDocument>(docs: T[]): (Omit<T, '_id'> & { _id: string })[] {
+    if (!docs) return [];
+    return docs.map(doc => toFrontend(doc));
 }
 
 /**
@@ -138,7 +178,30 @@ export function withErrorHandler<T extends any[], R>(
 ) {
     return async (...args: T): Promise<NextResponse<ApiResponse<R>>> => {
         try {
-            return await handler(...args);
+            const response = await handler(...args);
+            const responseData = await response.json();
+
+            // 如果响应数据中包含 MongoDB 文档，自动转换
+            if (responseData?.data) {
+                if (Array.isArray(responseData.data)) {
+                    // 处理数组
+                    responseData.data = toFrontendList(responseData.data);
+                } else if (responseData.data._id instanceof ObjectId) {
+                    // 处理单个文档
+                    responseData.data = toFrontend(responseData.data);
+                } else if (responseData.data.items && Array.isArray(responseData.data.items)) {
+                    // 处理分页数据
+                    const items = responseData.data.items;
+                    if (items.length > 0 && items[0]._id instanceof ObjectId) {
+                        responseData.data.items = toFrontendList(items);
+                    }
+                }
+            }
+
+            return NextResponse.json(responseData, {
+                status: response.status,
+                headers: response.headers
+            });
         } catch (error) {
             console.error('API Error:', error);
 

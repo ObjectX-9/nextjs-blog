@@ -1,14 +1,26 @@
 import { getDb } from "@/lib/mongodb";
-import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
+import {
+  ApiErrors,
+  successResponse,
+  withErrorHandler
+} from "@/app/api/data";
 
-export async function POST(
+export const POST = withErrorHandler<[Request, { params: { id: string } }], { views: number }>(async (
   request: Request,
   { params }: { params: { id: string } }
-) {
-  try {
+) => {
     const db = await getDb();
     const articleId = params.id;
+
+  // 先检查文章是否存在
+  const article = await db.collection("articles").findOne({
+    _id: new ObjectId(articleId)
+  });
+
+  if (!article) {
+    throw ApiErrors.ARTICLE_NOT_FOUND();
+  }
 
     const result = await db.collection("articles").updateOne(
       { _id: new ObjectId(articleId) },
@@ -16,18 +28,11 @@ export async function POST(
     );
 
     if (result.modifiedCount === 0) {
-      return NextResponse.json(
-        { error: "Article not found" },
-        { status: 404 }
-      );
+      throw ApiErrors.INTERNAL_ERROR('更新浏览量失败');
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error updating article likes:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+  // 返回更新后的浏览量
+  return successResponse<{ views: number }>({
+    views: (article.views || 0) + 1
+  }, '更新浏览量成功');
+});

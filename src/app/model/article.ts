@@ -1,6 +1,9 @@
+import { FrontendDocument } from "@/utils/db-helpers";
+import { ObjectId } from "mongoose";
+
 export interface Article {
   // MongoDB ID
-  _id?: string;
+  _id?: string | ObjectId;
 
   // 文章标题
   title: string;
@@ -68,3 +71,16 @@ export interface ArticleCategory {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PaginatedArticles {
+  items: Article[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+export type ArticleDocument = Article & FrontendDocument;

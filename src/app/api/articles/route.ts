@@ -1,225 +1,156 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
-import { Article } from "@/app/model/article";
+import { Article, ArticleDocument, ArticleStatus, PaginatedArticles } from "@/app/model/article";
+import {
+  ApiErrors,
+  successResponse,
+  withErrorHandler,
+} from "@/app/api/data";
+import { createDbHelper, DbDocument } from "@/utils/db-helpers";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
+import { UpdateFilter } from "mongodb";
 
-// MongoDB中的文章接口
-interface IArticleDB extends Omit<Article, '_id'> {
-  _id?: ObjectId;
-}
+// 创建文章数据库操作实例
+const articleDb = createDbHelper<ArticleDocument>("articles");
 
-// 数据转换函数
-function toArticle(dbArticle: IArticleDB): Article {
-  const { _id, ...rest } = dbArticle;
-  return {
-    ...rest,
-    _id: _id?.toString(),
+/**
+ * 创建新文章
+ */
+export const POST = withErrorHandler(async (request: Request) => {
+  const article = await parseRequestBody(request);
+
+  // 验证必需字段
+  RequestValidator.validateRequired(article, ['title', 'content', 'categoryId']);
+  RequestValidator.validateObjectIds(article, ['categoryId']);
+
+  // 如果没有提供 order，获取当前最大 order 并加 1
+  let order = article.order;
+  if (order === undefined) {
+    const lastArticle = await articleDb.find(
+      { categoryId: article.categoryId },
+      { sort: { order: -1 }, limit: 1 }
+    );
+    order = (lastArticle[0]?.order || 0) + 1;
+  }
+
+  const articleToInsert: Omit<Article, '_id'> = {
+    ...article,
+    order: Number(order),
+    likes: 0,
+    views: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
-}
 
-function toDBArticle(article: Article): Omit<IArticleDB, '_id'> {
-  const { _id, ...rest } = article;
-  return rest;
-}
+  const result = await articleDb.insertOne(articleToInsert);
 
-// 创建新文章
-export async function POST(request: Request) {
-  try {
-    const article = await request.json();
-    const db = await getDb();
+  return successResponse({
+    _id: result._id?.toString(),
+    ...articleToInsert,
+  }, '文章创建成功');
+});
 
-    // 如果没有提供 order，获取当前最大 order 并加 1
-    let order = article.order;
-    if (order === undefined) {
-      const lastArticle = await db
-        .collection<IArticleDB>("articles")
-        .find({ categoryId: article.categoryId })
-        .sort({ order: -1 })
-        .limit(1)
-        .toArray();
-      order = (lastArticle[0]?.order || 0) + 1;
+/**
+ * 获取文章列表或单篇文章
+ */
+export const GET = withErrorHandler<[Request], Article | PaginatedArticles>(async (request: Request) => {
+  const params = createApiParams(request);
+
+  // 获取参数
+  const id = params.getObjectId("id");
+  const status = params.getString("status");
+  const categoryId = params.getString("categoryId");
+  const sortBy = params.getString("sortBy") || 'latest';
+  const { page, limit } = params.getPagination();
+
+  // 如果有 ID，获取单篇文章
+  if (id) {
+    const article = await articleDb.findById(id);
+
+    if (!article) {
+      throw ApiErrors.ARTICLE_NOT_FOUND();
     }
 
-    const articleToInsert: IArticleDB = {
-      ...article,
-      order: Number(order),
-      likes: 0,
-      views: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    return successResponse<Article>(article, '获取文章成功');
+  }
+
+  // 否则获取文章列表
+  const query: Partial<ArticleDocument> = {};
+  if (status) {
+    query.status = status as ArticleStatus;
+  }
+  if (categoryId) {
+    query.categoryId = categoryId as string;
+  }
+
+  // 根据排序类型设置排序规则
+  let sortOptions: any;
+  if (sortBy === 'order') {
+    // 按 order 字段排序，主要用于分类内的自定义排序
+    sortOptions = {
+      order: 1,
+      createdAt: -1,
+      _id: -1
     };
-
-    const result = await db.collection<IArticleDB>("articles").insertOne(articleToInsert);
-
-    return NextResponse.json({
-      _id: result.insertedId.toString(),
-      ...article,
-    });
-  } catch (error: any) {
-    console.error("Error creating article:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create article" },
-      { status: 500 }
-    );
+  } else {
+    // 默认按最新时间排序，主要用于首页展示
+    sortOptions = {
+      createdAt: -1,
+      _id: -1
+    };
   }
-}
 
-// 获取文章列表或单篇文章
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
-    const id = searchParams.get("id");
-    const categoryId = searchParams.get("categoryId");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const db = await getDb();
+  const paginatedData = await articleDb.paginate(query, {
+    page,
+    limit,
+    sort: sortOptions
+  });
 
-    // 如果有 ID，获取单篇文章
-    if (id) {
-      const article = await db.collection<IArticleDB>("articles").findOne({
-        _id: new ObjectId(id),
-      });
-
-      if (!article) {
-        return NextResponse.json(
-          { error: "Article not found" },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json(toArticle(article));
-    }
-
-    // 否则获取文章列表
-    const query: any = {};
-    if (status) {
-      query.status = status;
-    }
-    if (categoryId) {
-      query.categoryId = categoryId;
-    }
-
-    // 计算跳过的文档数量
-    const skip = (page - 1) * limit;
-
-    // 获取总数量（用于判断是否还有更多数据）
-    const total = await db.collection<IArticleDB>("articles").countDocuments(query);
-
-    // 获取分页数据，使用强排序确保一致性
-    const articles = await db
-      .collection<IArticleDB>("articles")
-      .find(query)
-      .sort({ 
-        createdAt: -1,  // 按创建时间降序
-        _id: -1         // 确保排序稳定性
-      })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
-    // 添加调试信息
-    console.log(`第${page}页文章 (跳过${skip}条):`);
-
-    return NextResponse.json({ 
-      articles: articles.map(toArticle),
-      pagination: {
-        page,
-        limit,
-        total,
-        hasMore: skip + articles.length < total
-      }
-    });
-  } catch (error: any) {
-    console.error("Error fetching articles:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch articles" },
-      { status: 500 }
-    );
-  }
-}
+  return successResponse<PaginatedArticles>(paginatedData, '获取文章列表成功');
+});
 
 // 更新文章
-export async function PUT(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    const article = await request.json();
+export const PUT = withErrorHandler(async (request: Request) => {
+  const params = createApiParams(request);
+  const id = params.getRequiredObjectId("id");
+  const article = await parseRequestBody(request);
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "Article ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDb();
-    const articleToUpdate = {
-      ...toDBArticle(article),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // 处理 order 的更新
-    if (article.order !== undefined) {
-      articleToUpdate.order = Number(article.order);
-    }
-
-    const result = await db.collection<IArticleDB>("articles").updateOne(
-      { _id: new ObjectId(id) },
-      { $set: articleToUpdate }
-    );
-
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: "Article not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      _id: id,
-      ...article,
-    });
-  } catch (error: any) {
-    console.error("Error updating article:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to update article" },
-      { status: 500 }
-    );
+  // 验证必需字段
+  RequestValidator.validateRequired(article, ['title', 'content']);
+  RequestValidator.validateObjectIds(article, ['categoryId']);
+  if (article.order !== undefined) {
+    RequestValidator.validateNumbers(article, ['order']);
   }
-}
+
+  const articleToUpdate: Partial<ArticleDocument> = {
+    ...RequestValidator.sanitize(article, ['title', 'content', 'categoryId', 'order', 'status']),
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (article.order !== undefined) {
+    articleToUpdate.order = Number(article.order);
+  }
+
+  const result = await articleDb.updateById(id, { $set: articleToUpdate as UpdateFilter<DbDocument> });
+
+  if (result.matchedCount === 0) {
+    throw ApiErrors.ARTICLE_NOT_FOUND();
+  }
+
+  return successResponse<Article>({
+    _id: id,
+    ...article,
+  }, '文章更新成功');
+});
 
 // 删除文章
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+export const DELETE = withErrorHandler(async (request: Request) => {
+  const params = createApiParams(request);
+  const id = params.getRequiredObjectId("id");
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "Article ID is required" },
-        { status: 400 }
-      );
-    }
+  const result = await articleDb.deleteById(id);
 
-    const db = await getDb();
-    const result = await db.collection<IArticleDB>("articles").deleteOne({
-      _id: new ObjectId(id),
-    });
-
-    if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { error: "Article not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Error deleting article:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to delete article" },
-      { status: 500 }
-    );
+  if (result.deletedCount === 0) {
+    throw ApiErrors.ARTICLE_NOT_FOUND();
   }
-}
+
+  return successResponse(null, '文章删除成功');
+});

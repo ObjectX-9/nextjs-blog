@@ -1,22 +1,12 @@
 import Link from "next/link";
 import ViewCounter from "./ViewCounter";
 import LikeButton from "./LikeButton";
-
-interface ListItem {
-  _id?: string;
-  name?: string;
-  title?: string;
-  url?: string;
-  lastModified?: Date;
-  createdAt?: string;
-  likes?: number;
-  views?: number;
-}
+import { Article } from "@/app/model/article";
 
 interface ListSectionProps {
   title: string;
   titleLink: string;
-  items: ListItem[];
+  items: Article[];
 }
 
 export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {

@@ -1,6 +1,11 @@
-import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import {
+  ApiErrors,
+  successResponse,
+  withErrorHandler,
+  validateRequiredParams
+} from "@/app/api/data";
 
 interface IArticleCategory {
   _id?: ObjectId;
@@ -14,29 +19,63 @@ interface IArticleCategory {
 }
 
 // 获取所有文章分类
-export async function GET() {
-  try {
-    const db = await getDb();
-    const categories = await db
-      .collection<IArticleCategory>("articleCategories")
-      .find()
-      .sort({ order: 1, name: 1 }) // 首先按order排序，其次按name排序
+export const GET = withErrorHandler(async (request: Request) => {
+  const { searchParams } = new URL(request.url);
+  const includeStats = searchParams.get('includeStats') === 'true';
+
+  const db = await getDb();
+  const categories = await db
+    .collection<IArticleCategory>("articleCategories")
+    .find()
+    .sort({ order: 1, name: 1 }) // 首先按order排序，其次按name排序
+    .toArray();
+
+  // 如果需要包含统计信息
+  if (includeStats) {
+    // 使用聚合查询统计每个分类的文章数量
+    const pipeline = [
+      {
+        $match: { status: "published" } // 只统计已发布的文章
+      },
+      {
+        $group: {
+          _id: "$categoryId",
+          count: { $sum: 1 }
+        }
+      }
+    ];
+
+    const articleCounts = await db
+      .collection("articles")
+      .aggregate<{ _id: string, count: number }>(pipeline)
       .toArray();
 
-    return NextResponse.json({ success: true, categories });
-  } catch (error) {
-    console.error("Error fetching article categories:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch article categories" },
-      { status: 500 }
-    );
+    // 创建计数映射
+    const countMap: Record<string, number> = {};
+    articleCounts.forEach(item => {
+      if (item._id) {
+        countMap[item._id] = item.count;
+      }
+    });
+
+    // 为每个分类添加文章数量
+    const categoriesWithStats = categories.map(category => ({
+      ...category,
+      articleCount: countMap[category._id!.toString()] || 0
+    }));
+
+    return successResponse<any[]>(categoriesWithStats, '获取分类列表成功');
   }
-}
+
+  return successResponse<IArticleCategory[]>(categories, '获取分类列表成功');
+});
 
 // 创建新分类
-export async function POST(request: Request) {
-  try {
+export const POST = withErrorHandler<[Request], IArticleCategory>(async (request: Request) => {
     const { name, description, order, isTop, status } = await request.json();
+
+  validateRequiredParams({ name }, ['name']);
+
     const db = await getDb();
 
     // 检查分类名是否已存在
@@ -45,10 +84,7 @@ export async function POST(request: Request) {
       .findOne({ name });
 
     if (existingCategory) {
-      return NextResponse.json(
-        { error: "Category already exists" },
-        { status: 400 }
-      );
+      throw ApiErrors.DUPLICATE_ENTRY('分类名称已存在');
     }
 
     const categoryToInsert: IArticleCategory = {
@@ -65,34 +101,21 @@ export async function POST(request: Request) {
       .collection<IArticleCategory>("articleCategories")
       .insertOne(categoryToInsert);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        category: { ...categoryToInsert, _id: result.insertedId },
-      });
+  if (!result.acknowledged) {
+    throw ApiErrors.INTERNAL_ERROR('创建分类失败');
     }
 
-    throw new Error("Failed to insert category");
-  } catch (error) {
-    console.error("Error creating article category:", error);
-    return NextResponse.json(
-      { error: "Failed to create article category" },
-      { status: 500 }
-    );
-  }
-}
+  return successResponse<IArticleCategory>({
+    ...categoryToInsert,
+    _id: result.insertedId
+  }, '创建分类成功');
+});
 
 // 更新分类
-export async function PUT(request: Request) {
-  try {
+export const PUT = withErrorHandler<[Request], IArticleCategory>(async (request: Request) => {
     const { id, name, description, order, isTop, status } = await request.json();
 
-    if (!name || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: "分类名称不能为空" },
-        { status: 400 }
-      );
-    }
+  validateRequiredParams({ id, name }, ['id', 'name']);
 
     const db = await getDb();
 
@@ -102,10 +125,7 @@ export async function PUT(request: Request) {
       .findOne({ _id: new ObjectId(id) });
 
     if (!category) {
-      return NextResponse.json(
-        { error: "分类不存在" },
-        { status: 404 }
-      );
+      throw ApiErrors.NOT_FOUND('分类不存在');
     }
 
     // 检查是否存在同名分类（排除当前分类）
@@ -114,57 +134,40 @@ export async function PUT(request: Request) {
       .findOne({ name, _id: { $ne: new ObjectId(id) } });
 
     if (existingCategory) {
-      return NextResponse.json(
-        { error: "分类名称已存在" },
-        { status: 400 }
-      );
+      throw ApiErrors.DUPLICATE_ENTRY('分类名称已存在');
     }
 
-    const result = await db.collection<IArticleCategory>("articleCategories").updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $set: {
-          name,
-          description,
-          order: order !== undefined ? order : category.order,
-          isTop: isTop !== undefined ? isTop : category.isTop,
-          status: status || category.status,
-          updatedAt: new Date().toISOString(),
-        },
-      }
+  const updateData = {
+    name,
+    description,
+    order: order !== undefined ? order : category.order,
+    isTop: isTop !== undefined ? isTop : category.isTop,
+    status: status || category.status,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await db.collection<IArticleCategory>("articleCategories").updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updateData }
     );
 
     if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
+      throw ApiErrors.NOT_FOUND('分类不存在');
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Category updated successfully",
-    });
-  } catch (error) {
-    console.error("Error updating article category:", error);
-    return NextResponse.json(
-      { error: "Failed to update article category" },
-      { status: 500 }
-    );
-  }
-}
+  return successResponse<IArticleCategory>({
+    ...category,
+    ...updateData
+  }, '更新分类成功');
+});
 
 // 删除分类
-export async function DELETE(request: Request) {
-  try {
+export const DELETE = withErrorHandler<[Request], null>(async (request: Request) => {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { error: "分类 ID 不能为空" },
-        { status: 400 }
-      );
+      throw ApiErrors.MISSING_PARAMS('分类ID不能为空');
     }
 
     const db = await getDb();
@@ -175,10 +178,7 @@ export async function DELETE(request: Request) {
       .findOne({ _id: new ObjectId(id) });
 
     if (!category) {
-      return NextResponse.json(
-        { error: "分类不存在" },
-        { status: 404 }
-      );
+      throw ApiErrors.NOT_FOUND('分类不存在');
     }
 
     // 检查是否有文章使用该分类
@@ -187,10 +187,7 @@ export async function DELETE(request: Request) {
       .countDocuments({ categoryId: new ObjectId(id) });
 
     if (articlesCount > 0) {
-      return NextResponse.json(
-        { error: "该分类下还有文章，无法删除" },
-        { status: 400 }
-      );
+      throw ApiErrors.CONFLICT('该分类下还有文章，无法删除');
     }
 
     const result = await db
@@ -198,18 +195,8 @@ export async function DELETE(request: Request) {
       .deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { error: "删除分类失败" },
-        { status: 500 }
-      );
+      throw ApiErrors.INTERNAL_ERROR('删除分类失败');
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("删除分类出错:", error);
-    return NextResponse.json(
-      { error: "删除分类失败" },
-      { status: 500 }
-    );
-  }
-}
+  return successResponse<null>(null, '删除分类成功');
+});
