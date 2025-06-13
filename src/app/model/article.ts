@@ -72,6 +72,18 @@ export interface ArticleCategory {
   updatedAt: string;
 }
 
+export interface ArticleCountByCategory {
+  categoryId: string;
+  categoryName: string;
+  count: number;
+  order: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  description?: string;
+  isTop: boolean;
+}
+
 export interface PaginatedArticles {
   items: Article[];
   pagination: {

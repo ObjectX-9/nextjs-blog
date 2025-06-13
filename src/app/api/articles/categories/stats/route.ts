@@ -1,19 +1,12 @@
 import { getDb } from "@/lib/mongodb";
 import {
-  ApiErrors,
   successResponse,
   withErrorHandler,
 } from "@/app/api/data";
-import { ArticleStatus } from "@/app/model/article";
-
-interface CategoryStats {
-  categoryId: string;
-  categoryName: string;
-  count: number;
-}
+import { ArticleCountByCategory, ArticleStatus } from "@/app/model/article";
 
 // 获取分类文章统计
-export const GET = withErrorHandler<[], CategoryStats[]>(async () => {
+export const GET = withErrorHandler<[], ArticleCountByCategory[]>(async () => {
   const db = await getDb();
 
   // 使用聚合查询获取分类统计
@@ -49,7 +42,13 @@ export const GET = withErrorHandler<[], CategoryStats[]>(async () => {
             { $arrayElemAt: ["$articleCount.count", 0] },
             0
           ]
-        }
+        },
+        order: { $ifNull: ["$order", 0] },
+        status: { $ifNull: ["$status", "in_progress"] },
+        createdAt: { $ifNull: ["$createdAt", ""] },
+        updatedAt: { $ifNull: ["$updatedAt", ""] },
+        description: { $ifNull: ["$description", ""] },
+        isTop: { $ifNull: ["$isTop", false] }
       }
     },
     {
@@ -59,8 +58,8 @@ export const GET = withErrorHandler<[], CategoryStats[]>(async () => {
 
   const stats = await db
     .collection("articleCategories")
-    .aggregate<CategoryStats>(pipeline)
+    .aggregate<ArticleCountByCategory>(pipeline)
     .toArray();
 
-  return successResponse<CategoryStats[]>(stats, '获取分类统计成功');
+  return successResponse<ArticleCountByCategory[]>(stats, '获取分类统计成功');
 }); 

@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSiteStore } from "@/store/site";
 import Image from "next/image";
 import { useLocalCache } from "@/app/hooks/useLocalCache";
+import { articlesService } from "@/app/business/articles";
 
 // 缓存键常量
 const CACHE_KEYS = {
@@ -90,24 +91,7 @@ export default function ArticleDetailPage() {
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        // 检查缓存中是否有文章数据
-        const cacheKey = `article_${params.id}`;
-        const cachedArticle = getFromCache<Article>(cacheKey);
-
-        let articleData = cachedArticle;
-
-        if (!articleData) {
-          // 没有缓存，从API获取
-          const response = await fetch(`/api/articles?id=${params.id}`);
-          if (!response.ok) {
-            throw new Error("获取文章失败");
-          }
-          articleData = await response.json();
-
-          // 缓存文章数据，设置较长的缓存时间（30分钟）
-          setCache(cacheKey, articleData, 30 * 60 * 1000);
-        }
-
+        const articleData = await articlesService.getArticle(params.id);
         // 设置文章数据
         setArticle(articleData);
 

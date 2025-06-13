@@ -1,6 +1,12 @@
 import { request } from "@/utils/request";
-import { Article, ArticleCategory, PaginatedArticles } from "../model/article";
-
+import { Article, ArticleCategory, ArticleCountByCategory, ArticleStatus, PaginatedArticles } from "../model/article";
+interface GetArticlesParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  categoryId?: string;
+  sortBy?: 'latest' | 'order';
+}
 class ArticlesBusiness {
   /**
    * 创建新文章
@@ -14,30 +20,31 @@ class ArticlesBusiness {
    * 获取文章列表
    */
   async getArticles(
-    page: number,
-    limit: number,
-    status?: string,
-    categoryId?: string,
-    sortBy: 'latest' | 'order' = 'latest'
+    params: GetArticlesParams
   ): Promise<PaginatedArticles> {
-    const params: any = {
-      page: page,
-      limit: limit,
+
+    const { page = 1, limit = 0, status, categoryId, sortBy = 'latest' } = params;
+
+    const queryParams: Record<string, string> = {
+      page: page.toString(),
+      limit: limit.toString(),
     };
 
     if (status) {
-      params.status = status;
+      queryParams.status = status;
     }
 
     if (categoryId) {
-      params.categoryId = categoryId;
+      queryParams.categoryId = categoryId;
     }
 
     if (sortBy) {
-      params.sortBy = sortBy;
+      queryParams.sortBy = sortBy;
     }
 
-    const response = await request.get<PaginatedArticles>('articles', params);
+    const response = await request.get<PaginatedArticles>('articles', {
+      ...queryParams,
+    });
     return response.data;
   }
 
@@ -66,11 +73,11 @@ class ArticlesBusiness {
   }
 
   /**
-   * 获取每个分类的文章数量（优化版本）
+   * 获取每个分类的文章数量
    */
-  async getArticleCountByCategory(): Promise<{ categoryId: string, categoryName: string, count: number }[]> {
+  async getArticleCountByCategory(): Promise<ArticleCountByCategory[]> {
     // 直接调用统计API，避免获取大量文章数据
-    const response = await request.get<{ categoryId: string, categoryName: string, count: number }[]>('articles/categories/stats');
+    const response = await request.get<ArticleCountByCategory[]>('articles/categories/stats');
     return response.data;
   }
 }

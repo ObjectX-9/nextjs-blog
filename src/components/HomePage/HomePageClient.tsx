@@ -63,11 +63,12 @@ export default function HomePageClient({ }: HomePageClientProps) {
 
       // 首页明确指定获取已发布的文章，并按最新时间排序
       const response = await articlesService.getArticles(
-        page,
-        20,
-        ArticleStatus.PUBLISHED,  // 只获取已发布的文章
-        undefined,    // 不限制分类
-        'latest'      // 按最新时间排序
+        {
+          page,
+          limit: 20,
+          status: ArticleStatus.PUBLISHED,  // 只获取已发布的文章
+          sortBy: 'latest'      // 按最新时间排序
+        }
       );
       if (isLoadMore) {
         // 使用 Set 来去重，防止重复数据
@@ -173,6 +174,8 @@ export default function HomePageClient({ }: HomePageClientProps) {
       <Loading />
     );
   }
+
+
 
   return (
     <main
