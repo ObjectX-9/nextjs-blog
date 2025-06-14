@@ -1,13 +1,14 @@
-import { getDb } from "@/lib/mongodb";
 import {
   successResponse,
   withErrorHandler,
 } from "@/app/api/data";
 import { ArticleCountByCategory, ArticleStatus } from "@/app/model/article";
+import { createDbHelper } from "@/utils/db-helpers";
+
+const articleCategoryDb = createDbHelper<ArticleCountByCategory>("articleCategories");
 
 // 获取分类文章统计
 export const GET = withErrorHandler<[], ArticleCountByCategory[]>(async () => {
-  const db = await getDb();
 
   // 使用聚合查询获取分类统计
   const pipeline = [
@@ -56,10 +57,7 @@ export const GET = withErrorHandler<[], ArticleCountByCategory[]>(async () => {
     }
   ];
 
-  const stats = await db
-    .collection("articleCategories")
-    .aggregate<ArticleCountByCategory>(pipeline)
-    .toArray();
+  const stats = await articleCategoryDb.aggregate<ArticleCountByCategory>(pipeline);
 
   return successResponse<ArticleCountByCategory[]>(stats, '获取分类统计成功');
 }); 

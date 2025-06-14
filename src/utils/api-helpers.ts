@@ -1,5 +1,4 @@
-import { NextRequest } from "next/server";
-import { DbHelper } from "./db-helpers";
+import { IdHelper } from "./db-helpers";
 
 /**
  * 从 URL 搜索参数中提取参数
@@ -69,7 +68,7 @@ export class ApiParams {
   getObjectId(key: string): string | undefined {
     const value = this.searchParams.get(key);
     if (!value) return undefined;
-    if (!DbHelper.isValidObjectId(value)) {
+    if (!IdHelper.toObjectId(value)) {
       throw new Error(`参数 ${key} 不是有效的 ObjectId`);
     }
     return value;
@@ -126,7 +125,7 @@ export class RequestValidator {
   ): void {
     objectIdFields.forEach(field => {
       const value = data[field];
-      if (value && !DbHelper.isValidObjectId(value)) {
+      if (value && !IdHelper.isValidObjectId(value)) {
         throw new Error(`字段 ${String(field)} 不是有效的 ObjectId`);
       }
     });

@@ -18,9 +18,10 @@ import {
   MenuUnfoldOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import { ArticleStatus, ArticleCategory } from "@/app/model/article";
+import { ArticleStatus, ArticleCountByCategory } from "@/app/model/article";
 import { MarkdownEditor } from "@/components/customMdRender/components/MarkdownEditor";
 import "@/styles/markdown.css";
+import { articlesService } from "@/app/business/articles";
 
 const { Header, Content } = Layout;
 
@@ -31,7 +32,7 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
   const [content, setContent] = useState("");
   const [showSidebar, setShowSidebar] = useState(true);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [categories, setCategories] = useState<ArticleCategory[]>([]);
+  const [categories, setCategories] = useState<ArticleCountByCategory[]>([]);
   const [articleSettings, setArticleSettings] = useState({
     title: "",
     categoryId: "",
@@ -44,17 +45,17 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/articles?id=${params.id}`);
-        const data = await response.json();
-        const articleContent = data.content || "";
+        const response = await articlesService.getArticle(params.id);
+        console.log("✅ ~ response:", response.content)
+        const articleContent = response.content || "";
         setInitialContentState(articleContent);
         setContent(articleContent);
 
         // 设置文章其他信息
         const settings = {
-          title: data.title || "",
-          categoryId: data.categoryId || "",
-          status: data.status || ArticleStatus.DRAFT,
+          title: response.title || "",
+          categoryId: response.categoryId || "",
+          status: response.status || ArticleStatus.DRAFT,
         };
         setArticleSettings(settings);
         form.setFieldsValue(settings);
@@ -72,10 +73,8 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("/api/articles/categories");
-        if (!response.ok) throw new Error("获取分类失败");
-        const data = await response.json();
-        setCategories(data.categories);
+        const response = await articlesService.getArticleCountByCategory();
+        setCategories(response || []);
       } catch (error) {
         console.error("获取分类失败:", error);
       }
@@ -122,49 +121,37 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
         });
         throw new Error(
           error.error ||
-            `上传文件失败: ${uploadResponse.status} ${uploadResponse.statusText}`
+          `上传文件失败: ${uploadResponse.status} ${uploadResponse.statusText}`
         );
       }
 
       const { url: ossPath } = await uploadResponse.json();
 
       // 2. 保存文章信息
-      const response = await fetch(`/api/articles?id=${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: formValues.title,
-          content,
-          ossPath,
-          categoryId: formValues.categoryId,
-          status: formValues.status,
-          updatedAt: new Date().toISOString(),
-        }),
+      const response = await articlesService.updateArticle(params.id, {
+        title: formValues.title,
+        content,
+        ossPath,
+        categoryId: formValues.categoryId,
+        status: formValues.status,
+        updatedAt: new Date().toISOString(),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "保存文章失败");
+      if (response) {
+        // 保存成功提示
+        Modal.success({
+          title: "保存成功",
+          content: "文章已成功保存",
+          onOk: () => {
+            // 3. 跳转到文章列表页
+            router.push("/admin/articles");
+          },
+        });
       }
-
-      const result = await response.json();
-
-      // 保存成功提示
-      Modal.success({
-        title: "保存成功",
-        content: "文章已成功保存",
-        onOk: () => {
-          // 3. 跳转到文章列表页
-          router.push("/admin/articles");
-        },
-      });
-    } catch (error: any) {
-      console.error("保存文章失败:", error);
+    } catch (error) {
       Modal.error({
         title: "保存失败",
-        content: error.message || "保存失败，请重试",
+        content: error instanceof Error ? error.message : "保存失败，请重试",
       });
     } finally {
       setLoading(false);
@@ -220,7 +207,6 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
           width="20vw"
           onClose={() => setShowSidebar(false)}
           open={showSidebar}
-          maskStyle={{ display: "none" }}
           className="custom-drawer"
           styles={{
             body: {
@@ -231,7 +217,7 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
           }}
         >
           <nav className="space-y-1">
-            {content
+            {content.length > 0 ? content
               .split("\n")
               .filter((line) => line.startsWith("#"))
               .map((heading, index) => {
@@ -244,10 +230,9 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
                       group flex items-center py-2 px-3 rounded-lg cursor-pointer 
                       transition-all duration-200 ease-in-out
                       hover:bg-blue-50 hover:text-blue-600
-                      ${
-                        level === 1
-                          ? "font-medium text-gray-900"
-                          : "text-gray-600"
+                      ${level === 1
+                        ? "font-medium text-gray-900"
+                        : "text-gray-600"
                       }
                     `}
                     style={{
@@ -268,11 +253,10 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
                     <div
                       className={`
                       w-1.5 h-1.5 rounded-full mr-2 transition-colors duration-200
-                      ${
-                        level === 1
+                      ${level === 1
                           ? "bg-blue-500"
                           : "bg-gray-300 group-hover:bg-blue-400"
-                      }
+                        }
                     `}
                     />
                     <Typography.Text
@@ -283,7 +267,7 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
                     </Typography.Text>
                   </div>
                 );
-              })}
+              }) : null}
           </nav>
         </Drawer>
       </Layout>
@@ -318,9 +302,9 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
             rules={[{ required: true, message: "请选择文章分类" }]}
           >
             <Select placeholder="请选择分类">
-              {categories.map((category) => (
-                <Select.Option key={category._id} value={category._id}>
-                  {category.name}
+              {categories?.map((category) => (
+                <Select.Option key={category.categoryId} value={category.categoryId}>
+                  {category.categoryName}
                 </Select.Option>
               ))}
             </Select>

@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
+import { Article, ArticleStatus, ArticleCountByCategory } from '@/app/model/article';
 import { Input, Button, Select, InputNumber, Space, Tag, Typography, Form, Spin, message } from 'antd';
 import { PlusOutlined, EditOutlined } from '@ant-design/icons';
+import { articlesService } from '@/app/business/articles';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -19,7 +20,7 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
     status: ArticleStatus.DRAFT,
     createdAt: new Date().toISOString(),
   });
-  const [categories, setCategories] = useState<ArticleCategory[]>([]);
+  const [categories, setCategories] = useState<ArticleCountByCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -27,33 +28,30 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
 
   // 获取文章数据
   useEffect(() => {
-    const fetchArticle = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await fetch(`/api/articles?id=${params.id}`);
-        const data = await response.json();
-        setArticle(data);
-        if (data.tags) {
-          setTags(data.tags);
+        const [articleResponse, categoriesResponse] = await Promise.all([
+          articlesService.getArticle(params.id),
+          articlesService.getArticleCountByCategory()
+        ]);
+
+        setArticle(articleResponse);
+        if (articleResponse.tags) {
+          setTags(articleResponse.tags);
+        }
+
+        if (categoriesResponse) {
+          setCategories(categoriesResponse);
         }
       } catch (error) {
-        message.error('获取文章失败');
+        message.error('获取数据失败');
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/articles/categories');
-        const data = await response.json();
-        setCategories(data.categories || []);
-      } catch (error) {
-        message.error('获取分类失败');
-      }
-    };
-
-    fetchArticle();
-    fetchCategories();
+    fetchData();
   }, [params.id]);
 
   // 保存文章
@@ -67,22 +65,15 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      const response = await fetch(`/api/articles?id=${params.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedArticle),
-      });
+      const response = await articlesService.updateArticle(params.id, updatedArticle);
 
-      if (!response.ok) {
-        throw new Error('保存失败');
-      }
-
-      message.success('保存成功');
-      if (status === ArticleStatus.PUBLISHED) {
-        router.push('/admin/articles');
+      if (response) {
+        message.success('保存成功');
+        if (status === ArticleStatus.PUBLISHED) {
+          router.push('/admin/articles');
+        }
       }
     } catch (error) {
-      console.error('保存失败:', error);
       message.error('保存失败');
     } finally {
       setSaving(false);
@@ -159,14 +150,28 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
             <Form.Item label="文章分类">
               <Select
                 value={article.categoryId || undefined}
-                onChange={value => setArticle({ ...article, categoryId: value })}
+                onChange={value => {
+                  console.log('选择的分类ID:', value);
+                  setArticle({ ...article, categoryId: value });
+                }}
                 placeholder="请选择分类"
+                loading={loading}
+                style={{ width: '100%' }}
               >
-                {categories.map(category => (
-                  <Select.Option key={category._id} value={category._id}>
-                    {category.name}
+                {categories && categories.length > 0 ? (
+                  categories.map(category => (
+                    <Select.Option
+                      key={category.categoryId}
+                      value={category.categoryId}
+                    >
+                      {category.categoryName}
+                    </Select.Option>
+                  ))
+                ) : (
+                  <Select.Option value="" disabled>
+                    暂无分类
                   </Select.Option>
-                ))}
+                )}
               </Select>
             </Form.Item>
           </div>

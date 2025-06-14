@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArticleStatus, ArticleCategory } from '@/app/model/article';
+import { ArticleStatus, ArticleCountByCategory } from '@/app/model/article';
 import { MarkdownEditor } from '@/components/customMdRender/components/MarkdownEditor';
 import { Button, Modal, Input, Select, Space, Drawer, Typography, message } from 'antd';
 import { MenuOutlined, CloseOutlined } from '@ant-design/icons';
+import { articlesService } from '@/app/business/articles';
+import "@/styles/markdown.css";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -24,7 +26,7 @@ export default function NewArticlePage() {
   const [content, setContent] = useState(initialContent);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [categories, setCategories] = useState<ArticleCategory[]>([]);
+  const [categories, setCategories] = useState<ArticleCountByCategory[]>([]);
   const [articleSettings, setArticleSettings] = useState({
     title: '',
     categoryId: '',
@@ -35,12 +37,9 @@ export default function NewArticlePage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/articles/categories');
-        if (!response.ok) throw new Error('获取分类失败');
-        const data = await response.json();
-        setCategories(data.categories);
+        const response = await articlesService.getArticleCountByCategory();
+        setCategories(response || []);
       } catch (error) {
-        console.error('获取分类失败:', error);
         message.error('获取分类失败');
       }
     };
@@ -78,32 +77,22 @@ export default function NewArticlePage() {
       const { url: ossPath } = await uploadResponse.json();
 
       // 2. 保存文章信息
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: articleSettings.title,
-          content,
-          ossPath,
-          categoryId: articleSettings.categoryId,
-          status: articleSettings.status,
-          createdAt: new Date().toISOString(),
-        }),
+      const response = await articlesService.createArticle({
+        title: articleSettings.title,
+        content,
+        ossPath,
+        categoryId: articleSettings.categoryId,
+        status: articleSettings.status,
+        createdAt: new Date().toISOString(),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '保存文章失败');
+      if (response) {
+        // 3. 跳转到文章列表页
+        router.push('/admin/articles');
+        message.success('保存成功');
       }
-
-      // 3. 跳转到文章列表页
-      router.push('/admin/articles');
-      message.success('保存成功');
-    } catch (error: any) {
-      console.error('保存文章失败:', error);
-      message.error(error.message || '保存失败，请重试');
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '保存失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -168,8 +157,8 @@ export default function NewArticlePage() {
               placeholder="请选择分类"
             >
               {categories.map(category => (
-                <Option key={category._id} value={category._id}>
-                  {category.name}
+                <Option key={category.categoryId} value={category.categoryId}>
+                  {category.categoryName}
                 </Option>
               ))}
             </Select>

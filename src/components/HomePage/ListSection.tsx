@@ -10,6 +10,7 @@ interface ListSectionProps {
 }
 
 export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
+  if (!items) return null;
   return (
     <div className="w-full max-w-3xl my-0 mx-auto mt-10">
       <Link
@@ -29,13 +30,13 @@ export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
           </div>
         </div>
         <div className="grid grid-cols-6 text-gray-700 transition-colors duration-500 hover:text-gray-200">
-          {items.map((item, idx) => {
+          {items?.map((item, idx) => {
             const date = new Date(item.createdAt!);
             const isSameYear = idx === 0 || date.getFullYear() !== new Date(items[idx - 1].createdAt!).getFullYear();
 
             return (
               <Link
-                key={item._id}
+                key={item._id?.toString() || ""}
                 href={`/articles/${item._id?.toString() || ""}`}
                 className="col-span-6 hover:text-gray-700"
               >

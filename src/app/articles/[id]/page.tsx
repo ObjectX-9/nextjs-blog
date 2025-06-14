@@ -91,7 +91,7 @@ export default function ArticleDetailPage() {
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        const articleData = await articlesService.getArticle(params.id);
+        const articleData = await articlesService.getArticle(params.id as string);
         // 设置文章数据
         setArticle(articleData);
 
@@ -100,14 +100,7 @@ export default function ArticleDetailPage() {
           hasUpdatedView.current = true;
 
           setTimeout(() => {
-            fetch(`/api/articles/${params.id}/view`, {
-              method: "POST",
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              }
-            }).catch(err => console.error("更新浏览量失败:", err));
+            articlesService.updateArticleViews(params.id as string);
           }, 500);
         }
 

@@ -4,12 +4,12 @@ import {
   successResponse,
   withErrorHandler,
 } from "@/app/api/data";
-import { createDbHelper, DbDocument } from "@/utils/db-helpers";
+import { createDbHelper } from "@/utils/db-helpers";
 import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 import { UpdateFilter } from "mongodb";
 
 // 创建文章数据库操作实例
-const articleDb = createDbHelper<ArticleDocument>("articles");
+export const articleDb = createDbHelper<ArticleDocument>("articles");
 
 /**
  * 创建新文章
@@ -43,7 +43,7 @@ export const POST = withErrorHandler(async (request: Request) => {
   const result = await articleDb.insertOne(articleToInsert);
 
   return successResponse({
-    _id: result._id?.toString(),
+    _id: result._id,
     ...articleToInsert,
   }, '文章创建成功');
 });
@@ -57,8 +57,12 @@ export const GET = withErrorHandler<[Request], Article | PaginatedArticles>(asyn
   const id = params.getObjectId("id");
   const status = params.getString("status");
   const categoryId = params.getString("categoryId");
+  const search = params.getString("search");
   const sortBy = params.getString("sortBy") || 'latest';
   const { page, limit } = params.getPagination();
+
+  // 调试信息：确认API接收到的参数
+  console.log('🔍 API接收到的分页参数:', { page, limit, status, categoryId, search, sortBy });
 
   // 如果有 ID，获取单篇文章
   if (id) {
@@ -71,12 +75,15 @@ export const GET = withErrorHandler<[Request], Article | PaginatedArticles>(asyn
   }
 
   // 否则获取文章列表
-  const query: Partial<ArticleDocument> = {};
+  const query: any = {};
   if (status) {
     query.status = status as ArticleStatus;
   }
   if (categoryId) {
     query.categoryId = categoryId as string;
+  }
+  if (search) {
+    query.title = { $regex: search, $options: 'i' };
   }
 
   // 根据排序类型设置排序规则
@@ -127,7 +134,7 @@ export const PUT = withErrorHandler(async (request: Request) => {
     articleToUpdate.order = Number(article.order);
   }
 
-  const result = await articleDb.updateById(id, { $set: articleToUpdate as UpdateFilter<DbDocument> });
+  const result = await articleDb.updateById(id, { $set: articleToUpdate as UpdateFilter<any> });
 
   if (result.matchedCount === 0) {
     throw ApiErrors.ARTICLE_NOT_FOUND();

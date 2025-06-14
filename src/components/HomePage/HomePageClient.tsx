@@ -2,7 +2,7 @@
 
 import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
-import { Article, ArticleStatus } from "@/app/model/article";
+import { Article } from "@/app/model/article";
 import HomeHeader from "@/components/HomePage/HomeHeader";
 import AuthorIntro from "@/components/HomePage/AuthorIntro";
 import { ListSection } from "@/components/HomePage/ListSection";
@@ -15,16 +15,16 @@ import { WebControlInfo } from '@/components/HomePage/WebControlInfo'
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { calculateDuration } from "@/utils/time";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { throttle, debounce, DebouncedFunc } from "lodash-es";
+import { throttle } from "lodash-es";
 import Loading from "@/app/Loading";
 import { request } from '@/utils/request';
 import { articlesService } from "@/app/business/articles";
 
 interface HomePageClientProps {
-
+  
 }
 
-export default function HomePageClient({ }: HomePageClientProps) {
+export default function HomePageClient({}: HomePageClientProps) {
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
   const [workExperiences, setWorkExperiences] = useState<IWorkExperience[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -34,12 +34,9 @@ export default function HomePageClient({ }: HomePageClientProps) {
   const [page, setPage] = useState(1);
   const mainRef = useRef<HTMLElement>(null);
 
-  // 使用useRef存储debounced函数，避免重复创建
-  const debouncedLoadMoreRef = useRef<DebouncedFunc<() => void> | null>(null);
-
   const fetchSocialLinks = async () => {
     try {
-      const response = await request.get<{ socialLinks: ISocialLink[] }>('social-links');
+      const response = await request.get<{socialLinks: ISocialLink[]}>('social-links');
       setSocialLinks(response.data.socialLinks);
     } catch (error) {
       console.error('获取社交链接失败:', error);
@@ -48,41 +45,47 @@ export default function HomePageClient({ }: HomePageClientProps) {
 
   const fetchWorkExperiences = async () => {
     try {
-      const response = await request.get<{ workExperiences: IWorkExperience[] }>('work-experience');
+      const response = await request.get<{workExperiences: IWorkExperience[]}>('work-experience');
       setWorkExperiences(response.data.workExperiences);
     } catch (error) {
       console.error('获取工作经历失败:', error);
     }
   }
 
-  const fetchArticles = useCallback(async (page: number, isLoadMore: boolean) => {
+  const fetchArticles = async (pageNum: number = 1, isLoadMore: boolean = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    }
+    
     try {
+      const response = await articlesService.getArticles({
+        page: pageNum,
+        limit: 20,
+        status: 'published',
+        sortBy: 'latest'
+      });
+      
       if (isLoadMore) {
-        setLoadingMore(true);
-      }
-
-      // 首页明确指定获取已发布的文章，并按最新时间排序
-      const response = await articlesService.getArticles(
-        {
-          page,
-          limit: 20,
-          status: ArticleStatus.PUBLISHED,  // 只获取已发布的文章
-          sortBy: 'latest'      // 按最新时间排序
-        }
-      );
-      if (isLoadMore) {
-        // 使用 Set 来去重，防止重复数据
+        // 追加新数据，但要去重
         setArticles(prev => {
-          const existingIds = new Set(prev.map(article => article._id as string)) as Set<string>;
-          const newArticles = response.items.filter(article => !existingIds.has(article._id as string));
+          const existingIds = new Set(prev?.map(article => article._id));
+          const newArticles = (response.items as Article[])?.filter(
+            article => !existingIds?.has(article._id)
+          );
           return [...prev, ...newArticles];
         });
       } else {
+        // 设置初始数据
         setArticles(response.items);
       }
-
-      setHasMore(response.pagination.hasMore);
-
+      
+      // 使用API返回的分页信息
+      if (response.pagination) {
+        setHasMore(response.pagination.hasMore);
+      } else {
+        // 兼容旧的逻辑
+        setHasMore(response.items.length === 20);
+      }
     } catch (error) {
       console.error('获取文章失败:', error);
     } finally {
@@ -90,63 +93,59 @@ export default function HomePageClient({ }: HomePageClientProps) {
         setLoadingMore(false);
       }
     }
-  }, []); // 空依赖数组，因为函数内部使用的都是稳定的函数和state更新器
-
-  // 更新debounced函数
-  useEffect(() => {
-    debouncedLoadMoreRef.current = debounce(() => {
-      if (!loadingMore && hasMore) {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        fetchArticles(nextPage, true);
-      }
-    }, 300);
-
-    return () => {
-      debouncedLoadMoreRef.current?.cancel();
-    };
-  }, [page, loadingMore, hasMore, fetchArticles]);
+  }
 
   // 加载更多文章
   const loadMoreArticles = useCallback(() => {
-    debouncedLoadMoreRef.current?.();
-  }, []);
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchArticles(nextPage, true);
+    }
+  }, [page, loadingMore, hasMore]);
 
-  // 滚动监听main元素
+  // 滚动监听 - 修改为监听main元素
   useEffect(() => {
     const mainElement = mainRef.current;
     if (!mainElement) return;
 
-    const handleScroll = throttle(() => {
+    const handleScroll = () => {
       const scrollTop = mainElement.scrollTop;
       const clientHeight = mainElement.clientHeight;
       const scrollHeight = mainElement.scrollHeight;
-
+      
+      console.log('滚动事件触发', { 
+        scrollTop, 
+        clientHeight, 
+        scrollHeight, 
+        hasMore, 
+        loadingMore,
+        isNearBottom: scrollTop + clientHeight >= scrollHeight - 100
+      });
+      
       // 当滚动到距离底部100px时触发加载更多
       if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !loadingMore) {
         loadMoreArticles();
       }
-    }, 100); // 减少滚动事件频率
+    };
 
     // 添加初始化时的高度检查
     const checkInitialHeight = throttle(() => {
-      const scrollHeight = mainElement.scrollHeight;
-      const clientHeight = mainElement.clientHeight;
-
-      // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
-      if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
-        loadMoreArticles();
-      }
-    }, 100);
+        const scrollHeight = mainElement.scrollHeight;
+        const clientHeight = mainElement.clientHeight;
+        
+        // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
+        if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
+          loadMoreArticles();
+        }
+      }, 100);
 
     mainElement.addEventListener('scroll', handleScroll, { passive: true });
-
+    
     checkInitialHeight();
-
-    return () => {
-      mainElement.removeEventListener('scroll', handleScroll);
-    };
-  }, [loadMoreArticles, hasMore, loadingMore, articles.length]);
+    
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [loadMoreArticles, hasMore, loadingMore, articles?.length]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -166,19 +165,17 @@ export default function HomePageClient({ }: HomePageClientProps) {
     };
 
     fetchInitialData();
-  }, [fetchArticles]);
+  }, []);
 
   // 显示基础数据loading状态
   if (basicDataLoading) {
     return (
-      <Loading />
+      <Loading/>
     );
   }
 
-
-
   return (
-    <main
+    <main 
       ref={mainRef}
       className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8"
     >
@@ -210,13 +207,13 @@ export default function HomePageClient({ }: HomePageClientProps) {
           </Section>
         </div>
       </div>
-
+      
       <ListSection
         title="📚 技术文章"
         titleLink="/articles"
         items={articles}
       />
-
+      
       {/* 加载更多指示器 */}
       {loadingMore && (
         <div className="w-full max-w-3xl my-0 mx-auto mt-4 mb-8 flex justify-center">
@@ -226,7 +223,7 @@ export default function HomePageClient({ }: HomePageClientProps) {
           </div>
         </div>
       )}
-
+      
       {/* 没有更多内容提示 */}
       {!hasMore && articles.length > 0 && (
         <div className="w-full max-w-3xl my-0 mx-auto mt-4 mb-8 flex justify-center">

@@ -1,17 +1,71 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Article, ArticleStatus, ArticleCategory } from '@/app/model/article';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Article, ArticleStatus, ArticleCountByCategory, PaginatedArticles } from '@/app/model/article';
 import Link from 'next/link';
 import CategoryModal from '@/components/admin/CategoryModal';
 import { Table, Input, Select, Button, Space, message as antMessage, Tag } from 'antd';
 import { PlusOutlined, ApartmentOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { articlesService } from '@/app/business/articles';
+
+// 缓存管理类
+class ArticleCache {
+  private cache = new Map<string, { data: PaginatedArticles; timestamp: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存时间
+
+  // 生成缓存键
+  private getCacheKey(params: any): string {
+    return JSON.stringify(params);
+  }
+
+  // 获取缓存数据
+  get(params: any): PaginatedArticles | null {
+    const key = this.getCacheKey(params);
+    const cached = this.cache.get(key);
+
+    if (!cached) return null;
+
+    // 检查是否过期
+    if (Date.now() - cached.timestamp > this.CACHE_TTL) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return cached.data;
+  }
+
+  // 设置缓存数据
+  set(params: any, data: PaginatedArticles): void {
+    const key = this.getCacheKey(params);
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  // 清空缓存
+  clear(): void {
+    this.cache.clear();
+  }
+
+  // 根据模式清除缓存
+  clearByPattern(pattern: RegExp): void {
+    const keys = Array.from(this.cache.keys());
+    for (const key of keys) {
+      if (pattern.test(key)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+const articleCache = new ArticleCache();
 
 const { Search } = Input;
 
 // 表格列配置
-const getColumns = (categories: ArticleCategory[], handleDelete: (id: string) => void): ColumnsType<Article> => [
+const getColumns = (categories: ArticleCountByCategory[], handleDelete: (id: string) => void): ColumnsType<Article> => [
   {
     title: '标题',
     dataIndex: 'title',
@@ -26,7 +80,7 @@ const getColumns = (categories: ArticleCategory[], handleDelete: (id: string) =>
     title: '分类',
     dataIndex: 'categoryId',
     key: 'category',
-    render: (categoryId: string) => categories.find(c => c._id === categoryId)?.name || '-',
+    render: (categoryId: string) => categories.find(c => c.categoryId === categoryId)?.categoryName || '-',
   },
   {
     title: '状态',
@@ -52,7 +106,7 @@ const getColumns = (categories: ArticleCategory[], handleDelete: (id: string) =>
         <Link href={`/admin/articles/edit/${record._id}`} className="text-blue-500 hover:text-blue-600">
           编辑
         </Link>
-        <Button type="link" danger onClick={() => handleDelete(record._id!)}>
+        <Button type="link" danger onClick={() => handleDelete(record._id!.toString())}>
           删除
         </Button>
       </Space>
@@ -62,28 +116,87 @@ const getColumns = (categories: ArticleCategory[], handleDelete: (id: string) =>
 
 const ArticlesPage = () => {
   const [articles, setArticles] = useState<Article[]>([]);
-  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<ArticleCategory[]>([]);
+  const [categories, setCategories] = useState<ArticleCountByCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // 获取文章列表
-  const fetchArticles = useCallback(async () => {
+  // 分页状态
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+
+  // 防抖搜索
+  const [searchDebounced, setSearchDebounced] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchDebounced(searchText);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+
+
+  // 获取文章列表（带缓存）
+  const fetchArticles = useCallback(async (params?: any) => {
+    // 如果没有传入参数，构建当前参数
+    const requestParams = params || {
+      page: pagination.current,
+      limit: pagination.pageSize,
+      sortBy: 'latest',
+      ...(statusFilter && { status: statusFilter }),
+      ...(categoryFilter && { categoryId: categoryFilter }),
+      ...(searchDebounced && { search: searchDebounced }),
+    };
+
     try {
       setLoading(true);
-      const response = await fetch('/api/articles');
-      if (!response.ok) {
-        throw new Error('获取文章列表失败');
+
+      // 先尝试从缓存获取
+      const cached = articleCache.get(requestParams);
+      if (cached) {
+        console.log('💾 从缓存获取数据:', {
+          itemsCount: cached.items?.length || 0,
+          pagination: cached.pagination,
+          requestParams
+        });
+        setArticles(cached.items || []);
+        setPagination(prev => ({
+          ...prev,
+          total: cached.pagination.total || 0,
+        }));
+        setLoading(false);
+        return;
       }
-      const data = await response.json();
-      setArticles(data.articles || []);
+
+      const response = await articlesService.getArticles(requestParams);
+
+      // 调试信息：确认分页数据
+      console.log('🌐 API请求参数:', requestParams);
+      console.log('🌐 API响应数据:', {
+        itemsCount: response.items?.length || 0,
+        pagination: response.pagination
+      });
+
+      // 缓存数据
+      articleCache.set(requestParams, response);
+
+      setArticles(response.items || []);
+      setPagination(prev => ({
+        ...prev,
+        total: response.pagination.total || 0,
+      }));
     } catch (error) {
       console.error('获取文章列表失败:', error);
       antMessage.error('获取文章列表失败');
       setArticles([]);
+      setPagination(prev => ({ ...prev, total: 0 }));
     } finally {
       setLoading(false);
     }
@@ -92,9 +205,8 @@ const ArticlesPage = () => {
   // 获取分类列表
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch('/api/articles/categories');
-      const data = await response.json();
-      setCategories(data.categories || []);
+      const response = await articlesService.getArticleCountByCategory();
+      setCategories(response || []);
     } catch (error) {
       antMessage.error('获取分类列表失败');
     }
@@ -103,47 +215,108 @@ const ArticlesPage = () => {
   // 删除文章
   const handleDelete = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/articles?id=${id}`, { method: 'DELETE' });
-      if (!response.ok) {
-        throw new Error('删除失败');
-      }
+      await articlesService.deleteArticle(id);
       antMessage.success('删除成功');
-      fetchArticles();
+
+      // 清理缓存
+      articleCache.clear();
+
+      // 构建当前页请求参数，重新获取当前页数据
+      const refreshParams: any = {
+        page: pagination.current,
+        limit: pagination.pageSize,
+        sortBy: 'latest'
+      };
+
+      if (statusFilter) {
+        refreshParams.status = statusFilter;
+      }
+      if (categoryFilter) {
+        refreshParams.categoryId = categoryFilter;
+      }
+      if (searchDebounced) {
+        refreshParams.search = searchDebounced;
+      }
+
+      console.log('🗑️ 删除后刷新当前页:', refreshParams);
+      fetchArticles(refreshParams);
     } catch (error) {
       antMessage.error('删除失败');
     }
-  }, [fetchArticles]);
+  }, [fetchArticles, pagination.current, pagination.pageSize, statusFilter, categoryFilter, searchDebounced]);
 
-  // 处理搜索和筛选
-  useEffect(() => {
-    let filtered = [...articles];
+  // 处理分页变化
+  const handleTableChange = useCallback((paginationConfig: { current: number; pageSize: number }) => {
+    console.log('📄 分页变化参数:', paginationConfig);
 
-    // 应用分类筛选
-    if (categoryFilter) {
-      filtered = filtered.filter(article => article.categoryId === categoryFilter);
-    }
+    const { current: newCurrent, pageSize: newPageSize } = paginationConfig;
 
-    // 应用状态筛选
+    console.log('📄 新的分页参数:', { newCurrent, newPageSize });
+
+    // 先更新分页状态
+    setPagination(prev => ({
+      ...prev,
+      current: newCurrent,
+      pageSize: newPageSize,
+    }));
+
+    // 立即构建新的请求参数并获取数据
+    const newParams: any = {
+      page: newCurrent,
+      limit: newPageSize,
+      sortBy: 'latest'
+    };
+
+    // 添加当前的筛选条件
     if (statusFilter) {
-      filtered = filtered.filter(article => article.status === statusFilter);
+      newParams.status = statusFilter;
+    }
+    if (categoryFilter) {
+      newParams.categoryId = categoryFilter;
+    }
+    if (searchDebounced) {
+      newParams.search = searchDebounced;
     }
 
-    // 应用搜索（只搜索标题）
-    if (searchText.trim()) {
-      const searchRegex = new RegExp(searchText.trim(), 'i');
-      filtered = filtered.filter(article => 
-        searchRegex.test(article.title || '')
-      );
+    console.log('📄 立即请求新页面数据:', newParams);
+    fetchArticles(newParams);
+  }, [statusFilter, categoryFilter, searchDebounced, fetchArticles]);
+
+  // 处理筛选条件变化
+  useEffect(() => {
+    console.log('🔍 筛选条件变化，重置到第一页');
+
+    // 重置到第一页并立即请求数据
+    const resetParams: any = {
+      page: 1,
+      limit: pagination.pageSize,
+      sortBy: 'latest'
+    };
+
+    if (statusFilter) {
+      resetParams.status = statusFilter;
+    }
+    if (categoryFilter) {
+      resetParams.categoryId = categoryFilter;
+    }
+    if (searchDebounced) {
+      resetParams.search = searchDebounced;
     }
 
-    setFilteredArticles(filtered);
-  }, [articles, searchText, statusFilter, categoryFilter]);
+    setPagination(prev => ({ ...prev, current: 1 }));
+    fetchArticles(resetParams);
+  }, [statusFilter, categoryFilter, searchDebounced, fetchArticles, pagination.pageSize]);
 
-  // 初始化加载
+  // 首次加载数据
+  useEffect(() => {
+    console.log('🚀 首次加载数据');
+    fetchArticles();
+  }, []);
+
+  // 初始化加载分类
   useEffect(() => {
     fetchCategories();
-    fetchArticles();
-  }, [fetchCategories, fetchArticles]);
+  }, [fetchCategories]);
 
   return (
     <div className="p-6">
@@ -184,9 +357,9 @@ const ArticlesPage = () => {
           allowClear
         >
           <Select.Option value="">全部分类</Select.Option>
-          {categories.map(category => (
-            <Select.Option key={category._id} value={category._id}>
-              {category.name}
+          {categories?.map(category => (
+            <Select.Option key={category.categoryId} value={category.categoryId}>
+              {category.categoryName}
             </Select.Option>
           ))}
         </Select>
@@ -206,15 +379,28 @@ const ArticlesPage = () => {
       {/* 文章列表 */}
       <Table
         columns={getColumns(categories, handleDelete)}
-        dataSource={filteredArticles}
+        dataSource={articles}
         rowKey="_id"
         loading={loading}
         pagination={{
-          total: filteredArticles.length,
-          pageSize: 10,
-          showTotal: (total) => `共 ${total} 条`,
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showTotal: (total, range) => {
+            const currentPageCount = articles.length;
+            return `第 ${range[0]}-${range[1]} 条，共 ${total} 条 (当前页: ${currentPageCount} 条)`;
+          },
           showSizeChanger: true,
-          showQuickJumper: true
+          showQuickJumper: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+          onChange: (page, pageSize) => {
+            console.log('📄 分页onChange:', { page, pageSize });
+            handleTableChange({ current: page, pageSize });
+          },
+          onShowSizeChange: (current, size) => {
+            console.log('📄 分页大小变化:', { current, size });
+            handleTableChange({ current, pageSize: size });
+          },
         }}
       />
 

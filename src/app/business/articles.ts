@@ -1,10 +1,11 @@
 import { request } from "@/utils/request";
-import { Article, ArticleCategory, ArticleCountByCategory, ArticleStatus, PaginatedArticles } from "../model/article";
+import { Article, ArticleCountByCategory, PaginatedArticles } from "../model/article";
 interface GetArticlesParams {
   page?: number;
   limit?: number;
   status?: string;
   categoryId?: string;
+  search?: string;
   sortBy?: 'latest' | 'order';
 }
 class ArticlesBusiness {
@@ -23,7 +24,10 @@ class ArticlesBusiness {
     params: GetArticlesParams
   ): Promise<PaginatedArticles> {
 
-    const { page = 1, limit = 0, status, categoryId, sortBy = 'latest' } = params;
+    const { page = 1, limit = 10, status, categoryId, sortBy = 'latest', search } = params;
+
+    // 调试信息：确认传入的参数
+    console.log('🌐 articlesService.getArticles 接收到的参数:', params);
 
     const queryParams: Record<string, string> = {
       page: page.toString(),
@@ -42,9 +46,21 @@ class ArticlesBusiness {
       queryParams.sortBy = sortBy;
     }
 
+    if (search) {
+      queryParams.search = search;
+    }
+
+    console.log('🌐 发送的查询参数:', queryParams);
+
     const response = await request.get<PaginatedArticles>('articles', {
       ...queryParams,
     });
+
+    console.log('🌐 API返回数据:', {
+      itemsCount: response.data.items?.length || 0,
+      pagination: response.data.pagination
+    });
+
     return response.data;
   }
 
@@ -62,7 +78,7 @@ class ArticlesBusiness {
    * 更新文章
    */
   async updateArticle(id: string, article: Partial<Article>): Promise<Article> {
-    const response = await request.put<Article>(`articles/${id}`, article);
+    const response = await request.put<Article>(`articles?id=${id}`, article);
     return response.data;
   }
 
@@ -70,7 +86,7 @@ class ArticlesBusiness {
    * 删除文章
    */
   async deleteArticle(id: string): Promise<void> {
-    const response = await request.delete<void>(`articles/${id}`);
+    const response = await request.delete<void>(`articles?id=${id}`);
     return response.data;
   }
 
@@ -80,6 +96,23 @@ class ArticlesBusiness {
   async getArticleCountByCategory(): Promise<ArticleCountByCategory[]> {
     // 直接调用统计API，避免获取大量文章数据
     const response = await request.get<ArticleCountByCategory[]>('articles/categories/stats');
+    return response.data;
+  }
+
+  /**
+   * 更新文章浏览量
+   */
+  async updateArticleViews(id: string): Promise<void> {
+    console.log("✅ ~ id:", id)
+    const response = await request.post<void>(`articles/${id}/view`);
+    return response.data;
+  }
+
+  /**
+   * 更新文章点赞数
+   */
+  async updateArticleLikes(id: string): Promise<void> {
+    const response = await request.patch<void>(`articles/${id}/like`);
     return response.data;
   }
 }

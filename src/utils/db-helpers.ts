@@ -1,10 +1,14 @@
 import { getDb } from "@/lib/mongodb";
-import { ObjectId, WithId, Collection, Filter, UpdateFilter, DeleteResult, UpdateResult, OptionalUnlessRequiredId } from "mongodb";
+import { Collection, WithId, UpdateFilter, DeleteResult, UpdateResult, InsertOneResult, InsertManyResult, ObjectId } from "mongodb";
 
 /**
- * 类型安全的 ObjectId 转换工具
+ * 简单的ID转换工具
  */
-export class DbHelper {
+export class IdHelper {
+  static isValidObjectId(id: string): boolean {
+    return ObjectId.isValid(id);
+  }
+
   /**
    * 安全地转换字符串为 ObjectId
    */
@@ -19,235 +23,236 @@ export class DbHelper {
   }
 
   /**
-   * 批量转换字符串数组为 ObjectId 数组
+   * 转换查询条件中的_id字段
    */
-  static toObjectIds(ids: (string | ObjectId)[]): ObjectId[] {
-    return ids.map(id => this.toObjectId(id));
-  }
-
-  /**
-   * 安全地转换 ObjectId 为字符串
-   */
-  static toString(id: ObjectId | string): string {
-    return id.toString();
-  }
-
-  /**
-   * 检查是否为有效的 ObjectId
-   */
-  static isValidObjectId(id: string): boolean {
-    return ObjectId.isValid(id);
-  }
-}
-
-/**
- * 数据库文档基础类型（MongoDB 原生类型）
- */
-export type DbDocument = {
-  _id?: ObjectId;
-  [key: string]: any;
-};
-
-/**
- * 前端文档类型（兼容 string ID）
- */
-export type FrontendDocument = {
-  _id?: string | ObjectId;
-  [key: string]: any;
-};
-
-/**
- * 类型安全的数据库操作类
- * T: 前端使用的类型（_id 可以是 string | ObjectId）
- * DbT: 数据库实际存储的类型（_id 必须是 ObjectId）
- */
-export class TypeSafeDb<T extends FrontendDocument> {
-  private collection: Collection<DbDocument> | null = null;
-
-  constructor(private collectionName: string) {
-    this.collection = null;
-  }
-
-  /**
-   * 获取集合实例
-   */
-  private async getCollection(): Promise<Collection<DbDocument>> {
-    if (!this.collection) {
-      const db = await getDb();
-      this.collection = db.collection<DbDocument>(this.collectionName);
-    }
-    return this.collection;
-  }
-
-  /**
-   * 将前端文档转换为数据库文档
-   */
-  private toDbDocument(doc: Partial<T>): Partial<DbDocument> {
-    const { _id, ...rest } = doc;
-    const dbDoc: Partial<DbDocument> = { ...rest };
-
-    if (_id) {
-      dbDoc._id = DbHelper.toObjectId(_id as string | ObjectId);
+  static convertFilterIds(filter: any): any {
+    if (!filter || typeof filter !== 'object') {
+      return filter;
     }
 
-    return dbDoc;
+    const converted = { ...filter };
+
+    if (converted._id !== undefined) {
+      if (typeof converted._id === 'object' && converted._id !== null && !ObjectId.isValid(converted._id)) {
+        // 处理查询操作符，如 { $in: [...], $ne: "..." }
+        const operators: any = {};
+        for (const [op, opValue] of Object.entries(converted._id)) {
+          if (op.startsWith('$')) {
+            if (op === '$in' || op === '$nin') {
+              // 处理数组操作符
+              operators[op] = Array.isArray(opValue)
+                ? opValue.map(id => this.toObjectId(id as string | ObjectId))
+                : [this.toObjectId(opValue as string | ObjectId)];
+            } else {
+              operators[op] = this.toObjectId(opValue as string | ObjectId);
+            }
+          } else {
+            operators[op] = opValue;
+          }
+        }
+        converted._id = operators;
+      } else {
+        // 直接的 _id 值
+        converted._id = this.toObjectId(converted._id);
+      }
+    }
+
+    return converted;
   }
 
   /**
-   * 将数据库文档转换为前端文档
+   * 转换文档，将ObjectId转为字符串
    */
-  private toFrontendDocument(doc: WithId<DbDocument>): T {
+  static convertDocumentIds<T>(doc: WithId<any>): T & { _id: string } {
     return {
       ...doc,
       _id: doc._id.toString()
-    } as T;
-  }
-
-  /**
-   * 根据 ID 查找单个文档
-   */
-  async findById(id: string | ObjectId): Promise<T | null> {
-    const collection = await this.getCollection();
-    const doc = await collection.findOne({
-      _id: DbHelper.toObjectId(id)
-    } as Filter<DbDocument>);
-
-    return doc ? this.toFrontendDocument(doc) : null;
-  }
-
-  /**
-   * 根据条件查找单个文档
-   */
-  async findOne(filter: Partial<T>): Promise<T | null> {
-    const collection = await this.getCollection();
-    const dbFilter = this.toDbDocument(filter) as Filter<DbDocument>;
-    const doc = await collection.findOne(dbFilter);
-
-    return doc ? this.toFrontendDocument(doc) : null;
-  }
-
-  /**
-   * 查找多个文档
-   */
-  async find(filter: Partial<T> = {}, options?: {
-    sort?: any;
-    skip?: number;
-    limit?: number;
-  }): Promise<T[]> {
-    const collection = await this.getCollection();
-    const dbFilter = this.toDbDocument(filter) as Filter<DbDocument>;
-    let query = collection.find(dbFilter);
-
-    if (options?.sort) {
-      query = query.sort(options.sort);
-    }
-    if (options?.skip) {
-      query = query.skip(options.skip);
-    }
-    if (options?.limit) {
-      query = query.limit(options.limit);
-    }
-
-    const docs = await query.toArray();
-    return docs.map(doc => this.toFrontendDocument(doc));
-  }
-
-  /**
-   * 计算文档数量
-   */
-  async count(filter: Partial<T> = {}): Promise<number> {
-    const collection = await this.getCollection();
-    const dbFilter = this.toDbDocument(filter) as Filter<DbDocument>;
-    return collection.countDocuments(dbFilter);
-  }
-
-  /**
-   * 插入新文档
-   */
-  async insertOne(doc: Omit<T, '_id'>): Promise<T> {
-    const collection = await this.getCollection();
-    const dbDoc = this.toDbDocument(doc as Partial<T>);
-    const result = await collection.insertOne(dbDoc as unknown as OptionalUnlessRequiredId<DbDocument>);
-
-    return {
-      _id: result.insertedId.toString(),
-      ...doc
-    } as T;
-  }
-
-  /**
-   * 根据 ID 更新文档
-   */
-  async updateById(id: string | ObjectId, update: UpdateFilter<DbDocument>): Promise<UpdateResult<DbDocument>> {
-    const collection = await this.getCollection();
-    return collection.updateOne(
-      { _id: DbHelper.toObjectId(id) } as Filter<DbDocument>,
-      update
-    );
-  }
-
-  /**
-   * 根据条件更新文档
-   */
-  async updateOne(filter: Partial<T>, update: UpdateFilter<DbDocument>): Promise<UpdateResult<DbDocument>> {
-    const collection = await this.getCollection();
-    const dbFilter = this.toDbDocument(filter) as Filter<DbDocument>;
-    return collection.updateOne(dbFilter, update);
-  }
-
-  /**
-   * 根据 ID 删除文档
-   */
-  async deleteById(id: string | ObjectId): Promise<DeleteResult> {
-    const collection = await this.getCollection();
-    return collection.deleteOne({
-      _id: DbHelper.toObjectId(id)
-    } as Filter<DbDocument>);
-  }
-
-  /**
-   * 根据条件删除文档
-   */
-  async deleteOne(filter: Partial<T>): Promise<DeleteResult> {
-    const collection = await this.getCollection();
-    const dbFilter = this.toDbDocument(filter) as Filter<DbDocument>;
-    return collection.deleteOne(dbFilter);
-  }
-
-  /**
-   * 分页查询
-   */
-  async paginate(filter: Partial<T> = {}, options: {
-    page: number;
-    limit: number;
-    sort?: any;
-  }) {
-    const skip = (options.page - 1) * options.limit;
-    const [items, total] = await Promise.all([
-      this.find(filter, {
-        sort: options.sort,
-        skip,
-        limit: options.limit
-      }),
-      this.count(filter)
-    ]);
-
-    return {
-      items,
-      pagination: {
-        page: options.page,
-        limit: options.limit,
-        total,
-        totalPages: Math.ceil(total / options.limit),
-        hasMore: skip + items.length < total
-      }
-    };
+    } as T & { _id: string };
   }
 }
 
 /**
- * 创建类型安全的数据库操作实例
+ * 前端文档类型（string ID）
  */
-export function createDbHelper<T extends FrontendDocument>(collectionName: string): TypeSafeDb<T> {
-  return new TypeSafeDb<T>(collectionName);
+export type FrontendDocument = {
+  _id?: string;
+  [key: string]: any;
+};
+
+/**
+ * 创建简单的数据库操作Helper
+ * 只需要传入collection名称，自动处理ID转换
+ */
+export function createDbHelper<T extends FrontendDocument>(collectionName: string) {
+  let collection: Collection | null = null;
+
+  const getCollection = async (): Promise<Collection> => {
+    if (!collection) {
+      const db = await getDb();
+      collection = db.collection(collectionName);
+    }
+    return collection;
+  };
+
+  return {
+    /**
+     * 查找单个文档
+     */
+    async findOne(filter?: any, options?: any): Promise<T | null> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      const result = await coll.findOne(convertedFilter, options);
+      return result ? IdHelper.convertDocumentIds<T>(result) : null;
+    },
+
+    /**
+     * 查找多个文档
+     */
+    async find(filter?: any, options?: any): Promise<T[]> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      const docs = await coll.find(convertedFilter, options).toArray();
+      return docs.map(doc => IdHelper.convertDocumentIds<T>(doc));
+    },
+
+    /**
+     * 根据ID查找文档
+     */
+    async findById(id: string): Promise<T | null> {
+      return this.findOne({ _id: id });
+    },
+
+    /**
+     * 插入单个文档
+     */
+    async insertOne(doc: Omit<T, '_id'>): Promise<T> {
+      const coll = await getCollection();
+      const result: InsertOneResult = await coll.insertOne(doc);
+      return {
+        ...doc,
+        _id: result.insertedId.toString()
+      } as T;
+    },
+
+    /**
+     * 插入多个文档
+     */
+    async insertMany(docs: Omit<T, '_id'>[]): Promise<T[]> {
+      const coll = await getCollection();
+      const result: InsertManyResult = await coll.insertMany(docs);
+      return docs.map((doc, index) => ({
+        ...doc,
+        _id: result.insertedIds[index].toString()
+      })) as T[];
+    },
+
+    /**
+     * 更新单个文档
+     */
+    async updateOne(filter: any, update: UpdateFilter<any>): Promise<UpdateResult> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      return coll.updateOne(convertedFilter, update);
+    },
+
+    /**
+     * 更新多个文档
+     */
+    async updateMany(filter: any, update: UpdateFilter<any>): Promise<UpdateResult> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      return coll.updateMany(convertedFilter, update);
+    },
+
+    /**
+     * 根据ID更新文档
+     */
+    async updateById(id: string, update: UpdateFilter<any>): Promise<UpdateResult> {
+      return this.updateOne({ _id: id }, update);
+    },
+
+    /**
+     * 删除单个文档
+     */
+    async deleteOne(filter: any): Promise<DeleteResult> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      return coll.deleteOne(convertedFilter);
+    },
+
+    /**
+     * 删除多个文档
+     */
+    async deleteMany(filter: any): Promise<DeleteResult> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      return coll.deleteMany(convertedFilter);
+    },
+
+    /**
+     * 根据ID删除文档
+     */
+    async deleteById(id: string): Promise<DeleteResult> {
+      return this.deleteOne({ _id: id });
+    },
+
+    /**
+     * 计算文档数量
+     */
+    async countDocuments(filter?: any): Promise<number> {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      return coll.countDocuments(convertedFilter);
+    },
+
+    /**
+     * 分页查询
+     */
+    async paginate(filter: any = {}, options: {
+      page: number;
+      limit: number;
+      sort?: any;
+    }) {
+      const coll = await getCollection();
+      const convertedFilter = IdHelper.convertFilterIds(filter);
+      const skip = (options.page - 1) * options.limit;
+
+      const [items, total] = await Promise.all([
+        coll.find(convertedFilter)
+          .sort(options.sort || {})
+          .skip(skip)
+          .limit(options.limit)
+          .toArray()
+          .then(docs => docs.map(doc => IdHelper.convertDocumentIds<T>(doc))),
+        coll.countDocuments(convertedFilter)
+      ]);
+
+      return {
+        items,
+        pagination: {
+          page: options.page,
+          limit: options.limit,
+          total,
+          totalPages: Math.ceil(total / options.limit),
+          hasMore: skip + items.length < total
+        }
+      };
+    },
+
+    /**
+     * 聚合查询
+     */
+    async aggregate<R = any>(pipeline: any[]): Promise<R[]> {
+      const coll = await getCollection();
+      return coll.aggregate(pipeline).toArray() as Promise<R[]>;
+    },
+
+    /**
+     * 获取原生Collection (高级用法)
+     * 如果需要使用其他MongoDB方法，可以获取原生collection
+     */
+    async getRawCollection(): Promise<Collection> {
+      return getCollection();
+    }
+  };
 } 
