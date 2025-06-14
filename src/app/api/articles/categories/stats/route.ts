@@ -53,7 +53,7 @@ export const GET = withErrorHandler<[], ArticleCountByCategory[]>(async () => {
       }
     },
     {
-      $sort: { order: 1, categoryName: 1 }
+      $sort: { isTop: -1, order: 1, categoryName: 1 }
     }
   ];
 

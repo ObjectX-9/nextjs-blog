@@ -28,7 +28,7 @@ export const GET = withErrorHandler(async (request: Request) => {
 
   // 使用新的db-helpers API
   const categories = await articleCategoryDb.find({}, {
-    sort: { order: 1, name: 1 } // 首先按order排序，其次按name排序
+    sort: { isTop: -1, order: 1, name: 1 } // 首先按isTop降序排序(置顶在前)，其次按order升序排序，最后按name升序排序
   });
 
   // 如果需要包含统计信息
@@ -62,7 +62,7 @@ export const GET = withErrorHandler(async (request: Request) => {
       articleCount: countMap[category._id!] || 0
     }));
 
-    return successResponse<any[]>(categoriesWithStats, '获取分类列表成功');
+    return successResponse<IArticleCategory[]>(categoriesWithStats, '获取分类列表成功');
   }
 
   return successResponse<IArticleCategory[]>(categories, '获取分类列表成功');
