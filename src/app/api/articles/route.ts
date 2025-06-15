@@ -4,12 +4,9 @@ import {
   successResponse,
   withErrorHandler,
 } from "@/app/api/data";
-import { createDbHelper } from "@/utils/db-helpers";
 import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 import { UpdateFilter } from "mongodb";
-
-// 创建文章数据库操作实例
-export const articleDb = createDbHelper<ArticleDocument>("articles");
+import { articleDb } from "@/utils/db-instances";
 
 /**
  * 创建新文章

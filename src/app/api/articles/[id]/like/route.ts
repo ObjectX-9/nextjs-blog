@@ -4,7 +4,7 @@ import {
   successResponse,
   withErrorHandler
 } from "@/app/api/data";
-import { articleDb } from "../../route";
+import { articleDb } from "@/utils/db-instances";
 
 export const POST = withErrorHandler<[Request, { params: { id: string } }], { likes: number }>(async (
   request: Request,

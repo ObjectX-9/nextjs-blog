@@ -4,22 +4,7 @@ import {
   withErrorHandler,
   validateRequiredParams
 } from "@/app/api/data";
-import { createDbHelper } from "@/utils/db-helpers";
-import { articleDb } from "../route";
-
-interface IArticleCategory {
-  _id?: string;
-  name: string;
-  order: number;
-  description?: string;
-  isTop?: boolean;
-  status?: 'completed' | 'in_progress';
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 创建文章分类数据库操作实例
-export const articleCategoryDb = createDbHelper<IArticleCategory>("articleCategories");
+import { articleDb, articleCategoryDb, IArticleCategory } from "@/utils/db-instances";
 
 // 获取所有文章分类
 export const GET = withErrorHandler(async (request: Request) => {
