@@ -41,6 +41,7 @@ export default function ArticlesPage() {
 
     const response = await articlesService.getArticles({
       categoryId,
+      limit: 100,
       status: ArticleStatus.PUBLISHED, // 只获取已发布的文章
       sortBy: 'order'     // 按order排序
     });

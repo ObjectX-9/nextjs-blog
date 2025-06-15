@@ -1,157 +1,99 @@
 'use client';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
-import { MarkdownComponentProps } from '../types/components';
-import type { HTMLAttributes, DetailedHTMLProps, ImgHTMLAttributes } from 'react';
-import { componentRegistry } from '../ComponentRegistry';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import Lightbox from "yet-another-react-lightbox";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import "yet-another-react-lightbox/styles.css";
-import Image from 'next/image';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { useEffect, useRef } from 'react';
+import { Viewer } from '@toast-ui/react-editor';
+import '@toast-ui/editor/dist/toastui-editor-viewer.css';
+import '../components/MarkdownThemes.css';
+import 'prismjs/themes/prism.css';
+import '@toast-ui/editor-plugin-code-syntax-highlight/dist/toastui-editor-plugin-code-syntax-highlight.css';
+// 导入常用语言支持
+import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-scss';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-csharp';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-rust';
+import 'prismjs/components/prism-sql';
+import { ImagePreview, useImagePreview } from '../components/ImagePreview';
 
-// 创建共用的渲染组件函数
-const useMarkdownRenderer = () => {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [currentImage, setCurrentImage] = useState('');
+interface MarkdownRendererProps {
+  content: string;
+  isMobile?: boolean;
+  theme?: 'default' | 'github' | 'notion' | 'dark' | 'academic' | 'minimal' | 'material' | 'dracula' | 'solarized-light' | 'vscode' | 'monokai' | 'typora' | 'bear';
+  className?: string;
+  enableImagePreview?: boolean; // 是否启用图片预览功能
+}
 
-  const renderComponent = (id: string) => {
-    const componentConfig = componentRegistry.get(id);
-    if (!componentConfig) {
-      console.warn(`Component with id ${id} not found in registry`);
-      return null;
-    }
+export const MarkdownRenderer = ({
+  content,
+  isMobile = false,
+  theme = 'github',
+  className = '',
+  enableImagePreview = true
+}: MarkdownRendererProps) => {
+  const viewerRef = useRef<Viewer>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-    const componentFunction = componentConfig.component;
-    if (!componentFunction) {
-      console.warn(`Component type ${componentConfig.type} not found in componentMap`);
-      return null;
-    }
-
-    return componentFunction(componentConfig.props);
-  };
-
-  const createCustomComponents = () => ({
-    div: (props: DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement> & { 'data-component'?: string }) => {
-      const { 'data-component': dataComponent, ...rest } = props;
-
-      if (dataComponent) {
-        const component = renderComponent(dataComponent);
-        if (component) {
-          return <div {...rest}>{component}</div>;
-        }
-      }
-
-      return <div {...rest}>{props.children}</div>;
-    },
-    h1: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h1 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h2: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h2 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h3: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h3 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h4: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h4 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h5: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h5 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    h6: (props: DetailedHTMLProps<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>) => <h6 id={props.children?.toString().toLowerCase().replace(/\s+/g, '-')} {...props} />,
-    code: ({ node, inline, className, children, ...props }: any) => {
-      const match = /language-([\w-]+)/.exec(className || '');
-      const language = match ? match[1] : '';
-      return !inline && language ? (
-        <SyntaxHighlighter
-          style={vscDarkPlus}
-          language={language}
-          PreTag="div"
-          {...props}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      ) : (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    },
-    img: (props: DetailedHTMLProps<ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>) => {
-      const { src, alt, ...restProps } = props;
-      return (
-        <>
-          <Image
-            src={src || ''}
-            alt={alt || ''}
-            {...restProps}
-            width={500}
-            height={300}
-            onClick={() => {
-              setCurrentImage(src || '');
-              setLightboxOpen(true);
-            }}
-            className="cursor-pointer hover:opacity-80 transition-opacity"
-          />
-          {lightboxOpen && currentImage === src && (
-            <Lightbox
-              open={lightboxOpen}
-              close={() => setLightboxOpen(false)}
-              slides={[{ src: currentImage }]}
-              plugins={[Zoom]}
-            />
-          )}
-        </>
-      );
-    }
+  // 使用图片预览钩子
+  const { previewImage, closePreview } = useImagePreview({
+    enableImagePreview,
+    containerRef,
+    content
   });
 
-  return { createCustomComponents };
-};
+  // 获取主题CSS类名
+  const getThemeClass = () => {
+    if (theme === 'default') return '';
+    return `markdown-theme-${theme}`;
+  };
 
-// 桌面端渲染组件
-const DesktopMarkdownRenderer = ({ content = '' }: MarkdownComponentProps) => {
-  const { createCustomComponents } = useMarkdownRenderer();
-  const customComponents = createCustomComponents();
-
-  return (
-    <div className="markdown-content w-full h-full">
-      <div className="w-full h-full">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkBreaks]}
-          rehypePlugins={[rehypeRaw]}
-          components={customComponents}
-        >
-          {content || ''}
-        </ReactMarkdown>
-      </div>
-    </div>
-  );
-};
-
-// 移动端渲染组件
-const MobileMarkdownRenderer = ({ content = '', isMobile }: MarkdownComponentProps & { isMobile?: boolean }) => {
-  const { createCustomComponents } = useMarkdownRenderer();
-  const customComponents = createCustomComponents();
+  // 当内容变化时更新viewer
+  useEffect(() => {
+    if (viewerRef.current) {
+      const viewer = viewerRef.current.getInstance();
+      viewer.setMarkdown(content);
+    }
+  }, [content]);
 
   return (
-    <div className="markdown-content">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-        rehypePlugins={[rehypeRaw]}
-        components={customComponents}
-        className={cn(
-          "prose max-w-none",
-          isMobile && "prose-sm [&_h1]:!text-lg [&_h2]:!text-base [&_h3]:!text-sm [&_h4]:!text-xs [&_p]:!text-xs [&_ul]:!text-xs [&_ol]:!text-xs [&_li]:!text-xs [&_pre]:!text-xs [&_code]:!text-xs [&_blockquote]:!text-xs [&_table]:!text-xs [&_img]:!w-full [&_img]:!max-w-full [&_pre]:!overflow-x-auto [&_pre]:!whitespace-pre-wrap [&_pre]:!break-words [&]:!text-[12px] [&]:!leading-[1.5]"
-        )}
+    <>
+      <div
+        ref={containerRef}
+        className={`
+          markdown-content 
+          ${getThemeClass()} 
+          ${isMobile ? 'text-sm' : ''} 
+          ${className}
+        `}
       >
-        {content || ''}
-      </ReactMarkdown>
-    </div>
-  );
-};
+        <Viewer
+          ref={viewerRef}
+          initialValue={content}
+          plugins={[
+            [codeSyntaxHighlight, { highlighter: Prism }]
+          ]}
+        />
+      </div>
 
-// 主导出组件
-export const MarkdownRenderer = ({ content = '', isMobile = false }: MarkdownComponentProps & { isMobile?: boolean }) => {
-  return isMobile ? (
-    <MobileMarkdownRenderer content={content} isMobile={isMobile} />
-  ) : (
-    <DesktopMarkdownRenderer content={content} />
+      {/* 图片预览弹窗 */}
+      {previewImage && (
+        <ImagePreview
+          src={previewImage.src}
+          alt={previewImage.alt}
+          onClose={closePreview}
+        />
+      )}
+    </>
   );
 };

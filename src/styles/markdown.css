@@ -96,39 +96,6 @@
   border-bottom: 1px solid #0056b3;
 }
 
-/* 代码样式 */
-.markdown-content code {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-  font-size: 0.9em;
-  background-color: #f6f8fa;
-  padding: 0.2em 0.4em;
-  border-radius: 3px;
-  color: #476582;
-  margin: 0 0.2em;
-}
-
-.markdown-content pre {
-  background-color: #282c34;
-  color: #abb2bf;
-  padding: 1em;
-  border-radius: 6px;
-  overflow-x: auto;
-  margin: 1em 0;
-  font-size: 0.9em;
-  line-height: 1.5;
-}
-
-.markdown-content pre code {
-  background-color: transparent;
-  padding: 0;
-  margin: 0;
-  border-radius: 0;
-  color: inherit;
-  font-size: 1em;
-  overflow-wrap: normal;
-  white-space: pre;
-}
-
 /* 引用块样式 */
 .markdown-content blockquote {
   margin: 1em 0;
@@ -248,56 +215,6 @@
   border: none;
   margin: 2em 0;
   background-color: #dfe2e5;
-}
-
-/* 代码高亮 */
-.markdown-content .token.comment,
-.markdown-content .token.prolog,
-.markdown-content .token.doctype,
-.markdown-content .token.cdata {
-  color: #8e908c;
-  font-style: italic;
-}
-
-.markdown-content .token.namespace {
-  opacity: 0.7;
-}
-
-.markdown-content .token.string,
-.markdown-content .token.attr-value {
-  color: #98c379;
-}
-
-.markdown-content .token.punctuation,
-.markdown-content .token.operator {
-  color: #abb2bf;
-}
-
-.markdown-content .token.keyword {
-  color: #c678dd;
-}
-
-.markdown-content .token.function {
-  color: #61afef;
-}
-
-.markdown-content .token.boolean,
-.markdown-content .token.number {
-  color: #d19a66;
-}
-
-.markdown-content .token.property,
-.markdown-content .token.class-name,
-.markdown-content .token.constant,
-.markdown-content .token.symbol {
-  color: #e5c07b;
-}
-
-.markdown-content .token.selector,
-.markdown-content .token.important,
-.markdown-content .token.atrule,
-.markdown-content .token.builtin {
-  color: #e06c75;
 }
 
 /* 自定义容器 */

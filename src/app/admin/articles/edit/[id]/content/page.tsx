@@ -10,13 +10,10 @@ import {
   Input,
   Select,
   Spin,
-  Drawer,
-  Typography,
 } from "antd";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UnorderedListOutlined,
 } from "@ant-design/icons";
 import { ArticleStatus, ArticleCountByCategory } from "@/app/model/article";
 import { MarkdownEditor } from "@/components/customMdRender/components/MarkdownEditor";
@@ -30,7 +27,6 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState("");
-  const [showSidebar, setShowSidebar] = useState(true);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [categories, setCategories] = useState<ArticleCountByCategory[]>([]);
   const [articleSettings, setArticleSettings] = useState({
@@ -46,7 +42,6 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
       try {
         setLoading(true);
         const response = await articlesService.getArticle(params.id);
-        console.log("✅ ~ response:", response.content)
         const articleContent = response.content || "";
         setInitialContentState(articleContent);
         setContent(articleContent);
@@ -169,10 +164,6 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
       <Header className="bg-white px-6 flex justify-between items-center border-b">
         <h1 className="text-xl font-semibold m-0">{articleSettings.title}</h1>
         <div className="flex items-center gap-4">
-          <Button
-            icon={showSidebar ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-            onClick={() => setShowSidebar(!showSidebar)}
-          />
           <Button onClick={() => router.push("/admin/articles")}>取消</Button>
           <Button type="primary" onClick={handleSave} loading={loading}>
             保存
@@ -195,81 +186,6 @@ const EditArticleContent = ({ params }: { params: { id: string } }) => {
             </div>
           )}
         </Content>
-
-        <Drawer
-          title={
-            <div className="flex items-center gap-2">
-              <UnorderedListOutlined />
-              <span>目录</span>
-            </div>
-          }
-          placement="right"
-          width="20vw"
-          onClose={() => setShowSidebar(false)}
-          open={showSidebar}
-          className="custom-drawer"
-          styles={{
-            body: {
-              padding: "12px",
-              height: "calc(100vh - 55px)",
-              overflow: "auto",
-            },
-          }}
-        >
-          <nav className="space-y-1">
-            {content.length > 0 ? content
-              .split("\n")
-              .filter((line) => line.startsWith("#"))
-              .map((heading, index) => {
-                const level = heading.match(/^#+/)?.[0].length || 1;
-                const text = heading.replace(/^#+\s+/, "");
-                return (
-                  <div
-                    key={index}
-                    className={`
-                      group flex items-center py-2 px-3 rounded-lg cursor-pointer 
-                      transition-all duration-200 ease-in-out
-                      hover:bg-blue-50 hover:text-blue-600
-                      ${level === 1
-                        ? "font-medium text-gray-900"
-                        : "text-gray-600"
-                      }
-                    `}
-                    style={{
-                      paddingLeft: `${(level - 1) * 1.5 + 0.75}rem`,
-                      borderLeft:
-                        level === 1
-                          ? "3px solid #1677ff"
-                          : "3px solid transparent",
-                    }}
-                    onClick={() => {
-                      const element = document.getElementById(
-                        text.toLowerCase().replace(/\s+/g, "-")
-                      );
-                      element?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    title={text}
-                  >
-                    <div
-                      className={`
-                      w-1.5 h-1.5 rounded-full mr-2 transition-colors duration-200
-                      ${level === 1
-                          ? "bg-blue-500"
-                          : "bg-gray-300 group-hover:bg-blue-400"
-                        }
-                    `}
-                    />
-                    <Typography.Text
-                      ellipsis={{ tooltip: text }}
-                      className={`flex-1 ${level === 1 ? "text-blue-600" : ""}`}
-                    >
-                      {text}
-                    </Typography.Text>
-                  </div>
-                );
-              }) : null}
-          </nav>
-        </Drawer>
       </Layout>
 
       <Modal

@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArticleStatus, ArticleCountByCategory } from '@/app/model/article';
 import { MarkdownEditor } from '@/components/customMdRender/components/MarkdownEditor';
-import { Button, Modal, Input, Select, Space, Drawer, Typography, message } from 'antd';
-import { MenuOutlined, CloseOutlined } from '@ant-design/icons';
+import { Button, Modal, Input, Select, Space, Typography, message } from 'antd';
+import { MenuOutlined } from '@ant-design/icons';
 import { articlesService } from '@/app/business/articles';
 import "@/styles/markdown.css";
 
@@ -24,7 +24,6 @@ export default function NewArticlePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState(initialContent);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [categories, setCategories] = useState<ArticleCountByCategory[]>([]);
   const [articleSettings, setArticleSettings] = useState({
@@ -103,11 +102,6 @@ export default function NewArticlePage() {
       <div className="flex justify-between items-center px-6 py-3 border-b bg-white shadow-sm">
         <Title level={4} style={{ margin: 0 }}>新建文章</Title>
         <Space>
-          <Button
-            icon={<MenuOutlined />}
-            onClick={() => setShowSidebar(!showSidebar)}
-            title={showSidebar ? '隐藏目录' : '显示目录'}
-          />
           <Button onClick={() => router.push('/admin/articles')} disabled={loading}>
             取消
           </Button>
@@ -183,51 +177,6 @@ export default function NewArticlePage() {
           onChange={setContent}
         />
       </div>
-
-      {/* 右侧目录 */}
-      <Drawer
-        title={
-          <div className="flex items-center">
-            <MenuOutlined className="mr-2 text-blue-500" />
-            <span>目录</span>
-          </div>
-        }
-        placement="right"
-        onClose={() => setShowSidebar(false)}
-        open={showSidebar}
-        width="20vw"
-        styles={{
-          body: {
-            padding: 0,
-            background: 'linear-gradient(to bottom, white, #f9fafb)'
-          }
-        }}
-        closeIcon={<CloseOutlined />}
-      >
-        <nav className="p-6 space-y-2">
-          {content.split('\n')
-            .filter(line => line.startsWith('#'))
-            .map((heading, index) => {
-              const level = heading.match(/^#+/)?.[0].length || 1;
-              const text = heading.replace(/^#+\s+/, '');
-              return (
-                <div
-                  key={index}
-                  className={`group flex items-center py-2 ${level === 1 ? 'text-gray-900 font-medium' : 'text-gray-600'} hover:text-blue-600 hover:bg-blue-50/50 rounded-lg cursor-pointer text-sm transition-all duration-200 ease-in-out`}
-                  style={{ paddingLeft: `${(level - 1) * 1.25}rem` }}
-                  onClick={() => {
-                    const element = document.getElementById(text.toLowerCase().replace(/\s+/g, '-'));
-                    element?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  title={text}
-                >
-                  <div className="w-1 h-1 rounded-full bg-gray-300 group-hover:bg-blue-500 mr-2 transition-colors duration-200"></div>
-                  <span className="truncate">{text}</span>
-                </div>
-              );
-            })}
-        </nav>
-      </Drawer>
     </div>
   );
 }
