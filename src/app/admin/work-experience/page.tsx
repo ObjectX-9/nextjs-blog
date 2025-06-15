@@ -25,6 +25,7 @@ import {
   GlobalOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { workExperienceBusiness } from "@/app/business/work-experience";
 
 const { Title, Text, Paragraph } = Typography;
 const { Content } = Layout;
@@ -32,7 +33,6 @@ const { TextArea } = Input;
 
 export default function WorkExperienceManagementPage() {
   const [items, setItems] = useState<IWorkExperience[]>([]);
-  console.log("🚀 ~ WorkExperienceManagementPage ~ items:", items);
   const [editingItem, setEditingItem] = useState<IWorkExperienceBase | null>(
     null
   );
@@ -44,20 +44,15 @@ export default function WorkExperienceManagementPage() {
 
   const fetchWorkExperiences = async () => {
     try {
-      const response = await fetch("/api/work-experience");
-      const data = await response.json();
-      if (data.success) {
-        setItems(data.workExperiences);
-      } else {
-        throw new Error("Failed to fetch work experiences");
-      }
+      const workExperiences = await workExperienceBusiness.getWorkExperiences();
+      setItems(workExperiences);
     } catch (error) {
-      console.error("Error fetching work experiences:", error);
       message.error("获取工作经历失败，请刷新重试");
     }
   };
 
   const handleSaveItem = async () => {
+    const isUpdate = !!editingItem?._id;
     try {
       const values = await form.validateFields();
       const formData = {
@@ -69,31 +64,20 @@ export default function WorkExperienceManagementPage() {
           : values.endDate?.format("YYYY-MM-DD"),
       };
 
-      const method = editingItem?._id ? "PUT" : "POST";
-      const response = await fetch("/api/work-experience", {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const workExperience = isUpdate ? await workExperienceBusiness.updateWorkExperience(formData) : await workExperienceBusiness.createWorkExperience(formData);
 
-      const data = await response.json();
-      if (data.success) {
+      if (workExperience) {
         await fetchWorkExperiences();
         setEditingItem(null);
         form.resetFields();
-        message.success(`${editingItem?._id ? "更新" : "创建"}成功`);
+        message.success(`${isUpdate ? "更新" : "创建"}成功`);
       } else {
         throw new Error(
-          data.error ||
-            `Failed to ${
-              editingItem?._id ? "update" : "create"
-            } work experience`
+          `Failed to ${isUpdate ? "update" : "create"
+          } work experience`
         );
       }
     } catch (error) {
-      console.error("Error saving work experience:", error);
       message.error("保存失败，请重试");
     }
   };
@@ -107,19 +91,14 @@ export default function WorkExperienceManagementPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const response = await fetch(`/api/work-experience?id=${id}`, {
-            method: "DELETE",
-          });
-
-          const data = await response.json();
-          if (data.success) {
+          const response = await workExperienceBusiness.deleteWorkExperience(id);
+          if (response) {
             await fetchWorkExperiences();
             message.success("删除成功");
           } else {
-            throw new Error(data.error || "Failed to delete work experience");
+            throw new Error("Failed to delete work experience");
           }
         } catch (error) {
-          console.error("Error deleting work experience:", error);
           message.error("删除失败，请重试");
         }
       },
@@ -129,13 +108,15 @@ export default function WorkExperienceManagementPage() {
   const handleAddItem = () => {
     form.resetFields();
     setEditingItem({
-      _id: undefined,
+      _id: "",
       company: "",
       companyUrl: "",
       position: "",
       description: "",
       startDate: "",
       endDate: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   };
 

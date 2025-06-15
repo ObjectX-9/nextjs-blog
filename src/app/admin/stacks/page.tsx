@@ -25,17 +25,14 @@ import {
   UploadOutlined,
   GithubOutlined,
 } from "@ant-design/icons";
+import { stacksBusiness } from "@/app/business/stacks";
 
 const { Title, Paragraph, Text } = Typography;
 const { Content } = Layout;
 
-interface StackWithId extends IStack {
-  _id: string;
-}
-
 export default function StacksAdmin() {
-  const [stacks, setStacks] = useState<StackWithId[]>([]);
-  const [editingStack, setEditingStack] = useState<Partial<StackWithId> | null>(
+  const [stacks, setStacks] = useState<IStack[]>([]);
+  const [editingStack, setEditingStack] = useState<Partial<IStack> | null>(
     null
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -94,52 +91,45 @@ export default function StacksAdmin() {
   };
 
   const handleSaveStack = async () => {
+    const isUpdate = !!editingStack?._id;
     try {
       const values = await form.validateFields();
       setIsUploading(true);
 
       let iconUrl = editingStack?.iconSrc || "";
 
-      // Upload new image if selected
       if (selectedFile) {
         iconUrl = await uploadImage(selectedFile);
       }
 
-      const method = editingStack?._id ? "PUT" : "POST";
-      const response = await fetch("/api/stacks", {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...editingStack,
-          ...values,
-          iconSrc: iconUrl,
-        }),
+      const stack = isUpdate ? await stacksBusiness.updateStack({
+        ...editingStack,
+        ...values,
+        iconSrc: iconUrl,
+      }) : await stacksBusiness.createStack({
+        ...values,
+        iconSrc: iconUrl,
       });
 
-      if (!response.ok) {
+      if (!stack) {
         throw new Error(
-          `Failed to ${editingStack?._id ? "update" : "create"} stack`
+          `Failed to ${isUpdate ? "update" : "create"} stack`
         );
       }
 
-      const data = await response.json();
-      if (data.success) {
+      if (stack) {
         await fetchStacks();
         setEditingStack(null);
         setSelectedFile(null);
         setPreviewUrl("");
         form.resetFields();
-        message.success(`${editingStack?._id ? "更新" : "创建"}成功`);
+        message.success(`${isUpdate ? "更新" : "创建"}成功`);
       } else {
         throw new Error(
-          data.error ||
-            `Failed to ${editingStack?._id ? "update" : "create"} stack`
+          `Failed to ${isUpdate ? "update" : "create"} stack`
         );
       }
     } catch (error) {
-      console.error("Error saving stack:", error);
       message.error("保存失败，请重试");
     } finally {
       setIsUploading(false);
@@ -158,7 +148,7 @@ export default function StacksAdmin() {
     });
   };
 
-  const handleEditStack = (stack: StackWithId) => {
+  const handleEditStack = (stack: IStack) => {
     setSelectedFile(null);
     setPreviewUrl("");
     form.setFieldsValue(stack);
@@ -167,14 +157,8 @@ export default function StacksAdmin() {
 
   const fetchStacks = async () => {
     try {
-      const response = await fetch("/api/stacks");
-      if (!response.ok) {
-        throw new Error("Failed to fetch stacks");
-      }
-      const data = await response.json();
-      if (data.success) {
-        setStacks(data.stacks);
-      }
+      const stacks = await stacksBusiness.getStacks();
+      setStacks(stacks);
     } catch (error) {
       console.error("Error fetching stacks:", error);
       message.error("获取数据失败，请刷新重试");
@@ -182,6 +166,11 @@ export default function StacksAdmin() {
   };
 
   const handleDeleteStack = async (id: string) => {
+    if (!id) {
+      message.error("id is required");
+      return;
+    }
+
     Modal.confirm({
       title: "确认删除",
       content: "确定要删除这个技术栈吗？此操作不可恢复。",
@@ -190,23 +179,19 @@ export default function StacksAdmin() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const response = await fetch(`/api/stacks?id=${id}`, {
-            method: "DELETE",
-          });
+          const response = await stacksBusiness.deleteStack(id);
 
-          if (!response.ok) {
+          if (!response) {
             throw new Error("Failed to delete stack");
           }
 
-          const data = await response.json();
-          if (data.success) {
+          if (response) {
             await fetchStacks();
             message.success("删除成功");
           } else {
-            throw new Error(data.error || "Failed to delete stack");
+            throw new Error("Failed to delete stack");
           }
         } catch (error) {
-          console.error("Error deleting stack:", error);
           message.error("删除失败，请重试");
         }
       },
@@ -252,7 +237,7 @@ export default function StacksAdmin() {
                         type="text"
                         danger
                         icon={<DeleteOutlined />}
-                        onClick={() => handleDeleteStack(stack._id)}
+                        onClick={() => handleDeleteStack(stack._id || "")}
                       >
                         删除
                       </Button>

@@ -5,12 +5,9 @@ import { Link } from "lucide-react";
 import Image from "next/image";
 import { IStack } from "@/app/model/stack";
 import { useEffect, useState, useCallback } from "react";
-import { useLocalCache } from "@/app/hooks/useLocalCache";
 import { truncateText } from "@/utils/text";
-
-const CACHE_KEYS = {
-  STACKS: 'stacks_data',
-};
+import { stacksBusiness } from "../business/stacks";
+import { message } from "antd";
 
 // 骨架屏组件
 const StackSkeleton = () => {
@@ -33,42 +30,20 @@ const StackSkeleton = () => {
 export default function Stack() {
   const [stackList, setStackList] = useState<IStack[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getFromCache, setCache } = useLocalCache();
-
   // 获取技术栈数据
   const fetchStacks = useCallback(async () => {
     try {
-      // 先尝试从缓存获取
-      const cachedData = getFromCache<IStack[]>(CACHE_KEYS.STACKS);
-      if (cachedData) {
-        return cachedData;
-      }
-
-      const response = await fetch("/api/stacks", {
-        cache: "no-store",
-      });
-      const data = await response.json();
-      if (data.success) {
-        // 缓存结果
-        setCache(CACHE_KEYS.STACKS, data.stacks);
-        return data.stacks;
-      }
-      return [];
+      const stacks = await stacksBusiness.getStacks();
+      setStackList(stacks);
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching stacks:", error);
-      return [];
+      message.error("Error fetching stacks:" + error);
+      setLoading(false);
     }
-  }, [getFromCache, setCache]);
+  }, []);
 
   useEffect(() => {
     fetchStacks()
-      .then(data => {
-        setStackList(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
   }, [fetchStacks]);
 
   return (
@@ -89,7 +64,9 @@ export default function Stack() {
           // 显示实际数据
           stackList.map((stackItem) => (
             <li key={stackItem._id as any} className="mb-1 flex last:mb-0">
-              <Card className="flex-1 max-w-96">
+              <Card className="flex-1 max-w-96 cursor-pointer" onClick={() => {
+                window.open(stackItem.link, '_blank');
+              }}>
                 <div className="flex items-center h-full space-x-4 rounded-md p-4">
                   <Image
                     src={stackItem.iconSrc}
@@ -98,15 +75,12 @@ export default function Stack() {
                     alt={stackItem.title}
                   ></Image>
                   <div className="flex-1 space-y-1">
-                    <a
-                      className="text-sm font-medium leading-none flex hover:underline items-center"
-                      href={stackItem.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <div
+                      className="text-sm font-medium leading-none flex items-center"
                     >
                       {stackItem.title}
                       <Link className="ml-1" size={14} />
-                    </a>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {truncateText(stackItem.description)}
                     </p>

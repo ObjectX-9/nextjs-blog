@@ -1,133 +1,65 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import { IStack } from "@/app/model/stack";
+import { ApiErrors, errorResponse, successResponse, withErrorHandler } from "../data";
+import { stackDb } from "@/utils/db-instances";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 
-// Get all stacks
-export async function GET() {
-  try {
-    const db = await getDb();
-    const stacks = await db.collection<IStack>("stacks").find().toArray();
-
-    return NextResponse.json({ success: true, stacks });
-  } catch (error) {
-    console.error("Error fetching stacks:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch stacks" },
-      { status: 500 }
-    );
-  }
-}
+export const GET = withErrorHandler<[Request], { stacks: IStack[] }>(async () => {
+  const stacks = await stackDb.find({});
+  return successResponse({ stacks });
+});
 
 // Create a new stack
-export async function POST(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
+export const POST = withErrorHandler<[Request], { stack: IStack }>(async (request: Request) => {
+  const data = await parseRequestBody<IStack>(request);
+  RequestValidator.validateRequired(data, ['title', 'description', 'link', 'iconSrc']);
 
-    const stack = {
-      title: data.title,
-      description: data.description,
-      link: data.link,
-      iconSrc: data.iconSrc,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  const stack = {
+    title: data.title,
+    description: data.description,
+    link: data.link,
+    iconSrc: data.iconSrc,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
-    const result = await db
-      .collection<IStack>("stacks")
-      .insertOne(stack as unknown as IStack);
+  const result = await stackDb.insertOne(stack);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        stack: { ...stack, _id: result.insertedId },
-      });
-    }
-
-    throw new Error("Failed to insert stack");
-  } catch (error) {
-    console.error("Error creating stack:", error);
-    return NextResponse.json(
-      { error: "Failed to create stack" },
-      { status: 500 }
-    );
-  }
-}
+  return successResponse({ stack: result });
+});
 
 // Update a stack
-export async function PUT(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
+export const PUT = withErrorHandler<[Request], { stack: IStack }>(async (request: Request) => {
+  const data = await parseRequestBody<IStack>(request);
+  RequestValidator.validateRequired(data, ['_id', 'title', 'description', 'link', 'iconSrc']);
 
-    if (!data._id) {
-      return NextResponse.json(
-        { error: "Stack ID is required" },
-        { status: 400 }
-      );
-    }
+  const updateData = {
+    ...(data.title && { title: data.title }),
+    ...(data.description && { description: data.description }),
+    ...(data.link && { link: data.link }),
+    ...(data.iconSrc && { iconSrc: data.iconSrc }),
+    updatedAt: new Date(),
+  };
 
-    const updateData = {
-      ...(data.title && { title: data.title }),
-      ...(data.description && { description: data.description }),
-      ...(data.link && { link: data.link }),
-      ...(data.iconSrc && { iconSrc: data.iconSrc }),
-      updatedAt: new Date(),
-    };
+  const result = await stackDb.updateOne({ _id: data._id }, { $set: updateData });
 
-    const result = await db
-      .collection<IStack>("stacks")
-      .updateOne({ _id: new ObjectId(data._id) as any }, { $set: updateData });
-
-    if (result.matchedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Stack updated successfully",
-      });
-    }
-
-    return NextResponse.json({ error: "Stack not found" }, { status: 404 });
-  } catch (error) {
-    console.error("Error updating stack:", error);
-    return NextResponse.json(
-      { error: "Failed to update stack" },
-      { status: 500 }
-    );
+  if (result.matchedCount > 0) {
+    return successResponse({ stack: result });
   }
-}
 
-// Delete a stack
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+  return errorResponse(ApiErrors.NOT_FOUND('Stack not found'));
+});
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "Stack ID is required" },
-        { status: 400 }
-      );
-    }
+export const DELETE = withErrorHandler<[Request], { stack: IStack }>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const id = apiParams.getString("id");
 
-    const db = await getDb();
-    const result = await db
-      .collection<IStack>("stacks")
-      .deleteOne({ _id: new ObjectId(id) as any });
+  RequestValidator.validateRequired({ id }, ['id']);
 
-    if (result.deletedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Stack deleted successfully",
-      });
-    }
+  const result = await stackDb.deleteOne({ _id: id });
 
-    return NextResponse.json({ error: "Stack not found" }, { status: 404 });
-  } catch (error) {
-    console.error("Error deleting stack:", error);
-    return NextResponse.json(
-      { error: "Failed to delete stack" },
-      { status: 500 }
-    );
+  if (result.deletedCount > 0) {
+    return successResponse({ stack: result });
   }
-}
+
+  return errorResponse(ApiErrors.NOT_FOUND('Stack not found'));
+});

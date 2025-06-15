@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 export interface IWorkExperienceBase {
   _id?: string;
@@ -6,11 +6,13 @@ export interface IWorkExperienceBase {
   companyUrl: string;
   position: string;
   description: string;
+  createdAt: string;
+  updatedAt: string;
   startDate: string;
   endDate: string | null; // null means current position
 }
 
-export interface IWorkExperience extends Document, IWorkExperienceBase {
+export interface IWorkExperience extends IWorkExperienceBase {
   _id: string;
 }
 

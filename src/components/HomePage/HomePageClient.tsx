@@ -2,7 +2,7 @@
 
 import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
-import { Article } from "@/app/model/article";
+import { Article, ArticleStatus } from "@/app/model/article";
 import HomeHeader from "@/components/HomePage/HomeHeader";
 import AuthorIntro from "@/components/HomePage/AuthorIntro";
 import { ListSection } from "@/components/HomePage/ListSection";
@@ -17,54 +17,56 @@ import { calculateDuration } from "@/utils/time";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { throttle } from "lodash-es";
 import Loading from "@/app/Loading";
-import { request } from '@/utils/request';
 import { articlesService } from "@/app/business/articles";
+import { message } from "antd";
+import { socialLinkBusiness } from "@/app/business/social-link";
+import { workExperienceBusiness } from "@/app/business/work-experience";
 
 interface HomePageClientProps {
-  
+
 }
 
-export default function HomePageClient({}: HomePageClientProps) {
+export default function HomePageClient({ }: HomePageClientProps) {
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
   const [workExperiences, setWorkExperiences] = useState<IWorkExperience[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [basicDataLoading, setBasicDataLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMore = useRef(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const mainRef = useRef<HTMLElement>(null);
 
   const fetchSocialLinks = async () => {
     try {
-      const response = await request.get<{socialLinks: ISocialLink[]}>('social-links');
-      setSocialLinks(response.data.socialLinks);
+      const socialLinks = await socialLinkBusiness.getSocialLinks();
+      setSocialLinks(socialLinks);
     } catch (error) {
-      console.error('获取社交链接失败:', error);
+      message.error('获取社交链接失败:' + error);
     }
   }
 
   const fetchWorkExperiences = async () => {
     try {
-      const response = await request.get<{workExperiences: IWorkExperience[]}>('work-experience');
-      setWorkExperiences(response.data.workExperiences);
+      const workExperiences = await workExperienceBusiness.getWorkExperiences();
+      setWorkExperiences(workExperiences);
     } catch (error) {
-      console.error('获取工作经历失败:', error);
+      message.error('获取工作经历失败:' + error);
     }
   }
 
   const fetchArticles = async (pageNum: number = 1, isLoadMore: boolean = false) => {
     if (isLoadMore) {
-      setLoadingMore(true);
+      loadingMore.current = true;
     }
-    
+
     try {
       const response = await articlesService.getArticles({
         page: pageNum,
         limit: 20,
-        status: 'published',
+        status: ArticleStatus.PUBLISHED,
         sortBy: 'latest'
       });
-      
+
       if (isLoadMore) {
         // 追加新数据，但要去重
         setArticles(prev => {
@@ -78,74 +80,30 @@ export default function HomePageClient({}: HomePageClientProps) {
         // 设置初始数据
         setArticles(response.items);
       }
-      
+
       // 使用API返回的分页信息
       if (response.pagination) {
         setHasMore(response.pagination.hasMore);
+        setPage(response.pagination.page);
       } else {
         // 兼容旧的逻辑
         setHasMore(response.items.length === 20);
       }
+      loadingMore.current = false;
     } catch (error) {
       console.error('获取文章失败:', error);
-    } finally {
-      if (isLoadMore) {
-        setLoadingMore(false);
-      }
+      loadingMore.current = false;
     }
   }
 
   // 加载更多文章
-  const loadMoreArticles = useCallback(() => {
-    if (!loadingMore && hasMore) {
+  const loadMoreArticles = () => {
+    if (!loadingMore.current && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchArticles(nextPage, true);
     }
-  }, [page, loadingMore, hasMore]);
-
-  // 滚动监听 - 修改为监听main元素
-  useEffect(() => {
-    const mainElement = mainRef.current;
-    if (!mainElement) return;
-
-    const handleScroll = () => {
-      const scrollTop = mainElement.scrollTop;
-      const clientHeight = mainElement.clientHeight;
-      const scrollHeight = mainElement.scrollHeight;
-      
-      console.log('滚动事件触发', { 
-        scrollTop, 
-        clientHeight, 
-        scrollHeight, 
-        hasMore, 
-        loadingMore,
-        isNearBottom: scrollTop + clientHeight >= scrollHeight - 100
-      });
-      
-      // 当滚动到距离底部100px时触发加载更多
-      if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !loadingMore) {
-        loadMoreArticles();
-      }
-    };
-
-    // 添加初始化时的高度检查
-    const checkInitialHeight = throttle(() => {
-        const scrollHeight = mainElement.scrollHeight;
-        const clientHeight = mainElement.clientHeight;
-        
-        // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
-        if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
-          loadMoreArticles();
-        }
-      }, 100);
-
-    mainElement.addEventListener('scroll', handleScroll, { passive: true });
-    
-    checkInitialHeight();
-    
-    return () => mainElement.removeEventListener('scroll', handleScroll);
-  }, [loadMoreArticles, hasMore, loadingMore, articles?.length]);
+  }
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -158,7 +116,7 @@ export default function HomePageClient({}: HomePageClientProps) {
           fetchArticles(1, false) // 初始加载第一页文章
         ]);
       } catch (error) {
-        console.error('获取数据失败:', error);
+        message.error('获取数据失败:' + error);
       } finally {
         setBasicDataLoading(false);
       }
@@ -167,17 +125,52 @@ export default function HomePageClient({}: HomePageClientProps) {
     fetchInitialData();
   }, []);
 
+  // 滚动监听 - 修改为监听main元素
+  useEffect(() => {
+    const mainElement = mainRef.current;
+    if (!mainElement) return;
+
+    const handleScroll = throttle(() => {
+      const scrollTop = mainElement.scrollTop;
+      const clientHeight = mainElement.clientHeight;
+      const scrollHeight = mainElement.scrollHeight;
+
+      // 当滚动到距离底部100px时触发加载更多
+      if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !loadingMore.current) {
+        loadMoreArticles();
+      }
+    }, 100);
+
+    // 添加初始化时的高度检查
+    const checkInitialHeight = () => {
+      const scrollHeight = mainElement.scrollHeight;
+      const clientHeight = mainElement.clientHeight;
+
+      // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
+      if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
+        loadMoreArticles();
+      }
+    };
+
+    mainElement.addEventListener('scroll', handleScroll, { passive: true });
+
+    checkInitialHeight();
+
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [mainRef.current, page]);
+
   // 显示基础数据loading状态
   if (basicDataLoading) {
     return (
-      <Loading/>
+      <Loading />
     );
   }
 
   return (
-    <main 
+    <main
       ref={mainRef}
-      className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8"
+      className="flex h-screen w-full box-border flex-col overflow-y-auto custom-scrollbar-thin
+ py-8 px-8"
     >
       <HomeHeader />
 
@@ -207,15 +200,15 @@ export default function HomePageClient({}: HomePageClientProps) {
           </Section>
         </div>
       </div>
-      
+
       <ListSection
         title="📚 技术文章"
         titleLink="/articles"
         items={articles}
       />
-      
+
       {/* 加载更多指示器 */}
-      {loadingMore && (
+      {loadingMore.current && (
         <div className="w-full max-w-3xl my-0 mx-auto mt-4 mb-8 flex justify-center">
           <div className="flex items-center space-x-2 text-gray-500">
             <LoadingSpinner className="w-5 h-5" />
@@ -223,7 +216,7 @@ export default function HomePageClient({}: HomePageClientProps) {
           </div>
         </div>
       )}
-      
+
       {/* 没有更多内容提示 */}
       {!hasMore && articles.length > 0 && (
         <div className="w-full max-w-3xl my-0 mx-auto mt-4 mb-8 flex justify-center">

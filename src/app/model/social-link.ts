@@ -7,7 +7,9 @@ export interface ISocialLinkBase {
   bgColor: string;
 }
 
-export interface ISocialLink extends Document, ISocialLinkBase {}
+export interface ISocialLink extends ISocialLinkBase {
+  _id: string;
+}
 
 const socialLinkSchema = new Schema<ISocialLink>({
   name: { type: String, required: true },

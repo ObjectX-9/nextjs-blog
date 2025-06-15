@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IStack extends Document {
+export interface IStack {
+  _id?: string;
   title: string;
   description: string;
   link: string;

@@ -8,7 +8,6 @@ import {
   Home,
   Laptop,
   Menu,
-  PencilLine,
   Slack,
   Users,
   Camera,
@@ -29,6 +28,8 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ISocialLink } from "@/app/model/social-link";
 import { useSiteStore } from "@/store/site";
+import { socialLinkBusiness } from "@/app/business/social-link";
+import { message } from "antd";
 
 const navList = [
   {
@@ -61,42 +62,6 @@ const iconMap = {
   Follow: <Eye size={16} />,
 } as const;
 
-// Cache management
-const CACHE_KEYS = {
-  SOCIAL_LINKS: "social_links_data",
-  LAST_FETCH: "social_links_last_fetch",
-};
-
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-function getFromCache<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
-  const cached = localStorage.getItem(key);
-  if (!cached) return null;
-
-  try {
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function setCache(key: string, data: any): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(
-    key,
-    JSON.stringify({
-      data,
-      timestamp: Date.now(),
-    })
-  );
-}
-
 const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const currentPathname = usePathname();
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
@@ -106,28 +71,11 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
 
   useEffect(() => {
     const fetchSocialLinks = async () => {
-      // Try to get from cache first
-      const cached = getFromCache<ISocialLink[]>(CACHE_KEYS.SOCIAL_LINKS);
-      if (cached) {
-        setSocialLinks(cached);
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await fetch("/api/social-links");
-        if (!response.ok) {
-          throw new Error("Failed to fetch social links");
-        }
-        const data = await response.json();
-        if (data.success) {
-          setSocialLinks(data.socialLinks);
-          setCache(CACHE_KEYS.SOCIAL_LINKS, data.socialLinks);
-        } else {
-          throw new Error("Failed to fetch social links");
-        }
+        const socialLinks = await socialLinkBusiness.getSocialLinks();
+        setSocialLinks(socialLinks);
       } catch (error) {
-        console.error("Error fetching social links:", error);
+        message.error("Error fetching social links:" + error);
         setError(
           error instanceof Error
             ? error.message

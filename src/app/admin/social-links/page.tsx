@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ISocialLink } from "@/app/model/social-link";
 import Image from "next/image";
 import {
@@ -12,7 +12,6 @@ import {
   message,
   Typography,
   Layout,
-  Space,
   Upload,
 } from "antd";
 import {
@@ -22,6 +21,7 @@ import {
   LinkOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
+import { socialLinkBusiness } from "@/app/business/social-link";
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
@@ -52,17 +52,10 @@ export default function SocialLinksManagementPage() {
 
   const fetchSocialLinks = async () => {
     try {
-      const response = await fetch("/api/social-links");
-      if (!response.ok) {
-        throw new Error("Failed to fetch social links");
-      }
-      const data = await response.json();
-      if (data.success) {
-        setItems(data.socialLinks);
-      }
+      const socialLinks = await socialLinkBusiness.getSocialLinks();
+      setItems(socialLinks);
     } catch (error) {
-      console.error("Error fetching social links:", error);
-      message.error("获取数据失败，请刷新重试");
+      message.error("Error fetching social links:" + error);
     }
   };
 
@@ -108,6 +101,7 @@ export default function SocialLinksManagementPage() {
   };
 
   const handleSaveItem = async () => {
+    const isUpdate = !!editingItem?._id;
     try {
       const values = await form.validateFields();
       let iconUrl = editingItem?.icon;
@@ -124,37 +118,31 @@ export default function SocialLinksManagementPage() {
         }
       }
 
-      const method = editingItem?._id ? "PUT" : "POST";
-      const response = await fetch("/api/social-links", {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...editingItem,
-          ...values,
-          icon: iconUrl,
-        }),
+      const socialLink = isUpdate ? await socialLinkBusiness.updateSocialLink({
+        ...editingItem,
+        ...values,
+        icon: iconUrl,
+      }) : await socialLinkBusiness.createSocialLink({
+        ...values,
+        icon: iconUrl,
       });
 
-      if (!response.ok) {
+      if (!socialLink) {
         throw new Error(
-          `Failed to ${editingItem?._id ? "update" : "create"} social link`
+          `Failed to ${isUpdate ? "update" : "create"} social link`
         );
       }
 
-      const data = await response.json();
-      if (data.success) {
+      if (socialLink) {
         await fetchSocialLinks();
         setEditingItem(null);
         setSelectedFile(null);
         setPreviewUrl("");
         form.resetFields();
-        message.success(`${editingItem?._id ? "更新" : "创建"}成功`);
+        message.success(`${isUpdate ? "更新" : "创建"}成功`);
       } else {
         throw new Error(
-          data.error ||
-            `Failed to ${editingItem?._id ? "update" : "create"} social link`
+          `Failed to ${isUpdate ? "update" : "create"} social link`
         );
       }
     } catch (error) {
@@ -191,20 +179,17 @@ export default function SocialLinksManagementPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const response = await fetch(`/api/social-links?id=${id}`, {
-            method: "DELETE",
-          });
+          const response = await socialLinkBusiness.deleteSocialLink(id);
 
-          if (!response.ok) {
+          if (!response) {
             throw new Error("Failed to delete social link");
           }
 
-          const data = await response.json();
-          if (data.success) {
+          if (response) {
             await fetchSocialLinks();
             message.success("删除成功");
           } else {
-            throw new Error(data.error || "Failed to delete social link");
+            throw new Error("Failed to delete social link");
           }
         } catch (error) {
           console.error("Error deleting social link:", error);

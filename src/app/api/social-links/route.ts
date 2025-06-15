@@ -1,145 +1,63 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import { ISocialLink, ISocialLinkBase } from "@/app/model/social-link";
+import { socialLinkDb } from "@/utils/db-instances";
+import { ApiErrors, errorResponse, successResponse, withErrorHandler } from "../data";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 
-// Get all social links
-export async function GET() {
-  try {
-    const db = await getDb();
-    const socialLinks = await db
-      .collection<ISocialLink>("socialLinks")
-      .find()
-      .toArray();
+export const GET = withErrorHandler<[Request], { socialLinks: ISocialLink[] }>(async (request: Request) => {
+  const socialLinks = await socialLinkDb.find({});
+  return successResponse({ socialLinks: socialLinks });
+});
 
-    return NextResponse.json({ success: true, socialLinks });
-  } catch (error) {
-    console.error("Error fetching social links:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch social links" },
-      { status: 500 }
-    );
+export const POST = withErrorHandler<[Request], { socialLink: ISocialLink }>(async (request: Request) => {
+  const data = await parseRequestBody<ISocialLinkBase>(request);
+
+  RequestValidator.validateRequired(data, ['name', 'icon', 'url', 'bgColor']);
+
+  const socialLink: ISocialLinkBase = {
+    name: data.name,
+    icon: data.icon,
+    url: data.url,
+    bgColor: data.bgColor,
+  };
+
+  const result = await socialLinkDb.insertOne(socialLink);
+
+  return successResponse({ socialLink: result });
+});
+
+export const PUT = withErrorHandler<[Request], { socialLink: ISocialLink }>(async (request: Request) => {
+  const data = await parseRequestBody<ISocialLink>(request);
+
+  RequestValidator.validateRequired(data, ['_id', 'name', 'icon', 'url', 'bgColor']);
+
+  const updateData = {
+    ...(data.name && { name: data.name }),
+    ...(data.icon && { icon: data.icon }),
+    ...(data.url && { url: data.url }),
+    ...(data.bgColor && { bgColor: data.bgColor }),
+    updatedAt: new Date(),
+  };
+
+  const result = await socialLinkDb.updateOne({ _id: data._id }, { $set: updateData });
+
+  if (result.matchedCount > 0) {
+    return successResponse({ socialLink: data });
   }
-}
 
-// Create a new social link
-export async function POST(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
+  return errorResponse(ApiErrors.NOT_FOUND('Social link not found'));
+});
 
-    const socialLink: ISocialLinkBase = {
-      name: data.name,
-      icon: data.icon,
-      url: data.url,
-      bgColor: data.bgColor,
-    };
+export const DELETE = withErrorHandler<[Request], { socialLink: ISocialLink }>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const id = apiParams.getString("id");
 
-    const result = await db
-      .collection<ISocialLink>("socialLinks")
-      .insertOne(socialLink as unknown as ISocialLink);
+  RequestValidator.validateRequired({ id }, ['id']);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        socialLink: {
-          ...socialLink,
-          _id: result.insertedId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-    }
+  const result = await socialLinkDb.deleteOne({ _id: id });
 
-    throw new Error("Failed to insert social link");
-  } catch (error) {
-    console.error("Error creating social link:", error);
-    return NextResponse.json(
-      { error: "Failed to create social link" },
-      { status: 500 }
-    );
+  if (result.deletedCount > 0) {
+    return successResponse({ socialLink: { _id: id } });
   }
-}
 
-// Update a social link
-export async function PUT(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
-
-    if (!data._id) {
-      return NextResponse.json(
-        { error: "Social link ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const updateData = {
-      ...(data.name && { name: data.name }),
-      ...(data.icon && { icon: data.icon }),
-      ...(data.url && { url: data.url }),
-      ...(data.bgColor && { bgColor: data.bgColor }),
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .collection<ISocialLink>("socialLinks")
-      .updateOne({ _id: new ObjectId(data._id) as any }, { $set: updateData });
-
-    if (result.matchedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Social link updated successfully",
-      });
-    }
-
-    return NextResponse.json(
-      { error: "Social link not found" },
-      { status: 404 }
-    );
-  } catch (error) {
-    console.error("Error updating social link:", error);
-    return NextResponse.json(
-      { error: "Failed to update social link" },
-      { status: 500 }
-    );
-  }
-}
-
-// Delete a social link
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Social link ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDb();
-    const result = await db
-      .collection<ISocialLink>("socialLinks")
-      .deleteOne({ _id: new ObjectId(id) as any });
-
-    if (result.deletedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Social link deleted successfully",
-      });
-    }
-
-    return NextResponse.json(
-      { error: "Social link not found" },
-      { status: 404 }
-    );
-  } catch (error) {
-    console.error("Error deleting social link:", error);
-    return NextResponse.json(
-      { error: "Failed to delete social link" },
-      { status: 500 }
-    );
-  }
-}
+  return errorResponse(ApiErrors.NOT_FOUND('Social link not found'));
+});

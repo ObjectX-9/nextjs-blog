@@ -1,146 +1,70 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import { IWorkExperience } from "@/app/model/work-experience";
+import { ApiErrors, errorResponse, successResponse, withErrorHandler } from "../data";
+import { workExperienceDb } from "@/utils/db-instances";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 
-// Get all work experiences
-export async function GET() {
-  try {
-    const db = await getDb();
-    const workExperiences = await db
-      .collection<IWorkExperience>("workExperiences")
-      .find()
-      .toArray();
+export const GET = withErrorHandler<[Request], { workExperiences: IWorkExperience[] }>(async () => {
+  const workExperiences = await workExperienceDb.find({}, { sort: { startDate: -1 } });
+  return successResponse({ workExperiences });
+});
 
-    return NextResponse.json({ success: true, workExperiences });
-  } catch (error) {
-    console.error("Error fetching work experiences:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch work experiences" },
-      { status: 500 }
-    );
+export const POST = withErrorHandler<[Request], { workExperience: IWorkExperience }>(async (request: Request) => {
+  const data = await parseRequestBody<IWorkExperience>(request);
+
+  RequestValidator.validateRequired(data, ['company', 'position', 'description', 'startDate']);
+
+  const workExperience: Omit<IWorkExperience, '_id'> = {
+    company: data.company,
+    companyUrl: data.companyUrl,
+    position: data.position,
+    description: data.description,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await workExperienceDb.insertOne(workExperience);
+
+  return successResponse({ workExperience: result });
+
+});
+
+export const PUT = withErrorHandler<[Request], { workExperience: IWorkExperience }>(async (request: Request) => {
+  const data = await parseRequestBody<IWorkExperience>(request);
+
+  RequestValidator.validateRequired(data, ['_id', 'company', 'companyUrl', 'position', 'description', 'startDate']);
+
+  const updateData: Partial<IWorkExperience> = {
+    ...(data.company && { company: data.company }),
+    ...(data.companyUrl && { companyUrl: data.companyUrl }),
+    ...(data.position && { position: data.position }),
+    ...(data.description && { description: data.description }),
+    ...(data.startDate && { startDate: data.startDate }),
+    ...(typeof data.endDate !== "undefined" && { endDate: data.endDate }),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await workExperienceDb.updateOne({ _id: data._id }, { $set: updateData });
+
+  if (result.matchedCount > 0) {
+    return successResponse({ workExperience: result });
   }
-}
 
-// Create a new work experience
-export async function POST(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
+  return errorResponse(ApiErrors.NOT_FOUND('Work experience not found'));
+});
 
-    const workExperience = {
-      company: data.company,
-      companyUrl: data.companyUrl,
-      position: data.position,
-      description: data.description,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+export const DELETE = withErrorHandler<[Request], { workExperience: IWorkExperience }>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const id = apiParams.getString("id");
 
-    const result = await db
-      .collection<IWorkExperience>("workExperiences")
-      .insertOne(workExperience as unknown as IWorkExperience);
+  RequestValidator.validateRequired({ id }, ['id']);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        workExperience: { ...workExperience, _id: result.insertedId },
-      });
-    }
+  const result = await workExperienceDb.deleteOne({ _id: id });
 
-    throw new Error("Failed to insert work experience");
-  } catch (error) {
-    console.error("Error creating work experience:", error);
-    return NextResponse.json(
-      { error: "Failed to create work experience" },
-      { status: 500 }
-    );
+  if (result.deletedCount > 0) {
+    return successResponse({ workExperience: result });
   }
-}
 
-// Update a work experience
-export async function PUT(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
-
-    if (!data._id) {
-      return NextResponse.json(
-        { error: "Work experience ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const updateData = {
-      ...(data.company && { company: data.company }),
-      ...(data.companyUrl && { companyUrl: data.companyUrl }),
-      ...(data.position && { position: data.position }),
-      ...(data.description && { description: data.description }),
-      ...(data.startDate && { startDate: data.startDate }),
-      ...(typeof data.endDate !== "undefined" && { endDate: data.endDate }),
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .collection<IWorkExperience>("workExperiences")
-      .updateOne({ _id: new ObjectId(data._id) as any }, { $set: updateData });
-
-    if (result.matchedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Work experience updated successfully",
-      });
-    }
-
-    return NextResponse.json(
-      { error: "Work experience not found" },
-      { status: 404 }
-    );
-  } catch (error) {
-    console.error("Error updating work experience:", error);
-    return NextResponse.json(
-      { error: "Failed to update work experience" },
-      { status: 500 }
-    );
-  }
-}
-
-// Delete a work experience
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Work experience ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDb();
-    const result = await db
-      .collection<IWorkExperience>("workExperiences")
-      .deleteOne({ _id: new ObjectId(id) as any });
-
-    if (result.deletedCount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: "Work experience deleted successfully",
-      });
-    }
-
-    return NextResponse.json(
-      { error: "Work experience not found" },
-      { status: 404 }
-    );
-  } catch (error) {
-    console.error("Error deleting work experience:", error);
-    return NextResponse.json(
-      { error: "Failed to delete work experience" },
-      { status: 500 }
-    );
-  }
-}
+  return errorResponse(ApiErrors.NOT_FOUND('Work experience not found'));
+});
