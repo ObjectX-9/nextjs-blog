@@ -1,3 +1,5 @@
+import { scrollToHeading } from '@/utils/heading-utils';
+
 // 标题项目接口
 export interface HeadingItem {
     level: number;
@@ -28,7 +30,8 @@ export const TableOfContents: React.FC<{
                             <button
                                 onClick={() => {
                                     console.log('点击目录项:', heading.text, heading.id);
-                                    onHeadingClick(heading.id);
+                                    // 直接使用文本内容进行跳转，而不是通过 onHeadingClick 回调
+                                    scrollToHeading(heading.text);
                                 }}
                                 className={`
                     w-full text-left p-2 text-sm hover:bg-gray-100 rounded transition-colors

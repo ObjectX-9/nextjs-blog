@@ -9,6 +9,7 @@ import { useSiteStore } from "@/store/site";
 import Image from "next/image";
 import { useLocalCache } from "@/app/hooks/useLocalCache";
 import { articlesService } from "@/app/business/articles";
+import { scrollToHeading } from "@/utils/heading-utils";
 
 // 缓存键常量
 const CACHE_KEYS = {
@@ -435,16 +436,18 @@ export default function ArticleDetailPage() {
                     .map((heading, index) => {
                       const level = heading.match(/^#+/)?.[0].length || 1;
                       const text = heading.replace(/^#+\s+/, "");
+                      // Toast UI Editor 生成的 ID 规则：转换为小写，空格和特殊字符替换为连字符
+                      const headingId = text
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
+                        .replace(/^-+|-+$/g, "");
                       return (
                         <div
                           key={index}
                           className={`text-gray-700 hover:text-black cursor-pointer`}
                           style={{ paddingLeft: `${(level - 1) * 1}rem` }}
                           onClick={() => {
-                            const element = document.getElementById(
-                              text.toLowerCase().replace(/\s+/g, "-")
-                            );
-                            element?.scrollIntoView({ behavior: "smooth" });
+                            scrollToHeading(text);
                             setShowToc(false);
                           }}
                         >
@@ -534,6 +537,11 @@ export default function ArticleDetailPage() {
                 .map((heading, index) => {
                   const level = heading.match(/^#+/)?.[0].length || 1;
                   const text = heading.replace(/^#+\s+/, "");
+                  // Toast UI Editor 生成的 ID 规则：转换为小写，空格和特殊字符替换为连字符
+                  const headingId = text
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
+                    .replace(/^-+|-+$/g, "");
                   return (
                     <div
                       key={index}
@@ -543,10 +551,7 @@ export default function ArticleDetailPage() {
                         } hover:text-blue-600 cursor-pointer text-sm transition-colors duration-150 ease-in-out`}
                       style={{ paddingLeft: `${(level - 1) * 1}rem` }}
                       onClick={() => {
-                        const element = document.getElementById(
-                          text.toLowerCase().replace(/\s+/g, "-")
-                        );
-                        element?.scrollIntoView({ behavior: "smooth" });
+                        scrollToHeading(text);
                       }}
                       title={text}
                     >

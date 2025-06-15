@@ -2,15 +2,28 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { ArticleStatus, ArticleCountByCategory } from '@/app/model/article';
-import { MarkdownEditor } from '@/components/customMdRender/components/MarkdownEditor';
-import { Button, Modal, Input, Select, Space, Typography, message } from 'antd';
+import { Button, Modal, Input, Select, Space, Typography, message, Spin } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { articlesService } from '@/app/business/articles';
 import "@/styles/markdown.css";
 
 const { Title } = Typography;
 const { Option } = Select;
+
+// 动态导入 MarkdownEditor，禁用 SSR
+const MarkdownEditor = dynamic(
+  () => import('@/components/customMdRender/components/MarkdownEditor').then(mod => ({ default: mod.MarkdownEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full">
+        <Spin size="large" tip="正在加载编辑器..." />
+      </div>
+    )
+  }
+);
 
 const initialContent = `# 开始编写你的技术文档...`;
 

@@ -28,6 +28,10 @@ import 'prismjs/components/prism-go';
 import 'prismjs/components/prism-rust';
 import 'prismjs/components/prism-sql';
 import { HeadingItem, TableOfContents } from './TableOfContents';
+import { generateHeadingId } from '@/utils/heading-utils';
+
+// 浏览器环境检查
+const isBrowser = typeof window !== 'undefined';
 
 // 文档主题类型定义
 type DocumentTheme = 'default' | 'github' | 'notion' | 'dark' | 'academic' | 'minimal' | 'material' | 'dracula' | 'solarized-light' | 'vscode' | 'monokai' | 'typora' | 'bear';
@@ -55,6 +59,12 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const [headings, setHeadings] = useState<HeadingItem[]>([]);
   const [tocCollapsed, setTocCollapsed] = useState(false);
   const [currentDocumentTheme, setCurrentDocumentTheme] = useState<DocumentTheme>(documentTheme);
+  const [isClient, setIsClient] = useState(false);
+
+  // 确保组件只在客户端渲染
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 文档主题切换处理
   const handleDocumentThemeToggle = useCallback(() => {
@@ -128,7 +138,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     while ((match = headingRegex.exec(markdown)) !== null) {
       const level = match[1].length;
       const text = match[2].trim();
-      const id = `heading-${text.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/(^-|-$)/g, '')}-${headings.length}`;
+      // 使用统一的 ID 生成规则
+      const id = generateHeadingId(text);
 
       headings.push({
         level,
@@ -327,6 +338,18 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       setUploading(false);
     }
   };
+
+  // 在服务端或客户端初始化期间显示加载状态
+  if (!isClient || !isBrowser) {
+    return (
+      <div className={`markdown-editor w-full h-full flex items-center justify-center ${className}`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <div className="text-gray-500">正在加载编辑器...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`markdown-editor w-full h-full flex ${className}`}>
