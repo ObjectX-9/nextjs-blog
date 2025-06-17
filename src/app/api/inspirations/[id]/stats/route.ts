@@ -1,47 +1,44 @@
 import { ObjectId } from "mongodb";
-import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { InspirationDocument } from "@/app/model/inspiration";
+import { ApiErrors, successResponse, withErrorHandler } from "@/app/api/data";
+import { parseRequestBody } from "@/utils/api-helpers";
+import { inspirationDb } from "@/utils/db-instances";
 
-// 更新点赞数
-export async function POST(
-  request: NextRequest,
+// 更新点赞数和浏览量
+export const POST = withErrorHandler<[Request, { params: { id: string } }], { likes?: number; views?: number }>(async (
+  request: Request,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { action } = await request.json();
-    if (!["like", "view"].includes(action)) {
-      return NextResponse.json(
-        { error: "Invalid action. Use 'like' or 'view'" },
-        { status: 400 }
-      );
-    }
+) => {
+  const inspirationId = params.id;
 
-    const db = await getDb();
-    const collection = db.collection<InspirationDocument>("inspirations");
+  // 从请求体获取 action
+  const { action } = await parseRequestBody(request);
 
-    const updateField = action === "like" ? "likes" : "views";
-    const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(params.id) },
-      { $inc: { [updateField]: 1 } },
-      { returnDocument: "after" }
-    );
-
-    if (!result) {
-      return NextResponse.json(
-        { error: "Inspiration not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      [updateField]: result[updateField],
-    });
-  } catch (error) {
-    console.error(`Error updating inspiration ${params.id}:`, error);
-    return NextResponse.json(
-      { error: "Failed to update inspiration stats" },
-      { status: 500 }
-    );
+  if (!["like", "view"].includes(action)) {
+    throw ApiErrors.BAD_REQUEST("Invalid action. Use 'like' or 'view'");
   }
-}
+
+  // 先检查灵感笔记是否存在
+  const inspiration = await inspirationDb.findOne({
+    _id: new ObjectId(inspirationId)
+  });
+
+  if (!inspiration) {
+    throw ApiErrors.NOT_FOUND("灵感笔记不存在");
+  }
+
+  const updateField = action === "like" ? "likes" : "views";
+  const result = await inspirationDb.updateOne(
+    { _id: new ObjectId(inspirationId) },
+    { $inc: { [updateField]: 1 } }
+  );
+
+  if (result.modifiedCount === 0) {
+    throw ApiErrors.INTERNAL_ERROR(`更新${action === "like" ? "点赞" : "浏览"}数失败`);
+  }
+
+  // 返回更新后的计数
+  const newCount = (inspiration[updateField] || 0) + 1;
+  return successResponse({
+    [updateField]: newCount,
+  }, `更新${action === "like" ? "点赞" : "浏览"}数成功`);
+});

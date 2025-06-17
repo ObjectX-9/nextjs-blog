@@ -1,162 +1,109 @@
-import { ObjectId } from "mongodb";
-import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { IInspirationCreate, IInspirationUpdate, InspirationDocument } from "@/app/model/inspiration";
+import { NextRequest } from "next/server";
+import { IInspiration, IInspirationCreate, IInspirationFilter, IInspirationUpdate, PaginatedInspirations } from "@/app/model/inspiration";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
+import { ApiErrors, successResponse, withErrorHandler } from "../data";
+import { inspirationDb } from "@/utils/db-instances";
 
-// 获取灵感笔记列表
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const status = searchParams.get("status") as "draft" | "published" | null;
-    const tag = searchParams.get("tag");
+/**
+ * 获取灵感笔记列表
+ */
+export const GET = withErrorHandler<[Request], PaginatedInspirations>(async (request: Request) => {
+  const params = createApiParams(request);
 
-    const db = await getDb();
-    const collection = db.collection<InspirationDocument>("inspirations");
+  // 获取参数
+  const { page, limit } = params.getPagination();
+  const status = params.getString("status");
+  const tags = params.getString("tags");
 
-    // 构建查询条件
-    const query: any = {};
-    if (status) query.status = status;
-    if (tag) query.tags = tag;
+  // 构建查询条件
+  const query: IInspirationFilter = {};
+  if (status) query.status = status as "draft" | "published";
+  if (tags) query.tags = tags.split(',') as string[];
 
-    // 计算总数
-    const total = await collection.countDocuments(query);
+  // 获取分页数据
+  const paginatedData = await inspirationDb.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 }
+  });
 
-    // 获取分页数据
-    const inspirations = await collection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .toArray();
+  const response: PaginatedInspirations = {
+    data: paginatedData.items,
+    total: paginatedData.pagination.total,
+    page: paginatedData.pagination.page,
+    limit: paginatedData.pagination.limit,
+  };
 
-    return NextResponse.json({
-      data: inspirations,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching inspirations:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch inspirations" },
-      { status: 500 }
-    );
+  return successResponse(response, '获取灵感笔记列表成功');
+});
+
+/**
+ * 创建新的灵感笔记
+ */
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  const data: IInspirationCreate = await parseRequestBody(request);
+
+  // 验证必需字段
+  RequestValidator.validateRequired(data, ['title', 'content']);
+
+  const now = new Date();
+  const inspiration: Omit<IInspiration, '_id'> = {
+    ...data,
+    createdAt: now,
+    updatedAt: now,
+    likes: 0,
+    views: 0,
+    images: data.images || [],
+  };
+
+  const result = await inspirationDb.insertOne(inspiration);
+
+  return successResponse({
+    _id: result._id,
+    ...inspiration,
+  }, '灵感笔记创建成功');
+});
+
+/**
+ * 更新灵感笔记
+ */
+export const PUT = withErrorHandler(async (request: NextRequest) => {
+  const params = createApiParams(request);
+  const id = params.getRequiredObjectId("id");
+  const data: IInspirationUpdate = await parseRequestBody(request);
+
+  // 验证必需字段
+  RequestValidator.validateRequired(data, ['title', 'content']);
+
+  const updateData = {
+    ...RequestValidator.sanitize(data, ['title', 'content', 'status', 'tags', 'images']),
+    updatedAt: new Date(),
+  };
+
+  const result = await inspirationDb.updateById(id, { $set: updateData });
+
+  if (result.matchedCount === 0) {
+    throw ApiErrors.NOT_FOUND('灵感笔记不存在');
   }
-}
 
-// 创建新的灵感笔记
-export async function POST(request: NextRequest) {
-  try {
-    const data: IInspirationCreate = await request.json();
-    const db = await getDb();
-    const collection = db.collection<InspirationDocument>("inspirations");
+  return successResponse({
+    _id: id,
+    ...data,
+  }, '灵感笔记更新成功');
+});
 
-    const now = new Date();
-    const inspiration: Omit<InspirationDocument, '_id'> = {
-      ...data,
-      createdAt: now,
-      updatedAt: now,
-      likes: 0,
-      views: 0,
-      images: data.images || [],
-    };
+/**
+ * 删除灵感笔记
+ */
+export const DELETE = withErrorHandler(async (request: NextRequest) => {
+  const params = createApiParams(request);
+  const id = params.getRequiredObjectId("id");
 
-    const result = await collection.insertOne(inspiration as InspirationDocument);
+  const result = await inspirationDb.deleteById(id);
 
-    return NextResponse.json({
-      _id: result.insertedId,
-      ...inspiration,
-    });
-  } catch (error) {
-    console.error("Error creating inspiration:", error);
-    return NextResponse.json(
-      { error: "Failed to create inspiration" },
-      { status: 500 }
-    );
+  if (result.deletedCount === 0) {
+    throw ApiErrors.NOT_FOUND('灵感笔记不存在');
   }
-}
 
-// 更新灵感笔记
-export async function PUT(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    if (!id) {
-      return NextResponse.json(
-        { error: "Inspiration ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const data: IInspirationUpdate = await request.json();
-    const db = await getDb();
-    const collection = db.collection<InspirationDocument>("inspirations");
-
-    const updateData = {
-      ...data,
-      updatedAt: new Date(),
-    };
-
-    const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: updateData },
-      { returnDocument: "after" }
-    );
-
-    if (!result) {
-      return NextResponse.json(
-        { error: "Inspiration not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error("Error updating inspiration:", error);
-    return NextResponse.json(
-      { error: "Failed to update inspiration" },
-      { status: 500 }
-    );
-  }
-}
-
-// 删除灵感笔记
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    if (!id) {
-      return NextResponse.json(
-        { error: "Inspiration ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDb();
-    const collection = db.collection<InspirationDocument>("inspirations");
-
-    const result = await collection.findOneAndDelete({
-      _id: new ObjectId(id),
-    });
-
-    if (!result) {
-      return NextResponse.json(
-        { error: "Inspiration not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ message: "Inspiration deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting inspiration:", error);
-    return NextResponse.json(
-      { error: "Failed to delete inspiration" },
-      { status: 500 }
-    );
-  }
-}
+  return successResponse(null, '灵感笔记删除成功');
+});

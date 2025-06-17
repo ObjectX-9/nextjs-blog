@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { InspirationDocument } from "@/app/model/inspiration";
+import { IInspiration } from "@/app/model/inspiration";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSiteStore } from "@/store/site";
 import { ISite } from "../model/site";
@@ -13,6 +13,7 @@ import InspirationHeader from "@/components/inspirations/InspirationHeader";
 import TagsList from "@/components/inspirations/TagsList";
 import ActionButtons from "@/components/inspirations/ActionButtons";
 import InspirationSkeleton from "@/components/inspirations/InspirationSkeleton";
+import { inspirationsBusiness } from "../business/inspirations";
 
 // 缓存键常量
 const CACHE_KEYS = {
@@ -27,7 +28,7 @@ const WebInspiration = ({
   hasLiked,
   site,
 }: {
-  inspiration: InspirationDocument;
+  inspiration: IInspiration;
   onLike: (id: string) => void;
   onView: (id: string) => void;
   hasLiked: boolean;
@@ -40,7 +41,7 @@ const WebInspiration = ({
     if (hasViewedRef.current) return;
 
     viewTimeoutRef.current = setTimeout(() => {
-      onView(inspiration._id.toString());
+      onView(inspiration._id || '');
       hasViewedRef.current = true;
     }, 1000); // 1秒后触发浏览量增加
   }, [inspiration._id, onView]);
@@ -101,7 +102,7 @@ const WebInspiration = ({
             )}
 
             <ActionButtons
-              inspirationId={inspiration._id.toString()}
+              inspirationId={inspiration._id || ''}
               likes={inspiration.likes || 0}
               views={inspiration.views || 0}
               hasLiked={hasLiked}
@@ -123,7 +124,7 @@ const MobileInspiration = ({
   hasLiked,
   site,
 }: {
-  inspiration: InspirationDocument;
+  inspiration: IInspiration;
   onLike: (id: string) => void;
   onView: (id: string) => void;
   hasLiked: boolean;
@@ -136,7 +137,7 @@ const MobileInspiration = ({
     if (hasViewedRef.current) return;
 
     viewTimeoutRef.current = setTimeout(() => {
-      onView(inspiration._id.toString());
+      onView(inspiration._id || '');
       hasViewedRef.current = true;
     }, 1000); // 1秒后触发浏览量增加
   }, [inspiration._id, onView]);
@@ -197,7 +198,7 @@ const MobileInspiration = ({
             )}
 
             <ActionButtons
-              inspirationId={inspiration._id.toString()}
+              inspirationId={inspiration._id || ''}
               likes={inspiration.likes || 0}
               views={inspiration.views || 0}
               hasLiked={hasLiked}
@@ -212,7 +213,7 @@ const MobileInspiration = ({
 };
 
 export default function InspirationPage() {
-  const [inspirations, setInspirations] = useState<InspirationDocument[]>([]);
+  const [inspirations, setInspirations] = useState<IInspiration[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -250,15 +251,12 @@ export default function InspirationPage() {
     }
 
     try {
-      const response = await fetch(
-        `/api/inspirations?page=${currentPage}&limit=10&sort=createdAt:desc`
-      );
-      const result = await response.json();
+      const result = await inspirationsBusiness.getInspirations();
 
       if (isLoadMore) {
-        setInspirations((prev) => [...prev, ...result.data]);
+        setInspirations((prev) => [...prev, ...result.data as IInspiration[]]);
       } else {
-        setInspirations(result.data);
+        setInspirations(result.data as IInspiration[]);
       }
 
       setHasMore(result.data.length === 10);
@@ -298,7 +296,7 @@ export default function InspirationPage() {
       if (!scrollContainer) return;
 
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      
+
       // 添加日志帮助调试
       console.log('Scroll detected:', {
         scrollTop,
@@ -321,7 +319,7 @@ export default function InspirationPage() {
     if (scrollContainer) {
       console.log('添加滚动监听器');
       scrollContainer.addEventListener("scroll", handleScroll);
-      
+
       // 初始检查，如果内容不足以滚动，但有更多数据，则直接加载
       if (scrollContainer.scrollHeight <= scrollContainer.clientHeight && hasMore && !isLoadingMore && inspirations.length > 0) {
         console.log('内容不足以滚动，直接加载更多');
@@ -342,18 +340,9 @@ export default function InspirationPage() {
       if (likedInspirations.has(inspirationId)) return;
 
       try {
-        const response = await fetch(
-          `/api/inspirations/${inspirationId}/stats`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ action: "like" }),
-          }
-        );
+        const response = await inspirationsBusiness.updateInspirationStats(inspirationId, "like");
 
-        if (response.ok) {
+        if (response) {
           const updatedLikedInspirations = new Set(likedInspirations);
           updatedLikedInspirations.add(inspirationId);
           setLikedInspirations(updatedLikedInspirations);
@@ -366,7 +355,7 @@ export default function InspirationPage() {
           // Update the inspirations list with the new like count
           setInspirations((prevInspirations) =>
             prevInspirations.map((inspiration) =>
-              inspiration._id.toString() === inspirationId
+              inspiration._id === inspirationId
                 ? { ...inspiration, likes: (inspiration.likes || 0) + 1 }
                 : inspiration
             )
@@ -382,21 +371,12 @@ export default function InspirationPage() {
   const handleView = useCallback(
     async (inspirationId: string) => {
       try {
-        const response = await fetch(
-          `/api/inspirations/${inspirationId}/stats`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ action: "view" }),
-          }
-        );
+        const response = await inspirationsBusiness.updateInspirationStats(inspirationId, "view");
 
-        if (response.ok) {
+        if (response) {
           setInspirations((prevInspirations) =>
             prevInspirations.map((inspiration) =>
-              inspiration._id.toString() === inspirationId
+              inspiration._id === inspirationId
                 ? { ...inspiration, views: (inspiration.views || 0) + 1 }
                 : inspiration
             )
@@ -417,7 +397,7 @@ export default function InspirationPage() {
     <main className="flex-1 h-screen overflow-hidden">
       <div
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto px-4 py-4 sm:py-16"
+        className="h-full overflow-y-auto custom-scrollbar-thin px-4 py-4 sm:py-16"
         onScroll={(e) => {
           // 添加额外的滚动事件处理，以防主滚动监听器失效
           const target = e.currentTarget;
@@ -440,20 +420,20 @@ export default function InspirationPage() {
             {inspirations.map((inspiration) =>
               isMobile ? (
                 <MobileInspiration
-                  key={inspiration._id.toString()}
+                  key={inspiration._id || ''}
                   inspiration={inspiration}
                   onLike={handleLike}
                   onView={handleView}
-                  hasLiked={likedInspirations.has(inspiration._id.toString())}
+                  hasLiked={likedInspirations.has(inspiration._id || '')}
                   site={site}
                 />
               ) : (
                 <WebInspiration
-                  key={inspiration._id.toString()}
+                  key={inspiration._id || ''}
                   inspiration={inspiration}
                   onLike={handleLike}
                   onView={handleView}
-                  hasLiked={likedInspirations.has(inspiration._id.toString())}
+                  hasLiked={likedInspirations.has(inspiration._id || '')}
                   site={site}
                 />
               )

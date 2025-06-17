@@ -88,10 +88,12 @@ export class ApiParams {
   /**
    * 获取分页参数
    */
-  getPagination(defaultPage = 1, defaultLimit = 20) {
+  getPagination(defaultPage = 1, defaultLimit = 20, defaultTotal = 0, defaultHasMore = false) {
     return {
       page: this.getNumber('page', defaultPage)!,
-      limit: this.getNumber('limit', defaultLimit)!
+      limit: this.getNumber('limit', defaultLimit)!,
+      total: this.getNumber('total', defaultTotal)!,
+      hasMore: this.getBoolean('hasMore', defaultHasMore)!
     };
   }
 }

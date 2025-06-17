@@ -1,7 +1,7 @@
-import { ObjectId } from "mongodb";
+import { PaginatedData } from ".";
 
 export interface IInspiration {
-  _id?: ObjectId;
+  _id?: string;
   title: string;
   content: string;
   images?: string[]; // 图片URL数组
@@ -37,21 +37,8 @@ export interface IInspirationUpdate
   // 更新时所有字段都是可选的
 }
 
-// 用于前端展示的灵感笔记类型
-export interface InspirationDisplay
-  extends Omit<IInspiration, "_id" | "createdAt" | "updatedAt"> {
-  _id: string; // ObjectId 转为字符串
-  createdAt: string; // Date 转为字符串
-  updatedAt: string; // Date 转为字符串
-}
-
-// 数据库中的灵感笔记类型
-export type InspirationDocument = IInspiration & {
-  _id: ObjectId;
-};
-
 // 用于查询的过滤器类型
-export interface InspirationFilter {
+export interface IInspirationFilter {
   status?: "draft" | "published";
   tags?: string[];
   createdAt?: {
@@ -59,4 +46,8 @@ export interface InspirationFilter {
     $lte?: Date;
   };
   searchText?: string; // 用于搜索标题和内容
+}
+
+export interface PaginatedInspirations extends PaginatedData<IInspiration> {
+  data: IInspiration[];
 }
