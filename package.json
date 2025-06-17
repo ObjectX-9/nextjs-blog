@@ -101,6 +101,7 @@
     "prism-react-renderer": "^2.3.1",
     "prismjs": "^1.30.0",
     "react": "^18",
+    "react-body-highlighter": "^2.0.5",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18",
