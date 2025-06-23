@@ -429,7 +429,7 @@ export default function ArticleDetailPage() {
                 }`}
             >
               <div className="p-4">
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar-thin">
                   {article?.content
                     ?.split("\n")
                     .filter((line) => line.startsWith("#"))
@@ -462,7 +462,7 @@ export default function ArticleDetailPage() {
         </div>
 
         {/* 文章内容 */}
-        <div className="flex-1 overflow-y-auto pt-24 pb-20">
+        <div className="flex-1 overflow-y-auto custom-scrollbar-thin pt-24 pb-20">
           <div className="p-4">
             <div className="prose max-w-none">{renderArticleContent()}</div>
           </div>
@@ -481,7 +481,7 @@ export default function ArticleDetailPage() {
           className={`fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-lg transition-transform duration-300 ${showSidebar ? "translate-x-0" : "translate-x-full"
             }`}
         >
-          <div className="sticky top-0 h-screen overflow-y-auto">
+          <div className="sticky top-0 h-screen overflow-y-auto custom-scrollbar-thin">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">目录</h2>
               <button
@@ -566,7 +566,7 @@ export default function ArticleDetailPage() {
         {/* 主要内容区域 */}
         <div
           className={`transition-[margin] duration-300 ${showSidebar ? "mr-[20vw]" : "mr-0"
-            } border-r h-screen overflow-y-auto`}
+            } border-r h-screen overflow-y-auto custom-scrollbar-thin`}
         >
           <div className="max-w-4xl mx-auto py-8 px-8 relative">
             {!showSidebar && (
@@ -611,7 +611,7 @@ export default function ArticleDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto pt-24 pb-20">
+            <div className="flex-1 overflow-y-auto custom-scrollbar-thin pt-24 pb-20">
               <div className="p-4">
                 <ArticleSkeleton />
               </div>
@@ -622,7 +622,7 @@ export default function ArticleDetailPage() {
           <div className="relative min-h-screen w-full">
             {/* 右侧固定目录骨架屏 */}
             <div className="fixed top-0 right-0 w-[20vw] h-screen bg-white shadow-lg">
-              <div className="sticky top-0 h-screen overflow-y-auto">
+              <div className="sticky top-0 h-screen overflow-y-auto custom-scrollbar-thin">
                 <div className="p-6 border-b">
                   <div className="h-6 bg-gray-200 rounded w-1/3"></div>
                 </div>
@@ -631,7 +631,7 @@ export default function ArticleDetailPage() {
             </div>
 
             {/* 主要内容区域骨架屏 */}
-            <div className="mr-[20vw] border-r h-screen overflow-y-auto">
+            <div className="mr-[20vw] border-r h-screen overflow-y-auto custom-scrollbar-thin">
               <div className="max-w-4xl mx-auto py-8 px-8">
                 <ArticleSkeleton />
               </div>

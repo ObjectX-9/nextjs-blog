@@ -2,6 +2,7 @@ import Link from "next/link";
 import ViewCounter from "./ViewCounter";
 import LikeButton from "./LikeButton";
 import { Article } from "@/app/model/article";
+import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 interface ListSectionProps {
   title: string;
@@ -11,6 +12,7 @@ interface ListSectionProps {
 
 export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
   if (!items) return null;
+  const isMobile = useDeviceDetection();
   return (
     <div className="w-full max-w-3xl my-0 mx-auto mt-10">
       <Link
@@ -54,14 +56,18 @@ export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
                         <div className="text-left">{`${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}`}</div>
                         <div className="truncate">{item.title}</div>
                       </div>
-                      <div className="col-span-2 flex items-baseline justify-around text-gray-500 text-xs">
-                        <div className="w-4 h-4 flex items-center justify-start">
-                          <LikeButton articleId={item._id?.toString() || ""} initialLikes={item.likes!} />
-                        </div>
-                        <div className="w-4 h-4 flex items-center justify-start cursor-default pointer-events-none">
-                          <ViewCounter initialViews={item.views!} />
-                        </div>
-                      </div>
+                      {
+                        !isMobile && (
+                          <div className="col-span-2 flex items-baseline justify-around text-gray-500 text-xs">
+                            <div className="w-4 h-4 flex items-center justify-start">
+                              <LikeButton articleId={item._id?.toString() || ""} initialLikes={item.likes!} />
+                            </div>
+                            <div className="w-4 h-4 flex items-center justify-start cursor-default pointer-events-none">
+                              <ViewCounter initialViews={item.views!} />
+                            </div>
+                          </div>
+                        )
+                      }
                     </div>
                   </div>
                 </div>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IInspiration } from "@/app/model/inspiration";
+import { IInspiration, IInspirationCreate } from "@/app/model/inspiration";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { inspirationsBusiness } from "@/app/business/inspirations";
 import {
   Modal,
   Card,
@@ -149,9 +150,8 @@ export default function InspirationManagement() {
   // 获取灵感笔记列表
   const fetchInspirations = async () => {
     try {
-      const response = await fetch("/api/inspirations?page=1&limit=1000000&sort=createdAt:desc");
-      const data = await response.json();
-      setInspirations(data.data);
+      const result = await inspirationsBusiness.getInspirations(1, 1000000);
+      setInspirations(result.data as IInspiration[]);
     } catch (error) {
       console.error("Error fetching inspirations:", error);
       message.error("获取灵感笔记列表失败");
@@ -170,22 +170,16 @@ export default function InspirationManagement() {
     images: string[];
   }) => {
     try {
-      const response = await fetch("/api/inspirations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: data.content,
-          images: data.images,
-          status: "published",
-        }),
-      });
+      const inspirationData: IInspirationCreate = {
+        title: data.content.substring(0, 50) || "快速笔记", // 使用内容的前50个字符作为标题
+        content: data.content,
+        images: data.images,
+        status: "published",
+      };
 
-      if (response.ok) {
-        fetchInspirations();
-        message.success("发送成功");
-      }
+      await inspirationsBusiness.createInspiration(inspirationData);
+      fetchInspirations();
+      message.success("发送成功");
     } catch (error) {
       console.error("Error creating inspiration:", error);
       message.error("发送失败");
@@ -195,9 +189,7 @@ export default function InspirationManagement() {
   // 删除灵感笔记
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`/api/inspirations/${id}`, {
-        method: "DELETE",
-      });
+      await inspirationsBusiness.deleteInspiration(id);
       fetchInspirations();
       message.success("删除成功");
     } catch (error) {

@@ -1,9 +1,9 @@
 import { request } from "@/utils/request";
-import { IInspiration, PaginatedInspirations } from "../model/inspiration";
+import { IInspiration, IInspirationCreate, PaginatedInspirations } from "../model/inspiration";
 
 class Inspirations {
-    async getInspirations(): Promise<PaginatedInspirations> {
-        const response = await request.get<PaginatedInspirations>('inspirations');
+    async getInspirations(page: number = 1, limit: number = 10): Promise<PaginatedInspirations> {
+        const response = await request.get<PaginatedInspirations>(`inspirations?page=${page}&limit=${limit}`);
         return response.data;
     }
 
@@ -12,7 +12,7 @@ class Inspirations {
         return response.data.inspiration;
     }
 
-    async createInspiration(inspiration: IInspiration): Promise<IInspiration> {
+    async createInspiration(inspiration: IInspirationCreate): Promise<IInspiration> {
         const response = await request.post<IInspiration>('inspirations', inspiration);
         return response.data;
     }

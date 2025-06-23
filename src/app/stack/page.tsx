@@ -47,7 +47,7 @@ export default function Stack() {
   }, [fetchStacks]);
 
   return (
-    <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
+    <main className="flex h-screen w-full box-border flex-col overflow-y-auto custom-scrollbar-thin py-8 px-8">
       <h1 className="text-3xl font-bold mb-6">技术栈</h1>
       <div className="mb-4 last:mb-0">
         这里是我的常用栈，我使用这些工具来构建和维护我的项目。
