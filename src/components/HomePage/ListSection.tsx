@@ -11,8 +11,8 @@ interface ListSectionProps {
 }
 
 export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
-  if (!items) return null;
   const isMobile = useDeviceDetection();
+  if (!items) return null;
   return (
     <div className="w-full max-w-3xl my-0 mx-auto mt-10">
       <Link
