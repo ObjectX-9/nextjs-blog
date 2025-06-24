@@ -14,13 +14,13 @@ import { WebRunInfo } from '@/components/HomePage/WebRunInfo'
 import { WebControlInfo } from '@/components/HomePage/WebControlInfo'
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { calculateDuration } from "@/utils/time";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { throttle } from "lodash-es";
+import { useEffect, useState, useRef } from "react";
 import Loading from "@/app/Loading";
 import { articlesService } from "@/app/business/articles";
 import { message } from "antd";
 import { socialLinkBusiness } from "@/app/business/social-link";
 import { workExperienceBusiness } from "@/app/business/work-experience";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 interface HomePageClientProps {
 
@@ -31,10 +31,9 @@ export default function HomePageClient({ }: HomePageClientProps) {
   const [workExperiences, setWorkExperiences] = useState<IWorkExperience[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [basicDataLoading, setBasicDataLoading] = useState(true);
-  const loadingMore = useRef(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const mainRef = useRef<HTMLElement>(null);
 
   const fetchSocialLinks = async () => {
     try {
@@ -56,7 +55,7 @@ export default function HomePageClient({ }: HomePageClientProps) {
 
   const fetchArticles = async (pageNum: number = 1, isLoadMore: boolean = false) => {
     if (isLoadMore) {
-      loadingMore.current = true;
+      setIsLoadingMore(true);
     }
 
     try {
@@ -89,21 +88,30 @@ export default function HomePageClient({ }: HomePageClientProps) {
         // 兼容旧的逻辑
         setHasMore(response.items.length === 20);
       }
-      loadingMore.current = false;
+      setIsLoadingMore(false);
     } catch (error) {
       console.error('获取文章失败:', error);
-      loadingMore.current = false;
+      setIsLoadingMore(false);
     }
   }
 
   // 加载更多文章
   const loadMoreArticles = () => {
-    if (!loadingMore.current && hasMore) {
+    if (!isLoadingMore && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchArticles(nextPage, true);
     }
   }
+
+  // 使用 useInfiniteScroll hook
+  const scrollContainerRef = useInfiniteScroll({
+    hasMore,
+    isLoadingMore,
+    loadMore: loadMoreArticles,
+    threshold: 100,
+    debounceMs: 150,
+  });
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -125,39 +133,7 @@ export default function HomePageClient({ }: HomePageClientProps) {
     fetchInitialData();
   }, []);
 
-  // 滚动监听 - 修改为监听main元素
-  useEffect(() => {
-    const mainElement = mainRef.current;
-    if (!mainElement) return;
 
-    const handleScroll = throttle(() => {
-      const scrollTop = mainElement.scrollTop;
-      const clientHeight = mainElement.clientHeight;
-      const scrollHeight = mainElement.scrollHeight;
-
-      // 当滚动到距离底部100px时触发加载更多
-      if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !loadingMore.current) {
-        loadMoreArticles();
-      }
-    }, 100);
-
-    // 添加初始化时的高度检查
-    const checkInitialHeight = () => {
-      const scrollHeight = mainElement.scrollHeight;
-      const clientHeight = mainElement.clientHeight;
-
-      // 如果内容高度不足以产生滚动，且还有更多数据，则自动加载
-      if (scrollHeight <= clientHeight && hasMore && !loadingMore && articles.length > 0) {
-        loadMoreArticles();
-      }
-    };
-
-    mainElement.addEventListener('scroll', handleScroll, { passive: true });
-
-    checkInitialHeight();
-
-    return () => mainElement.removeEventListener('scroll', handleScroll);
-  }, [mainRef.current, page]);
 
   // 显示基础数据loading状态
   if (basicDataLoading) {
@@ -168,7 +144,7 @@ export default function HomePageClient({ }: HomePageClientProps) {
 
   return (
     <main
-      ref={mainRef}
+      ref={scrollContainerRef}
       className="flex h-screen w-full box-border flex-col overflow-y-auto custom-scrollbar-thin
  py-8 px-8"
     >
@@ -208,7 +184,7 @@ export default function HomePageClient({ }: HomePageClientProps) {
       />
 
       {/* 加载更多指示器 */}
-      {loadingMore.current && (
+      {isLoadingMore && (
         <div className="w-full max-w-3xl my-0 mx-auto mt-4 mb-8 flex justify-center">
           <div className="flex items-center space-x-2 text-gray-500">
             <LoadingSpinner className="w-5 h-5" />

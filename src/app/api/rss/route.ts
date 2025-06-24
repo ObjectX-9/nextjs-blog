@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
     const type = searchParams.get("type") || "bookmarks"; // 默认为书签类型
-    
+
     // 基础 URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    
+
     // 根据类型处理不同的内容
     switch (type) {
       case "articles":
@@ -36,20 +36,20 @@ export async function GET(request: NextRequest) {
 async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
   try {
     const db = await getDb();
-    
+
     // 构建查询条件
     let query: any = {};
     if (categoryId) {
       query.categoryId = new ObjectId(categoryId);
     }
-    
+
     // 获取书签数据
     const bookmarks = await db.collection("bookmarks")
       .find(query)
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
-    
+
     // 如果有分类ID，获取分类信息
     let categoryName = "全部书签";
     if (categoryId) {
@@ -58,7 +58,7 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
         categoryName = category.name;
       }
     }
-    
+
     // 创建 RSS feed
     const feed = new RSS({
       title: `ObjectX - ${categoryName}`,
@@ -69,7 +69,7 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
       language: "zh-CN",
       pubDate: new Date(),
     });
-    
+
     // 添加书签到 feed
     if (bookmarks.length > 0) {
       bookmarks.forEach((bookmark: any) => {
@@ -91,10 +91,10 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
         date: new Date(),
       });
     }
-    
+
     // 生成 XML
     const xml = feed.xml();
-    
+
     // 返回 XML 响应
     return new NextResponse(xml, {
       headers: {
@@ -114,21 +114,21 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
 async function getArticlesRSS(baseUrl: string, categoryId: string | null) {
   try {
     const db = await getDb();
-    
+
     // 构建查询条件
     let query: any = { status: "published" };
     if (categoryId) {
       // 使用字符串形式的 categoryId，与文章 API 保持一致
       query.categoryId = categoryId;
     }
-    
+
     // 获取文章数据
     const articles = await db.collection("articles")
       .find(query)
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
-    
+
     // 如果有分类ID，获取分类信息
     let categoryName = "全部文章";
     if (categoryId) {
@@ -137,7 +137,7 @@ async function getArticlesRSS(baseUrl: string, categoryId: string | null) {
         categoryName = category.name;
       }
     }
-    
+
     // 创建 RSS feed
     const feed = new RSS({
       title: `ObjectX - ${categoryName}`,
@@ -148,7 +148,7 @@ async function getArticlesRSS(baseUrl: string, categoryId: string | null) {
       language: "zh-CN",
       pubDate: new Date(),
     });
-    
+
     // 添加文章到 feed
     if (articles.length > 0) {
       articles.forEach((article: any) => {
@@ -172,10 +172,10 @@ async function getArticlesRSS(baseUrl: string, categoryId: string | null) {
         date: new Date(),
       });
     }
-    
+
     // 生成 XML
     const xml = feed.xml();
-    
+
     // 返回 XML 响应
     return new NextResponse(xml, {
       headers: {

@@ -7,19 +7,19 @@ class StacksBusiness {
         return response.data.stacks;
     }
 
-    async createStack(stack: IStack): Promise<IStack> {
-        const response = await request.post<IStack>('stacks', stack);
-        return response.data;
+    async createStack(stack: Omit<IStack, '_id'>): Promise<IStack> {
+        const response = await request.post<{ stack: IStack }>('stacks', stack);
+        return response.data.stack;
     }
 
     async updateStack(stack: IStack): Promise<IStack> {
-        const response = await request.put<IStack>('stacks', stack);
-        return response.data;
+        const response = await request.put<{ stack: IStack }>('stacks', stack);
+        return response.data.stack;
     }
 
     async deleteStack(id: string): Promise<IStack> {
-        const response = await request.delete<IStack>(`stacks?id=${id}`);
-        return response.data;
+        const response = await request.delete<{ stack: IStack }>(`stacks?id=${id}`);
+        return response.data.stack;
     }
 }
 

@@ -8,7 +8,6 @@ export const GET = withErrorHandler<[Request], { stacks: IStack[] }>(async () =>
   return successResponse({ stacks });
 });
 
-// Create a new stack
 export const POST = withErrorHandler<[Request], { stack: IStack }>(async (request: Request) => {
   const data = await parseRequestBody<IStack>(request);
   RequestValidator.validateRequired(data, ['title', 'description', 'link', 'iconSrc']);
@@ -27,7 +26,6 @@ export const POST = withErrorHandler<[Request], { stack: IStack }>(async (reques
   return successResponse({ stack: result });
 });
 
-// Update a stack
 export const PUT = withErrorHandler<[Request], { stack: IStack }>(async (request: Request) => {
   const data = await parseRequestBody<IStack>(request);
   RequestValidator.validateRequired(data, ['_id', 'title', 'description', 'link', 'iconSrc']);

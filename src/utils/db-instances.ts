@@ -4,6 +4,7 @@ import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { IStack } from "@/app/model/stack";
 import { IInspiration } from "@/app/model/inspiration";
+import { IPhoto } from "@/app/model/photo";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -35,3 +36,6 @@ export const workExperienceDb = createDbHelper<IWorkExperience>("workExperiences
 export const stackDb = createDbHelper<IStack>("stacks");
 
 export const inspirationDb = createDbHelper<IInspiration>("inspirations");
+
+// 照片
+export const photoDb = createDbHelper<IPhoto>("photos");

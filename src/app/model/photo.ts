@@ -2,21 +2,18 @@ import mongoose, { Schema, Document } from "mongoose";
 import { ObjectId } from "mongodb";
 
 export interface IPhoto {
+  _id?: string;
   src: string;
   width: number;
   height: number;
   title: string;
   location: string;
   date: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface IPhotoDB extends Omit<IPhoto, "_id"> {
-  _id: ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const photoSchema = new Schema<IPhotoDB>(
+const photoSchema = new Schema<IPhoto>(
   {
     src: { type: String, required: true },
     width: { type: Number, required: true },
@@ -31,4 +28,4 @@ const photoSchema = new Schema<IPhotoDB>(
 );
 
 export const Photo =
-  mongoose.models.Photo || mongoose.model<IPhotoDB>("Photo", photoSchema);
+  mongoose.models.Photo || mongoose.model<IPhoto>("Photo", photoSchema);
