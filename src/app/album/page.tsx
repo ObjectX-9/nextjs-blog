@@ -1,41 +1,32 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { usePhotos } from "@/app/hooks/usePhotos";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 import ErrorMessage from "./components/ErrorMessage";
 import PhotoGrid from "./components/PhotoGrid";
-
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
-
-import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";
-import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
-import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
+import CustomLightbox from "./components/CustomLightbox";
 
 export default function Album() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const { photos, loading, error, refetch } = usePhotos();
 
-  // 转换照片数据用于Lightbox
-  const lightboxSlides = useMemo(() =>
-    photos.map((photo) => ({
-      src: photo.src,
-      title: photo.title,
-      description: photo.location,
-    }))
-    , [photos]);
-
   // 处理照片点击
   const handlePhotoClick = (index: number) => {
+    console.log('相册页面收到点击事件，索引:', index);
+    console.log('设置selectedIndex为:', index);
+    console.log('当前photos数组长度:', photos.length);
     setSelectedIndex(index);
   };
 
   // 关闭Lightbox
   const handleCloseLightbox = () => {
     setSelectedIndex(-1);
+  };
+
+  // 处理索引变化
+  const handleIndexChange = (index: number) => {
+    setSelectedIndex(index);
   };
 
   // Loading状态
@@ -47,6 +38,8 @@ export default function Album() {
   if (error) {
     return <ErrorMessage error={error} onRetry={refetch} />;
   }
+
+  console.log('渲染相册页面，selectedIndex:', selectedIndex, 'isOpen:', selectedIndex >= 0);
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
@@ -69,20 +62,13 @@ export default function Album() {
         onPhotoClick={handlePhotoClick}
       />
 
-      {/* Lightbox弹窗 */}
-      <Lightbox
-        slides={lightboxSlides}
-        open={selectedIndex >= 0}
-        index={selectedIndex}
-        close={handleCloseLightbox}
-        plugins={[Fullscreen, Slideshow, Thumbnails, Zoom]}
-        carousel={{
-          finite: true,
-        }}
-        render={{
-          buttonPrev: lightboxSlides.length <= 1 ? () => null : undefined,
-          buttonNext: lightboxSlides.length <= 1 ? () => null : undefined,
-        }}
+      {/* 自定义 Lightbox */}
+      <CustomLightbox
+        photos={photos}
+        currentIndex={selectedIndex}
+        isOpen={selectedIndex >= 0}
+        onClose={handleCloseLightbox}
+        onIndexChange={handleIndexChange}
       />
     </main>
   );

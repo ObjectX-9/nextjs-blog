@@ -65,6 +65,9 @@ dependencies:
   '@types/ali-oss':
     specifier: ^6.16.11
     version: 6.16.11
+  '@types/exif-js':
+    specifier: ^2.3.1
+    version: 2.3.1
   '@types/lodash-es':
     specifier: ^4.17.12
     version: 4.17.12
@@ -230,6 +233,9 @@ dependencies:
   dayjs:
     specifier: ^1.11.13
     version: 1.11.13
+  exif-js:
+    specifier: ^2.3.0
+    version: 2.3.0
   framer-motion:
     specifier: ^11.0.24
     version: 11.15.0(react-dom@18.3.1)(react@18.3.1)
@@ -2120,6 +2126,12 @@ packages:
 
   /@types/estree@1.0.6:
     resolution: {integrity: sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==}
+
+  /@types/exif-js@2.3.1:
+    resolution: {integrity: sha512-vylc2UhpCygw5i1cNA0m+acpq+Ufs3m9ekFJhZ7+PZyDECh05qfmRtgJE0y9QLFZo0hnvHfP+lVkPM746of5Uw==}
+    dependencies:
+      '@types/node': 20.17.10
+    dev: false
 
   /@types/hast@2.3.10:
     resolution: {integrity: sha512-McWspRw8xx8J9HurkVBfYj0xKoE25tOFlHGdx4MJ5xORQrMGZNqJhVQWaIbm6Oyla5kYOXtDiopzKRJzEOkwJw==}
@@ -4899,6 +4911,10 @@ packages:
       onetime: 6.0.0
       signal-exit: 3.0.7
       strip-final-newline: 3.0.0
+    dev: false
+
+  /exif-js@2.3.0:
+    resolution: {integrity: sha512-1Og9pAzG2FZRVlaavH8bB8BTeHcjMdJhKmeQITkX+uLRCD0xPtKAdZ2clZmQdJ56p9adXtJ8+jwrGp/4505lYg==}
     dev: false
 
   /extend-shallow@2.0.1:

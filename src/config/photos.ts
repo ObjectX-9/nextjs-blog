@@ -1,3 +1,5 @@
+import { IExifData } from '@/app/model/photo';
+
 export interface Photo {
   src: string;
   width: number;
@@ -5,6 +7,10 @@ export interface Photo {
   title: string;
   location: string;
   date: string;
+  exif?: IExifData;
+  tags?: string[];
+  description?: string;
+  photographer?: string;
 }
 
 export const photos: Photo[] = [
