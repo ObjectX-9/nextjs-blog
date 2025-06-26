@@ -73,7 +73,6 @@ export interface IExifData {
   software?: string;        // 编辑软件
 
   // 扩展技术信息
-  lensSerialNumber?: string; // 镜头序列号
   cameraSerialNumber?: string; // 相机序列号
   firmware?: string;         // 固件版本
   orientation?: number;      // 图像方向
@@ -136,12 +135,14 @@ export interface IExifData {
   contrastSetting?: string;  // 对比度设置
   saturationSetting?: string; // 饱和度设置
   sharpnessSetting?: string; // 锐度设置
+  brightnessSetting?: string; // 亮度设置
 
   // 镜头详细信息
   lensInfo?: string;         // 镜头详细信息
   focalRange?: string;       // 镜头焦距范围
   apertureRange?: string;    // 镜头光圈范围
   lensFeatures?: string[];   // 镜头特性 (如：RF镜头, 光学防抖等)
+  lensSerialNumber?: string; // 镜头序列号 (从MakerNote解析)
 
   // 镜头校正
   distortionCorrection?: string;    // 畸变校正
@@ -267,7 +268,6 @@ const exifSchema = new Schema<IExifData>({
   software: { type: String },
 
   // 扩展参数
-  lensSerialNumber: { type: String },
   cameraSerialNumber: { type: String },
   firmware: { type: String },
   orientation: { type: Number },
@@ -328,12 +328,14 @@ const exifSchema = new Schema<IExifData>({
   contrastSetting: { type: String },
   saturationSetting: { type: String },
   sharpnessSetting: { type: String },
+  brightnessSetting: { type: String },
 
   // 镜头详细信息
   lensInfo: { type: String },
   focalRange: { type: String },
   apertureRange: { type: String },
   lensFeatures: [{ type: String }],
+  lensSerialNumber: { type: String },
 
   // 镜头校正
   distortionCorrection: { type: String },

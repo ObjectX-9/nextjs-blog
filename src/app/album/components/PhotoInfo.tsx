@@ -124,11 +124,15 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                             <div className="space-y-1">
                                 <InfoItem label="相机" value={photo.exif?.camera} />
                                 <InfoItem label="镜头" value={photo.exif?.lens} />
+                                <InfoItem label="镜头详细信息" value={photo.exif?.lensInfo} />
+                                <InfoItem label="镜头序列号" value={photo.exif?.lensSerialNumber} />
+                                <InfoItem label="焦距范围" value={photo.exif?.focalRange} />
+                                <InfoItem label="光圈范围" value={photo.exif?.apertureRange} />
+                                <InfoItem label="镜头特性" value={photo.exif?.lensFeatures?.join(', ')} />
                                 <InfoItem label="镜头规格" value={photo.exif?.lensSpecification} />
                                 <InfoItem label="焦距" value={photo.exif?.focalLength} />
                                 <InfoItem label="35mm 等效" value={photo.exif?.focalLengthIn35mmFilm} unit="mm" />
                                 <InfoItem label="焦平面分辨率" value={photo.exif?.focalPlaneXResolution ? `${photo.exif.focalPlaneXResolution.toFixed(1)} × ${photo.exif.focalPlaneYResolution?.toFixed(1)}` : undefined} />
-                                <InfoItem label="镜头序列号" value={photo.exif?.lensSerialNumber} />
                                 <InfoItem label="机身序列号" value={photo.exif?.cameraSerialNumber} />
                                 <InfoItem label="固件版本" value={photo.exif?.firmware} />
                             </div>
@@ -274,26 +278,64 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                     </>
                 )}
 
-                {/* 胶片模拟配方 */}
-                {photo.exif?.filmSimulation && (
+                {/* 佳能Picture Style */}
+                {(photo.exif?.contrastSetting || photo.exif?.saturationSetting || photo.exif?.sharpnessSetting || photo.exif?.brightnessSetting || photo.exif?.filmSimulation) && (
                     <>
                         <div>
-                            {groupTitle(null, '胶片模拟配方')}
+                            {photo.exif?.filmSimulation ?
+                                groupTitle(null, 'Picture Style / 胶片模拟') :
+                                groupTitle(null, 'Picture Style 参数')
+                            }
                             <div className="space-y-1">
-                                <InfoItem label="胶片模式" value={photo.exif.filmSimulation} />
-                                <InfoItem label="动态范围" value="标准" />
+                                {photo.exif?.filmSimulation && (
+                                    <>
+                                        <InfoItem label="胶片模式" value={photo.exif.filmSimulation} />
+                                        <InfoItem label="动态范围" value="标准" />
+                                    </>
+                                )}
                                 <InfoItem label="白平衡" value={photo.exif.whiteBalance} />
-                                <InfoItem label="高光色调" value="0" />
-                                <InfoItem label="阴影色调" value="0" />
-                                <InfoItem label="饱和度" value={photo.exif.saturation || "标准"} />
-                                <InfoItem label="锐度" value={photo.exif.sharpness || "标准"} />
-                                <InfoItem label="降噪" value="0" />
-                                <InfoItem label="清晰度" value="0" />
-                                <InfoItem label="色彩效果" value="强" />
-                                <InfoItem label="彩色 Fx 蓝色" value="强" />
-                                <InfoItem label="白平衡微调" value="红色 -20, 蓝色 +80" />
-                                <InfoItem label="颗粒效果强度" value="关" />
-                                <InfoItem label="颗粒效果大小" value="关" />
+                                <InfoItem label="白平衡偏移" value={photo.exif.whiteBalanceBias} />
+                                <InfoItem label="色温" value={photo.exif.colorTemperature} />
+                                <InfoItem label="色调" value={photo.exif.colorTone} />
+                                <InfoItem label="对比度" value={photo.exif.contrastSetting || photo.exif.contrast || '标准'} />
+                                <InfoItem label="饱和度" value={photo.exif.saturationSetting || photo.exif.saturation || '标准'} />
+                                <InfoItem label="锐度" value={photo.exif.sharpnessSetting || photo.exif.sharpness || '标准'} />
+                                <InfoItem label="亮度" value={photo.exif.brightnessSetting} />
+                                {photo.exif?.filmSimulation && (
+                                    <>
+                                        <InfoItem label="高光色调" value="0" />
+                                        <InfoItem label="阴影色调" value="0" />
+                                        <InfoItem label="降噪" value="0" />
+                                        <InfoItem label="清晰度" value="0" />
+                                        <InfoItem label="色彩效果" value="强" />
+                                        <InfoItem label="彩色 Fx 蓝色" value="强" />
+                                        <InfoItem label="白平衡微调" value="红色 -20, 蓝色 +80" />
+                                        <InfoItem label="颗粒效果强度" value="关" />
+                                        <InfoItem label="颗粒效果大小" value="关" />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <Divider />
+                    </>
+                )}
+
+                {/* 佳能专有功能 */}
+                {(photo.exif?.imageQuality || photo.exif?.noiseReduction || photo.exif?.digitalLensOptimizer) && (
+                    <>
+                        <div>
+                            {groupTitle(null, '佳能专有功能')}
+                            <div className="space-y-1">
+                                <InfoItem label="图像质量" value={photo.exif.imageQuality} />
+                                <InfoItem label="高ISO降噪" value={photo.exif.noiseReduction} />
+                                <InfoItem label="数字镜头优化器" value={photo.exif.digitalLensOptimizer} />
+                                <InfoItem label="双像素RAW" value={photo.exif.dualPixelRaw} />
+                                <InfoItem label="对焦模式" value={photo.exif.canonFocusMode} />
+                                <InfoItem label="AF区域模式" value={photo.exif.canonAFAreaMode} />
+                                <InfoItem label="畸变校正" value={photo.exif.distortionCorrection} />
+                                <InfoItem label="色差校正" value={photo.exif.chromaticAberrationCorrection} />
+                                <InfoItem label="暗角校正" value={photo.exif.vignettingCorrection} />
+                                <InfoItem label="周边光量校正" value={photo.exif.peripheralIllumination} />
                             </div>
                         </div>
                         <Divider />

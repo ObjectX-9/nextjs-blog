@@ -117,6 +117,13 @@ interface RawExifData {
     CanonFi?: any;                  // 佳能文件信息
     CanonPa?: any;                  // 佳能全景信息
 
+    // MakerNote 相关
+    MakerNote?: any;                // 制造商注释
+    MakerNoteCanon?: any;           // 佳能MakerNote
+
+    // 可能的镜头相关标签（数字形式）
+    [key: number]: any;             // 支持数字键（如EXIF标签号）
+
     // 高ISO降噪
     HighISONoiseReduction?: number; // 高ISO降噪设置
 
@@ -624,18 +631,52 @@ const getColorTemperature = (rawExif: any): string | undefined => {
 const getContrastSetting = (rawExif: any, cameraMake?: string): string | undefined => {
     // 佳能Picture Style对比度
     if (cameraMake?.toLowerCase().includes('canon')) {
-        if (rawExif.CanonCs && rawExif.CanonCs.ContrastSetting !== undefined) {
-            const contrast = rawExif.CanonCs.ContrastSetting;
-            if (contrast === 0) return '标准';
-            if (contrast > 0) return `+${contrast}`;
-            return `${contrast}`;
+        // 检查多个可能的对比度字段
+        const possibleFields = [
+            'ContrastSetting',
+            'Contrast',
+            'PictureStyleContrast',
+            'ContrastCurve',
+            'ToneCurve'
+        ];
+
+        for (const field of possibleFields) {
+            let contrast: number | undefined;
+
+            // 从佳能特有字段获取
+            if (rawExif.CanonCs && rawExif.CanonCs[field] !== undefined) {
+                contrast = rawExif.CanonCs[field];
+            }
+            // MakerNote是二进制数据，不能直接访问
+            // 已解析的佳能字段会在CanonCs等字段中
+            // 从根级别获取
+            else if (rawExif[field] !== undefined) {
+                contrast = rawExif[field];
+            }
+
+            if (contrast !== undefined) {
+                // 佳能的对比度值通常在-4到+4范围内
+                if (contrast >= 128) {
+                    // 如果是大数值，可能需要转换
+                    contrast = contrast - 128;
+                }
+
+                if (contrast === 0) return '标准';
+                if (contrast > 0) return `+${contrast}`;
+                return `${contrast}`;
+            }
         }
 
-        if (rawExif.PictureStyleContrast !== undefined) {
-            const contrast = rawExif.PictureStyleContrast;
-            if (contrast === 0) return '标准';
-            if (contrast > 0) return `+${contrast}`;
-            return `${contrast}`;
+        // 尝试从Picture Style详细参数获取
+        if (rawExif.CanonPi) {
+            for (const field of possibleFields) {
+                if (rawExif.CanonPi[field] !== undefined) {
+                    const contrast = rawExif.CanonPi[field];
+                    if (contrast === 0) return '标准';
+                    if (contrast > 0) return `+${contrast}`;
+                    return `${contrast}`;
+                }
+            }
         }
     }
 
@@ -656,18 +697,52 @@ const getContrastSetting = (rawExif: any, cameraMake?: string): string | undefin
 const getSaturationSetting = (rawExif: any, cameraMake?: string): string | undefined => {
     // 佳能Picture Style饱和度
     if (cameraMake?.toLowerCase().includes('canon')) {
-        if (rawExif.CanonCs && rawExif.CanonCs.SaturationSetting !== undefined) {
-            const saturation = rawExif.CanonCs.SaturationSetting;
-            if (saturation === 0) return '标准';
-            if (saturation > 0) return `+${saturation}`;
-            return `${saturation}`;
+        // 检查多个可能的饱和度字段
+        const possibleFields = [
+            'SaturationSetting',
+            'Saturation',
+            'PictureStyleSaturation',
+            'ColorSaturation',
+            'ChromaSaturation'
+        ];
+
+        for (const field of possibleFields) {
+            let saturation: number | undefined;
+
+            // 从佳能特有字段获取
+            if (rawExif.CanonCs && rawExif.CanonCs[field] !== undefined) {
+                saturation = rawExif.CanonCs[field];
+            }
+            // MakerNote是二进制数据，不能直接访问
+            // 已解析的佳能字段会在CanonCs等字段中
+            // 从根级别获取
+            else if (rawExif[field] !== undefined) {
+                saturation = rawExif[field];
+            }
+
+            if (saturation !== undefined) {
+                // 佳能的饱和度值通常在-4到+4范围内
+                if (saturation >= 128) {
+                    // 如果是大数值，可能需要转换
+                    saturation = saturation - 128;
+                }
+
+                if (saturation === 0) return '标准';
+                if (saturation > 0) return `+${saturation}`;
+                return `${saturation}`;
+            }
         }
 
-        if (rawExif.PictureStyleSaturation !== undefined) {
-            const saturation = rawExif.PictureStyleSaturation;
-            if (saturation === 0) return '标准';
-            if (saturation > 0) return `+${saturation}`;
-            return `${saturation}`;
+        // 尝试从Picture Style详细参数获取
+        if (rawExif.CanonPi) {
+            for (const field of possibleFields) {
+                if (rawExif.CanonPi[field] !== undefined) {
+                    const saturation = rawExif.CanonPi[field];
+                    if (saturation === 0) return '标准';
+                    if (saturation > 0) return `+${saturation}`;
+                    return `${saturation}`;
+                }
+            }
         }
     }
 
@@ -688,18 +763,53 @@ const getSaturationSetting = (rawExif: any, cameraMake?: string): string | undef
 const getSharpnessSetting = (rawExif: any, cameraMake?: string): string | undefined => {
     // 佳能Picture Style锐度
     if (cameraMake?.toLowerCase().includes('canon')) {
-        if (rawExif.CanonCs && rawExif.CanonCs.SharpnessSetting !== undefined) {
-            const sharpness = rawExif.CanonCs.SharpnessSetting;
-            if (sharpness === 0) return '标准';
-            if (sharpness > 0) return `+${sharpness}`;
-            return `${sharpness}`;
+        // 检查多个可能的锐度字段
+        const possibleFields = [
+            'SharpnessSetting',
+            'Sharpness',
+            'PictureStyleSharpness',
+            'SharpnessLevel',
+            'EdgeSharpness',
+            'DetailSharpness'
+        ];
+
+        for (const field of possibleFields) {
+            let sharpness: number | undefined;
+
+            // 从佳能特有字段获取
+            if (rawExif.CanonCs && rawExif.CanonCs[field] !== undefined) {
+                sharpness = rawExif.CanonCs[field];
+            }
+            // MakerNote是二进制数据，不能直接访问
+            // 已解析的佳能字段会在CanonCs等字段中
+            // 从根级别获取
+            else if (rawExif[field] !== undefined) {
+                sharpness = rawExif[field];
+            }
+
+            if (sharpness !== undefined) {
+                // 佳能的锐度值通常在-4到+4范围内
+                if (sharpness >= 128) {
+                    // 如果是大数值，可能需要转换
+                    sharpness = sharpness - 128;
+                }
+
+                if (sharpness === 0) return '标准';
+                if (sharpness > 0) return `+${sharpness}`;
+                return `${sharpness}`;
+            }
         }
 
-        if (rawExif.PictureStyleSharpness !== undefined) {
-            const sharpness = rawExif.PictureStyleSharpness;
-            if (sharpness === 0) return '标准';
-            if (sharpness > 0) return `+${sharpness}`;
-            return `${sharpness}`;
+        // 尝试从Picture Style详细参数获取
+        if (rawExif.CanonPi) {
+            for (const field of possibleFields) {
+                if (rawExif.CanonPi[field] !== undefined) {
+                    const sharpness = rawExif.CanonPi[field];
+                    if (sharpness === 0) return '标准';
+                    if (sharpness > 0) return `+${sharpness}`;
+                    return `${sharpness}`;
+                }
+            }
         }
     }
 
@@ -718,21 +828,489 @@ const getSharpnessSetting = (rawExif: any, cameraMake?: string): string | undefi
 
 // 获取色调设置 (佳能Color Tone)
 const getColorToneSetting = (rawExif: any): string | undefined => {
-    if (rawExif.CanonCs && rawExif.CanonCs.ColorTone !== undefined) {
-        const tone = rawExif.CanonCs.ColorTone;
-        if (tone === 0) return '标准';
-        if (tone > 0) return `+${tone}`;
-        return `${tone}`;
+    // 检查多个可能的色调字段
+    const possibleFields = [
+        'ColorTone',
+        'PictureStyleColorTone',
+        'ToneSetting',
+        'ColorTemperatureSetting'
+    ];
+
+    for (const field of possibleFields) {
+        let tone: number | undefined;
+
+        // 从佳能特有字段获取
+        if (rawExif.CanonCs && rawExif.CanonCs[field] !== undefined) {
+            tone = rawExif.CanonCs[field];
+        }
+        // MakerNote是二进制数据，不能直接访问
+        // 已解析的佳能字段会在CanonCs等字段中
+        // 从根级别获取
+        else if (rawExif[field] !== undefined) {
+            tone = rawExif[field];
+        }
+
+        if (tone !== undefined) {
+            // 佳能的色调值通常在-4到+4范围内
+            if (tone >= 128) {
+                // 如果是大数值，可能需要转换
+                tone = tone - 128;
+            }
+
+            if (tone === 0) return '标准';
+            if (tone > 0) return `+${tone}`;
+            return `${tone}`;
+        }
     }
 
-    if (rawExif.PictureStyleColorTone !== undefined) {
-        const tone = rawExif.PictureStyleColorTone;
-        if (tone === 0) return '标准';
-        if (tone > 0) return `+${tone}`;
-        return `${tone}`;
+    // 尝试从Picture Style详细参数获取
+    if (rawExif.CanonPi) {
+        for (const field of possibleFields) {
+            if (rawExif.CanonPi[field] !== undefined) {
+                const tone = rawExif.CanonPi[field];
+                if (tone === 0) return '标准';
+                if (tone > 0) return `+${tone}`;
+                return `${tone}`;
+            }
+        }
     }
 
     return undefined;
+};
+
+// 获取亮度设置 (佳能Picture Style Brightness)
+const getBrightnessSetting = (rawExif: any, cameraMake?: string): string | undefined => {
+    // 佳能Picture Style亮度
+    if (cameraMake?.toLowerCase().includes('canon')) {
+        // 检查多个可能的亮度字段
+        const possibleFields = [
+            'BrightnessSetting',
+            'Brightness',
+            'PictureStyleBrightness',
+            'Luminance',
+            'LuminanceAdjustment',
+            'ExposureAdjustment'
+        ];
+
+        for (const field of possibleFields) {
+            let brightness: number | undefined;
+
+            // 从佳能特有字段获取
+            if (rawExif.CanonCs && rawExif.CanonCs[field] !== undefined) {
+                brightness = rawExif.CanonCs[field];
+            }
+            // MakerNote是二进制数据，不能直接访问
+            // 已解析的佳能字段会在CanonCs等字段中
+            // 从根级别获取
+            else if (rawExif[field] !== undefined) {
+                brightness = rawExif[field];
+            }
+
+            if (brightness !== undefined) {
+                // 佳能的亮度值通常在-4到+4范围内
+                if (brightness >= 128) {
+                    // 如果是大数值，可能需要转换
+                    brightness = brightness - 128;
+                }
+
+                if (brightness === 0) return '标准';
+                if (brightness > 0) return `+${brightness}`;
+                return `${brightness}`;
+            }
+        }
+
+        // 尝试从Picture Style详细参数获取
+        if (rawExif.CanonPi) {
+            for (const field of possibleFields) {
+                if (rawExif.CanonPi[field] !== undefined) {
+                    const brightness = rawExif.CanonPi[field];
+                    if (brightness === 0) return '标准';
+                    if (brightness > 0) return `+${brightness}`;
+                    return `${brightness}`;
+                }
+            }
+        }
+    }
+
+    return undefined;
+};
+
+// 从二进制数据中读取字符串
+const readStringFromBinary = (data: number[], offset: number, maxLength: number = 50): string => {
+    let result = '';
+    for (let i = 0; i < maxLength && offset + i < data.length; i++) {
+        const byte = data[offset + i];
+        if (byte === 0) break; // 遇到空字节停止
+        if (byte >= 32 && byte <= 126) { // 可打印ASCII字符
+            result += String.fromCharCode(byte);
+        } else if (byte > 126) { // 可能是UTF-8
+            break;
+        }
+    }
+    return result.trim();
+};
+
+// 从二进制数据中读取16位整数（小端序）
+const readUint16LE = (data: number[], offset: number): number => {
+    if (offset + 1 >= data.length) return 0;
+    return data[offset] | (data[offset + 1] << 8);
+};
+
+// 从二进制数据中读取32位整数（小端序）
+const readUint32LE = (data: number[], offset: number): number => {
+    if (offset + 3 >= data.length) return 0;
+    return data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24);
+};
+
+// 将佳能的Picture Style数值转换为用户可读格式
+const formatCanonStyleValue = (value: number): string => {
+    // 佳能通常使用0作为标准值，正负值表示调整
+    if (value === 0 || value === 128) return '标准';
+
+    // 处理可能的偏移编码
+    let adjustedValue = value;
+    if (value >= 128) {
+        adjustedValue = value - 128;
+    }
+
+    // 限制在合理范围内 (-4 到 +4)
+    if (adjustedValue < -4) adjustedValue = -4;
+    if (adjustedValue > 4) adjustedValue = 4;
+
+    if (adjustedValue > 0) return `+${adjustedValue}`;
+    if (adjustedValue < 0) return `${adjustedValue}`;
+    return '标准';
+};
+
+// 解析Picture Style参数从二进制数据
+const parsePictureStyleFromBinary = (data: number[], offset: number, count: number, type: number): {
+    contrast?: string;
+    saturation?: string;
+    sharpness?: string;
+    brightness?: string;
+    colorTone?: string;
+} | null => {
+    const result: any = {};
+
+    try {
+        console.log(`📝 🎨 解析Picture Style数据: offset=${offset}, count=${count}, type=${type}`);
+
+        // 根据数据类型和大小来解析
+        if (type === 3) { // SHORT (16位整数)
+            for (let i = 0; i < Math.min(count, 50) && offset + (i * 2) + 1 < data.length; i++) {
+                const value = readUint16LE(data, offset + (i * 2));
+
+                // 根据在数组中的位置推断参数类型
+                // 佳能通常在特定偏移存储这些值
+                if (i === 0 || i === 1) { // 前几个可能是Picture Style模式
+                    console.log(`📝 🎨 位置 ${i} 的值: ${value} (0x${value.toString(16)})`);
+                } else if (i >= 2 && i <= 10) { // 中间位置可能是调整参数
+                    const formatted = formatCanonStyleValue(value);
+                    console.log(`📝 🎨 位置 ${i} 的Picture Style参数: ${value} -> ${formatted}`);
+
+                    // 根据位置尝试分配参数（这需要根据实际测试调整）
+                    if (i === 2) result.contrast = formatted;
+                    else if (i === 3) result.saturation = formatted;
+                    else if (i === 4) result.sharpness = formatted;
+                    else if (i === 5) result.brightness = formatted;
+                    else if (i === 6) result.colorTone = formatted;
+                }
+            }
+        } else if (type === 4) { // LONG (32位整数)
+            for (let i = 0; i < Math.min(count, 20) && offset + (i * 4) + 3 < data.length; i++) {
+                const value = readUint32LE(data, offset + (i * 4));
+                console.log(`📝 🎨 32位值 ${i}: ${value} (0x${value.toString(16)})`);
+            }
+        } else if (type === 1) { // BYTE
+            for (let i = 0; i < Math.min(count, 100) && offset + i < data.length; i++) {
+                const value = data[offset + i];
+                if (value !== 0 && value !== 255) { // 忽略填充字节
+                    console.log(`📝 🎨 字节 ${i}: ${value}`);
+
+                    // 对于字节类型，尝试直接解析Picture Style参数
+                    const formatted = formatCanonStyleValue(value);
+                    if (formatted !== '标准') {
+                        // 根据位置分配参数（需要实际测试来确定正确位置）
+                        if (i === 10) result.contrast = formatted;
+                        else if (i === 11) result.saturation = formatted;
+                        else if (i === 12) result.sharpness = formatted;
+                        else if (i === 13) result.brightness = formatted;
+                        else if (i === 14) result.colorTone = formatted;
+                    }
+                }
+            }
+        }
+
+        // 扫描整个区域寻找特定的Picture Style模式
+        console.log('📝 🎨 扫描Picture Style参数模式...');
+        for (let i = 0; i < Math.min(count * 4, 200) && offset + i < data.length; i++) {
+            const byte = data[offset + i];
+
+            // 寻找可能的Picture Style参数组合
+            // 佳能通常将对比度、饱和度、锐度等连续存储
+            if (byte > 0 && byte < 20 && offset + i + 4 < data.length) {
+                const values = [
+                    data[offset + i],
+                    data[offset + i + 1],
+                    data[offset + i + 2],
+                    data[offset + i + 3],
+                    data[offset + i + 4]
+                ];
+
+                // 检查是否像Picture Style参数（通常在0-8范围内，或120-136范围内）
+                const isValidPattern = values.every(v =>
+                    (v >= 0 && v <= 8) || (v >= 120 && v <= 136) || v === 0
+                );
+
+                if (isValidPattern && values.some(v => v !== 0)) {
+                    console.log(`📝 🎨 在偏移 ${offset + i} 发现可能的Picture Style参数:`, values);
+
+                    values.forEach((value, idx) => {
+                        if (value > 0) {
+                            const formatted = formatCanonStyleValue(value);
+                            console.log(`📝 🎨 参数 ${idx}: ${value} -> ${formatted}`);
+
+                            // 分配给相应的参数
+                            if (idx === 0 && !result.contrast) result.contrast = formatted;
+                            else if (idx === 1 && !result.saturation) result.saturation = formatted;
+                            else if (idx === 2 && !result.sharpness) result.sharpness = formatted;
+                            else if (idx === 3 && !result.brightness) result.brightness = formatted;
+                            else if (idx === 4 && !result.colorTone) result.colorTone = formatted;
+                        }
+                    });
+                }
+            }
+        }
+
+        // 如果找到了任何参数，返回结果
+        if (Object.keys(result).length > 0) {
+            console.log('📝 🎨 ✅ 成功解析Picture Style参数:', result);
+            return result;
+        }
+    } catch (error) {
+        console.log('📝 🎨 ❌ Picture Style解析出错:', error);
+    }
+
+    return null;
+};
+
+// 解析佳能 MakerNote 获取镜头信息
+const parseCanonMakerNote = (rawExif: any): {
+    lensModel?: string;
+    lensType?: string;
+    lensID?: string;
+    lensSerialNumber?: string;
+    focalLengthRange?: string;
+    apertureRange?: string;
+    lensFeatures?: string[];
+    pictureStyleSettings?: {
+        contrast?: string;
+        saturation?: string;
+        sharpness?: string;
+        brightness?: string;
+        colorTone?: string;
+    };
+} => {
+    const result: any = {};
+
+    console.log('📝 开始解析佳能 MakerNote 二进制数据...');
+
+    // 处理二进制MakerNote数据
+    if (rawExif.MakerNote && Array.isArray(rawExif.MakerNote)) {
+        const data = rawExif.MakerNote;
+        console.log('📝 MakerNote 二进制数据长度:', data.length);
+
+        // 扫描二进制数据寻找ASCII字符串
+        console.log('📝 扫描MakerNote中的文本信息...');
+
+        for (let i = 0; i < data.length - 10; i++) {
+            const str = readStringFromBinary(data, i, 100);
+
+            if (str.length >= 8) { // 只关注较长的字符串
+                console.log(`📝 在偏移 ${i} 处发现文本:`, str);
+
+                // 检查是否是镜头信息
+                if (str.includes('mm') && (str.includes('F') || str.includes('f'))) {
+                    if (!result.lensModel || str.length > (result.lensModel.length || 0)) {
+                        result.lensModel = str;
+                        console.log('📝 ✅ 找到镜头型号:', str);
+                    }
+                }
+
+                // 检查是否是序列号（通常是MR开头的字符串）
+                if (str.match(/^[A-Z]{2}\d{6,}/)) {
+                    result.lensSerialNumber = str;
+                    console.log('📝 ✅ 找到可能的序列号:', str);
+                }
+
+                // 检查是否是固件版本
+                if (str.includes('Version') || str.match(/\d+\.\d+\.\d+/)) {
+                    console.log('📝 📄 固件/版本信息:', str);
+                }
+
+                // 检查是否是相机型号
+                if (str.includes('Canon') || str.includes('EOS')) {
+                    console.log('📝 📷 相机型号:', str);
+                }
+            }
+        }
+
+        // 尝试解析TIFF结构中的IFD条目
+        console.log('📝 尝试解析佳能MakerNote TIFF结构...');
+
+        // 佳能MakerNote通常以TIFF头开始
+        for (let offset = 0; offset < Math.min(100, data.length - 12); offset++) {
+            // 寻找可能的TIFF条目数量标识
+            const entryCount = readUint16LE(data, offset);
+
+            if (entryCount > 0 && entryCount < 200) { // 合理的条目数量
+                console.log(`📝 在偏移 ${offset} 处可能有 ${entryCount} 个TIFF条目`);
+
+                // 解析每个条目
+                for (let i = 0; i < Math.min(entryCount, 50); i++) {
+                    const entryOffset = offset + 2 + (i * 12);
+                    if (entryOffset + 12 > data.length) break;
+
+                    const tag = readUint16LE(data, entryOffset);
+                    const type = readUint16LE(data, entryOffset + 2);
+                    const count = readUint32LE(data, entryOffset + 4);
+                    const valueOffset = readUint32LE(data, entryOffset + 8);
+
+                    // 检查已知的佳能标签
+                    const knownTags: { [key: number]: string } = {
+                        1: 'CameraSettings',
+                        2: 'FocalLength',
+                        4: 'ShotInfo',
+                        6: 'ImageType',
+                        7: 'FirmwareVersion',
+                        9: 'OwnerName',
+                        95: 'LensModel', // 0x005F
+                        149: 'LensInfo', // 0x0095
+                        150: 'LensSerialNumber', // 0x0096
+                        // Picture Style相关标签
+                        38: 'ProcessingInfo', // 0x0026 - 包含Picture Style参数
+                        61: 'ColorData', // 0x003D - 色彩数据
+                        147: 'ColorInfo', // 0x0093 - 色彩信息
+                        160: 'ProcessingInfo2', // 0x00A0 - 更多处理信息
+                        224: 'ColorBalance', // 0x00E0 - 色彩平衡
+                    };
+
+                    if (knownTags[tag]) {
+                        console.log(`📝 🔍 佳能标签 ${tag} (${knownTags[tag]}): 类型=${type}, 数量=${count}, 值偏移=${valueOffset}`);
+
+                        // 如果是字符串类型的镜头信息
+                        if (tag === 95 || tag === 149) { // LensModel或LensInfo
+                            if (type === 2 && valueOffset < data.length) { // ASCII字符串
+                                const lensStr = readStringFromBinary(data, valueOffset, count);
+                                if (lensStr && lensStr.length > 5) {
+                                    result.lensModel = lensStr;
+                                    console.log('📝 ✅ 从TIFF条目找到镜头:', lensStr);
+                                }
+                            }
+                        }
+
+                        // 如果是镜头序列号
+                        if (tag === 150) { // LensSerialNumber
+                            if (type === 2 && valueOffset < data.length) {
+                                const serialStr = readStringFromBinary(data, valueOffset, count);
+                                if (serialStr) {
+                                    result.lensSerialNumber = serialStr;
+                                    console.log('📝 ✅ 从TIFF条目找到镜头序列号:', serialStr);
+                                }
+                            }
+                        }
+
+                        // 如果是Picture Style相关数据
+                        if (tag === 1 || tag === 38 || tag === 61 || tag === 147 || tag === 160 || tag === 224) {
+                            if (valueOffset < data.length) {
+                                console.log(`📝 🎨 解析Picture Style相关标签 ${tag}...`);
+                                const pictureStyleData = parsePictureStyleFromBinary(data, valueOffset, count, type);
+                                if (pictureStyleData) {
+                                    if (!result.pictureStyleSettings) {
+                                        result.pictureStyleSettings = {};
+                                    }
+                                    Object.assign(result.pictureStyleSettings, pictureStyleData);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 检查佳能特有的已解析字段（这些是EXIF库从MakerNote解析出来的）
+    const canonFields = [
+        'CanonCs', 'CanonSi', 'CanonPi', 'CanonFi', 'CanonPa',
+        'Canon.CameraSettings', 'Canon.ShotInfo', 'Canon.ProcessingInfo',
+        'Canon.FileInfo', 'Canon.PanoramaInfo'
+    ];
+
+    canonFields.forEach(field => {
+        if (rawExif[field]) {
+            console.log(`📝 发现佳能字段 ${field}:`, rawExif[field]);
+
+            // 如果有佳能相机设置，尝试提取镜头信息
+            if (field === 'CanonCs' && rawExif[field]) {
+                const cs = rawExif[field];
+                if (cs.LensType !== undefined) {
+                    console.log('📝 镜头类型 (LensType):', cs.LensType);
+                }
+                if (cs.LensModel && !result.lensModel) {
+                    result.lensModel = cs.LensModel;
+                    console.log('📝 从CanonCs找到镜头型号:', cs.LensModel);
+                }
+            }
+        }
+    });
+
+    // 从镜头信息推断特性
+    if (result.lensModel) {
+        const features: string[] = [];
+        const lensStr = result.lensModel.toLowerCase();
+
+        // 推断焦距范围
+        const focalMatch = result.lensModel.match(/(\d+)-?(\d+)?mm/);
+        if (focalMatch) {
+            if (focalMatch[2]) {
+                result.focalLengthRange = `${focalMatch[1]}-${focalMatch[2]}mm`;
+            } else {
+                result.focalLengthRange = `${focalMatch[1]}mm`;
+            }
+        }
+
+        // 推断光圈范围
+        const apertureMatch = result.lensModel.match(/[Ff](\d+(?:\.\d+)?)-?(\d+(?:\.\d+)?)?/);
+        if (apertureMatch) {
+            if (apertureMatch[2]) {
+                result.apertureRange = `f/${apertureMatch[1]}-f/${apertureMatch[2]}`;
+            } else {
+                result.apertureRange = `f/${apertureMatch[1]}`;
+            }
+        }
+
+        // 推断镜头特性
+        if (lensStr.includes('rf')) features.push('RF镜头');
+        else if (lensStr.includes('ef-s')) features.push('EF-S镜头');
+        else if (lensStr.includes('ef-m')) features.push('EF-M镜头');
+        else if (lensStr.includes('ef')) features.push('EF镜头');
+
+        if (lensStr.includes('is')) features.push('光学防抖 (IS)');
+        if (lensStr.includes('stm')) features.push('STM步进马达');
+        if (lensStr.includes('usm')) features.push('USM超声波马达');
+        if (lensStr.includes('nano usm')) features.push('Nano USM马达');
+        if (lensStr.includes('l ') || lensStr.endsWith('l')) features.push('L级专业镜头');
+        if (lensStr.includes('macro')) features.push('微距镜头');
+        if (lensStr.includes('fisheye')) features.push('鱼眼镜头');
+        if (lensStr.includes('ts-e')) features.push('移轴镜头');
+
+        if (features.length > 0) {
+            result.lensFeatures = features;
+        }
+    }
+
+    console.log('📝 MakerNote解析完成，结果:', result);
+    return result;
 };
 
 // 获取镜头详细信息 (增强版)
@@ -744,8 +1322,14 @@ const getLensDetails = (rawExif: any): {
 } => {
     const details: any = {};
 
+    // 首先尝试从 MakerNote 解析镜头信息
+    const makerNoteData = parseCanonMakerNote(rawExif);
+
     // 镜头信息字符串 - 多种来源（按优先级顺序）
-    if (rawExif.LensMake && rawExif.LensModel) {
+    if (makerNoteData.lensModel) {
+        details.lensInfo = makerNoteData.lensModel;
+        console.log('📝 使用 MakerNote 中的镜头信息:', makerNoteData.lensModel);
+    } else if (rawExif.LensMake && rawExif.LensModel) {
         details.lensInfo = `${rawExif.LensMake} ${rawExif.LensModel}`;
     } else if (rawExif.LensModel) {
         details.lensInfo = rawExif.LensModel;
@@ -1083,6 +1667,59 @@ export const extractCompleteMetadata = async (file: File): Promise<{
     };
 };
 
+// 获取所有原始 EXIF 数据（包括 MakerNote）
+const getAllRawExifData = (file: File): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        EXIF.getData(file as any, function (this: any) {
+            try {
+                // 获取所有标签，包括原始的数字标签
+                const allTags = EXIF.getAllTags(this);
+
+                // 尝试获取更多原始数据
+                const rawData: any = { ...allTags };
+
+                // 尝试获取 MakerNote 的原始字节数据
+                if (EXIF.getTag && typeof EXIF.getTag === 'function') {
+                    try {
+                        const makerNote = EXIF.getTag(this, 'MakerNote');
+                        if (makerNote) {
+                            rawData.MakerNote = makerNote;
+                            console.log('📝 获取到 MakerNote 原始数据:', makerNote);
+                        }
+                    } catch (e) {
+                        console.log('📝 无法获取 MakerNote:', e);
+                    }
+                }
+
+                // 尝试获取所有可能的数字标签
+                for (let i = 1; i <= 50000; i++) {
+                    try {
+                        if (EXIF.getTag && typeof EXIF.getTag === 'function') {
+                            const value = EXIF.getTag(this, i);
+                            if (value !== undefined && value !== null) {
+                                rawData[i] = value;
+                            }
+                        }
+                    } catch (e) {
+                        // 忽略错误，继续尝试下一个标签
+                    }
+                }
+
+                // 检查 exif-js 内部数据结构
+                if (this.exifdata) {
+                    console.log('📝 exif-js 内部数据:', this.exifdata);
+                    Object.assign(rawData, this.exifdata);
+                }
+
+                resolve(rawData);
+            } catch (error) {
+                console.error('Error getting raw EXIF data:', error);
+                reject(error);
+            }
+        });
+    });
+};
+
 // 从图片文件提取 EXIF 信息
 export const extractExifFromFile = (file: File): Promise<IExifData> => {
     return new Promise((resolve, reject) => {
@@ -1111,12 +1748,35 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                         console.log('  - FocalLengthIn35mmFilm:', rawExif.FocalLengthIn35mmFilm);
 
                         // 检查所有可能的镜头相关字段
-                        console.log('🔍 所有EXIF字段搜索:');
+                        console.log('🔍 所有镜头相关字段搜索:');
                         Object.keys(rawExif).forEach(key => {
-                            if (key.toLowerCase().includes('lens')) {
+                            const lowerKey = key.toLowerCase();
+                            if (lowerKey.includes('lens') || lowerKey.includes('focal') || lowerKey.includes('aperture')) {
                                 console.log(`  - ${key}:`, (rawExif as any)[key]);
                             }
                         });
+
+                        // 检查制造商特定字段
+                        console.log('🔍 制造商特定字段搜索:');
+                        Object.keys(rawExif).forEach(key => {
+                            const lowerKey = key.toLowerCase();
+                            if (lowerKey.includes('canon') || lowerKey.includes('maker') || lowerKey.includes('tag')) {
+                                console.log(`  - ${key}:`, (rawExif as any)[key]);
+                            }
+                        });
+
+                        // 检查数字标签（可能包含镜头信息）
+                        console.log('🔍 数字标签搜索:');
+                        Object.keys(rawExif).forEach(key => {
+                            // 检查纯数字键或十六进制键
+                            if (/^\d+$/.test(key) || /^0x[0-9A-F]+$/i.test(key)) {
+                                const value = (rawExif as any)[key];
+                                console.log(`  - 标签 ${key}:`, value);
+                            }
+                        });
+
+                        // 解析 MakerNote 数据
+                        console.log('📝 MakerNote 解析结果:');
 
                         // 输出完整的EXIF数据对象（查看所有可用字段）
                         console.log('🔍 完整EXIF对象:', rawExif);
@@ -1146,16 +1806,34 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                         console.log('  - 白平衡偏移:', getWhiteBalanceBias(rawExif) || '无');
                         console.log('  - 色温:', getColorTemperature(rawExif) || '自动');
                         console.log('  - 色调:', getColorToneSetting(rawExif) || '标准');
-                        console.log('  - 对比度:', getContrastSetting(rawExif, rawExif.Make) || '标准');
-                        console.log('  - 饱和度:', getSaturationSetting(rawExif, rawExif.Make) || '标准');
-                        console.log('  - 锐度:', getSharpnessSetting(rawExif, rawExif.Make) || '标准');
+
+                        console.log('🎨 Picture Style 详细参数:');
+
+                        // 解析MakerNote获取Picture Style参数（调试用）
+                        const debugMakerNoteData = parseCanonMakerNote(rawExif);
+                        if (debugMakerNoteData.pictureStyleSettings) {
+                            console.log('  📝 从MakerNote解析的Picture Style:');
+                            console.log('    - 对比度:', debugMakerNoteData.pictureStyleSettings.contrast || '未检测到');
+                            console.log('    - 饱和度:', debugMakerNoteData.pictureStyleSettings.saturation || '未检测到');
+                            console.log('    - 锐度:', debugMakerNoteData.pictureStyleSettings.sharpness || '未检测到');
+                            console.log('    - 亮度:', debugMakerNoteData.pictureStyleSettings.brightness || '未检测到');
+                            console.log('    - 色调:', debugMakerNoteData.pictureStyleSettings.colorTone || '未检测到');
+                        }
+
+                        // 传统方法获取的参数（作为备用）
+                        console.log('  📝 传统方法解析的Picture Style:');
+                        console.log('    - 对比度:', getContrastSetting(rawExif, rawExif.Make) || '标准');
+                        console.log('    - 饱和度:', getSaturationSetting(rawExif, rawExif.Make) || '标准');
+                        console.log('    - 锐度:', getSharpnessSetting(rawExif, rawExif.Make) || '标准');
+                        console.log('    - 亮度:', getBrightnessSetting(rawExif, rawExif.Make) || '标准');
 
                         console.log('🔍 镜头详细信息:');
                         const lensDetails = getLensDetails(rawExif);
-                        console.log('  - 镜头信息:', lensDetails.lensInfo || '未知');
-                        console.log('  - 焦距范围:', lensDetails.focalRange || '未知');
-                        console.log('  - 光圈范围:', lensDetails.apertureRange || '未知');
-                        console.log('  - 镜头特性:', lensDetails.lensFeatures?.join(', ') || '无');
+                        console.log('  - 镜头信息:', debugMakerNoteData.lensModel || lensDetails.lensInfo || '未知');
+                        console.log('  - 镜头序列号:', debugMakerNoteData.lensSerialNumber || '未知');
+                        console.log('  - 焦距范围:', debugMakerNoteData.focalLengthRange || lensDetails.focalRange || '未知');
+                        console.log('  - 光圈范围:', debugMakerNoteData.apertureRange || lensDetails.apertureRange || '未知');
+                        console.log('  - 镜头特性:', (debugMakerNoteData.lensFeatures || lensDetails.lensFeatures)?.join(', ') || '无');
 
                         // 同时输出构建后的基础lens字段用于对比
                         const constructedLens = (() => {
@@ -1194,9 +1872,27 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                     .join(' ')
                     .trim() || undefined;
 
-                // 提取镜头详细信息
+                // 解析 MakerNote 数据（在此处统一解析一次）
+                const makerNoteData = parseCanonMakerNote(rawExif);
+                console.log('  - MakerNote镜头信息:', makerNoteData);
+
+                // 提取镜头详细信息（优先使用MakerNote解析的数据）
                 const lensDetails = getLensDetails(rawExif);
                 const lensCorrections = getLensCorrections(rawExif);
+
+                // 合并MakerNote解析的镜头信息
+                if (makerNoteData.lensModel && !lensDetails.lensInfo) {
+                    lensDetails.lensInfo = makerNoteData.lensModel;
+                }
+                if (makerNoteData.focalLengthRange && !lensDetails.focalRange) {
+                    lensDetails.focalRange = makerNoteData.focalLengthRange;
+                }
+                if (makerNoteData.apertureRange && !lensDetails.apertureRange) {
+                    lensDetails.apertureRange = makerNoteData.apertureRange;
+                }
+                if (makerNoteData.lensFeatures && (!lensDetails.lensFeatures || lensDetails.lensFeatures.length === 0)) {
+                    lensDetails.lensFeatures = makerNoteData.lensFeatures;
+                }
 
                 // 佳能相机特殊字段解析
                 const canonSpecificData = rawExif.Make?.toLowerCase().includes('canon') ? {
@@ -1210,14 +1906,16 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
 
 
 
-                // 通用色彩和白平衡信息
+                // 通用色彩和白平衡信息（优先使用MakerNote解析的数据）
                 const colorAndWBData = {
                     whiteBalanceBias: getWhiteBalanceBias(rawExif),
                     colorTemperature: getColorTemperature(rawExif),
                     colorTone: getColorToneSetting(rawExif),
-                    contrastSetting: getContrastSetting(rawExif, rawExif.Make),
-                    saturationSetting: getSaturationSetting(rawExif, rawExif.Make),
-                    sharpnessSetting: getSharpnessSetting(rawExif, rawExif.Make),
+                    // Picture Style参数 - 优先使用MakerNote解析的值
+                    contrastSetting: makerNoteData.pictureStyleSettings?.contrast || getContrastSetting(rawExif, rawExif.Make),
+                    saturationSetting: makerNoteData.pictureStyleSettings?.saturation || getSaturationSetting(rawExif, rawExif.Make),
+                    sharpnessSetting: makerNoteData.pictureStyleSettings?.sharpness || getSharpnessSetting(rawExif, rawExif.Make),
+                    brightnessSetting: makerNoteData.pictureStyleSettings?.brightness || getBrightnessSetting(rawExif, rawExif.Make),
                 };
 
                 // 镜头信息
@@ -1226,6 +1924,7 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                     focalRange: lensDetails.focalRange,
                     apertureRange: lensDetails.apertureRange,
                     lensFeatures: lensDetails.lensFeatures,
+                    lensSerialNumber: makerNoteData.lensSerialNumber,
                     distortionCorrection: lensCorrections.distortionCorrection,
                     chromaticAberrationCorrection: lensCorrections.chromaticAberrationCorrection,
                     vignettingCorrection: lensCorrections.vignettingCorrection,
@@ -1234,6 +1933,10 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
 
                 // 构建基础镜头型号字符串 (优先使用完整信息)
                 const lens = (() => {
+                    // 0. 优先使用 MakerNote 中的镜头信息
+                    if (makerNoteData.lensModel) {
+                        return makerNoteData.lensModel;
+                    }
                     // 1. 首先尝试从 LensMake + LensModel 组合
                     if (rawExif.LensMake && rawExif.LensModel) {
                         return `${rawExif.LensMake} ${rawExif.LensModel}`.trim();
@@ -1295,7 +1998,6 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                     software: rawExif.Software || undefined,
 
                     // 扩展参数
-                    lensSerialNumber: rawExif.LensSerialNumber,
                     cameraSerialNumber: rawExif.BodySerialNumber,
                     firmware: rawExif.FirmwareVersion,
                     orientation: rawExif.Orientation,
