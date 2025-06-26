@@ -23,6 +23,24 @@ export interface ITechnicalData {
   colorProfile?: string;     // 色彩配置文件
 }
 
+// 直方图数据接口
+export interface IHistogramData {
+  red: number[];      // R通道直方图 (256个值)
+  green: number[];    // G通道直方图 (256个值)
+  blue: number[];     // B通道直方图 (256个值)
+  luminance: number[]; // 亮度直方图 (256个值)
+}
+
+// 影调分析数据接口
+export interface IToneAnalysis {
+  toneType: string;        // 影调类型：正常/高调/低调/平调/高对比
+  brightness: number;      // 亮度百分比 (0-100)
+  contrast: number;        // 对比度百分比 (0-100)
+  shadowRatio: number;     // 阴影占比 (0-100)
+  highlightRatio: number;  // 高光占比 (0-100)
+  histogram: IHistogramData; // 完整直方图数据
+}
+
 // 图像分析数据接口
 export interface IImageAnalysis {
   dominantColors?: string[]; // 主色调
@@ -33,6 +51,9 @@ export interface IImageAnalysis {
   faces?: number;            // 检测到的人脸数量
   objects?: string[];        // 识别的物体
   scene?: string;            // 场景分类
+
+  // 新增：完整影调分析数据
+  toneAnalysis?: IToneAnalysis;
 }
 
 // 扩展的EXIF信息接口
@@ -97,6 +118,36 @@ export interface IExifData {
   subjectDistance?: number;  // 对象距离
   digitalZoomRatio?: number; // 数字变焦比
   focalLengthIn35mmFilm?: number; // 35mm等效焦距
+
+  // 佳能相机专用字段
+  imageQuality?: string;     // 图像质量 (RAW/JPEG等)
+  noiseReduction?: string;   // 高ISO降噪
+  digitalLensOptimizer?: string; // 数字镜头优化器
+  dualPixelRaw?: string;     // 双像素RAW
+  canonFocusMode?: string;   // 佳能对焦模式
+  canonAFAreaMode?: string;  // 佳能AF区域模式
+
+  // 白平衡和色彩详细信息
+  whiteBalanceBias?: string; // 白平衡偏移
+  colorTemperature?: string; // 色温
+  colorTone?: string;        // 色调设置
+
+  // Picture Style 详细参数
+  contrastSetting?: string;  // 对比度设置
+  saturationSetting?: string; // 饱和度设置
+  sharpnessSetting?: string; // 锐度设置
+
+  // 镜头详细信息
+  lensInfo?: string;         // 镜头详细信息
+  focalRange?: string;       // 镜头焦距范围
+  apertureRange?: string;    // 镜头光圈范围
+  lensFeatures?: string[];   // 镜头特性 (如：RF镜头, 光学防抖等)
+
+  // 镜头校正
+  distortionCorrection?: string;    // 畸变校正
+  chromaticAberrationCorrection?: string; // 色差校正
+  vignettingCorrection?: string;    // 暗角校正
+  peripheralIllumination?: string; // 周边光量校正
 }
 
 // 文件元数据接口
@@ -160,6 +211,22 @@ const technicalSchema = new Schema<ITechnicalData>({
   colorProfile: { type: String },
 }, { _id: false });
 
+const histogramSchema = new Schema<IHistogramData>({
+  red: [{ type: Number }],
+  green: [{ type: Number }],
+  blue: [{ type: Number }],
+  luminance: [{ type: Number }],
+}, { _id: false });
+
+const toneAnalysisSchema = new Schema<IToneAnalysis>({
+  toneType: { type: String },
+  brightness: { type: Number },
+  contrast: { type: Number },
+  shadowRatio: { type: Number },
+  highlightRatio: { type: Number },
+  histogram: { type: histogramSchema },
+}, { _id: false });
+
 const analysisSchema = new Schema<IImageAnalysis>({
   dominantColors: [{ type: String }],
   averageBrightness: { type: Number },
@@ -169,6 +236,7 @@ const analysisSchema = new Schema<IImageAnalysis>({
   faces: { type: Number },
   objects: [{ type: String }],
   scene: { type: String },
+  toneAnalysis: { type: toneAnalysisSchema },
 }, { _id: false });
 
 const fileMetadataSchema = new Schema<IFileMetadata>({
@@ -242,6 +310,36 @@ const exifSchema = new Schema<IExifData>({
   subjectDistance: { type: Number },
   digitalZoomRatio: { type: Number },
   focalLengthIn35mmFilm: { type: Number },
+
+  // 佳能相机专用字段
+  imageQuality: { type: String },
+  noiseReduction: { type: String },
+  digitalLensOptimizer: { type: String },
+  dualPixelRaw: { type: String },
+  canonFocusMode: { type: String },
+  canonAFAreaMode: { type: String },
+
+  // 白平衡和色彩详细信息
+  whiteBalanceBias: { type: String },
+  colorTemperature: { type: String },
+  colorTone: { type: String },
+
+  // Picture Style 详细参数
+  contrastSetting: { type: String },
+  saturationSetting: { type: String },
+  sharpnessSetting: { type: String },
+
+  // 镜头详细信息
+  lensInfo: { type: String },
+  focalRange: { type: String },
+  apertureRange: { type: String },
+  lensFeatures: [{ type: String }],
+
+  // 镜头校正
+  distortionCorrection: { type: String },
+  chromaticAberrationCorrection: { type: String },
+  vignettingCorrection: { type: String },
+  peripheralIllumination: { type: String },
 }, { _id: false });
 
 const photoSchema = new Schema<IPhoto>(

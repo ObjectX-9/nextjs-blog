@@ -855,6 +855,20 @@ export default function PhotosManagementPage() {
                         </div>
                       </div>
                     )}
+                    {/* 新增：影调分析信息 */}
+                    {newPhoto.analysis.toneAnalysis && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div><strong>影调分析:</strong></div>
+                        <div className="ml-4 space-y-1">
+                          <div>影调类型: <span className="font-medium text-blue-600">{newPhoto.analysis.toneAnalysis.toneType}</span></div>
+                          <div>亮度: {newPhoto.analysis.toneAnalysis.brightness}%</div>
+                          <div>对比度: {newPhoto.analysis.toneAnalysis.contrast}%</div>
+                          <div>阴影占比: {newPhoto.analysis.toneAnalysis.shadowRatio}%</div>
+                          <div>高光占比: {newPhoto.analysis.toneAnalysis.highlightRatio}%</div>
+                          <div className="text-xs text-gray-500">包含完整RGB直方图数据</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </Panel>
               )}

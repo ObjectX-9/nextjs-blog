@@ -1,5 +1,5 @@
 import EXIF from 'exif-js';
-import { IExifData, IGPSData, ITechnicalData, IFileMetadata, IImageAnalysis } from '@/app/model/photo';
+import { IExifData, IGPSData, ITechnicalData, IFileMetadata, IImageAnalysis, IToneAnalysis, IHistogramData } from '@/app/model/photo';
 
 // EXIF 数据接口（扩展）
 interface RawExifData {
@@ -54,11 +54,8 @@ interface RawExifData {
     ResolutionUnit?: number;    // 分辨率单位
     Compression?: number;       // 压缩方式
 
-    // 富士相机特有字段
+    // 富士相机特有字段 (保留基础支持)
     FilmMode?: string;          // 胶片模拟
-    ShadowTone?: number;        // 阴影色调
-    HighlightTone?: number;     // 高光色调
-    NoiseReduction?: number;    // 降噪
 
     // 序列号等
     BodySerialNumber?: string;  // 机身序列号
@@ -88,6 +85,52 @@ interface RawExifData {
     SubjectDistance?: number;   // 对象距离
     DigitalZoomRatio?: number;  // 数字变焦比
     FocalLengthIn35mmFilm?: number; // 35mm等效焦距
+
+    // 白平衡和色彩相关
+    WhiteBalanceMode?: number;      // 白平衡模式
+    WhiteBalanceBias?: number;      // 白平衡偏移
+    ColorTemperature?: number;      // 色温
+    ColorMode?: number;             // 色彩模式
+    ColorFilter?: number;           // 色彩滤镜
+
+    // 镜头详细信息
+    LensMinFocalLength?: number;    // 镜头最小焦距
+    LensMaxFocalLength?: number;    // 镜头最大焦距
+    LensMaxAperture?: number;       // 镜头最大光圈
+    LensMinAperture?: number;       // 镜头最小光圈
+    LensInfo?: string;              // 镜头信息
+    LensFStops?: number;            // 镜头光圈档数
+
+    // 可能的备选镜头字段名
+    Lens?: string;                  // 镜头信息（备选）
+    LensType?: string;              // 镜头类型
+    LensID?: string;                // 镜头ID
+
+    // 图像处理参数 (标准EXIF)
+    ColorTone?: number;             // 色调
+    HighlightTone?: number;         // 高光色调
+
+    // 佳能特有字段
+    CanonCs?: any;                  // 佳能相机设置
+    CanonSi?: any;                  // 佳能拍摄信息  
+    CanonPi?: any;                  // 佳能处理信息
+    CanonFi?: any;                  // 佳能文件信息
+    CanonPa?: any;                  // 佳能全景信息
+
+    // 高ISO降噪
+    HighISONoiseReduction?: number; // 高ISO降噪设置
+
+    // 色彩风格参数
+    PictureStyleContrast?: number;   // Picture Style对比度
+    PictureStyleSaturation?: number; // Picture Style饱和度
+    PictureStyleSharpness?: number;  // Picture Style锐度
+    PictureStyleColorTone?: number;  // Picture Style色调
+
+    // 镜头校正
+    LensAberrationCorrection?: number; // 镜头像差校正
+    ChromaticAberrationCorrection?: number; // 色差校正
+    DistortionCorrection?: number;   // 畸变校正
+    VignettingCorrection?: number;   // 暗角校正
 }
 
 // 格式化曝光时间
@@ -116,9 +159,10 @@ const formatExposureCompensation = (value: number): string => {
     return `${sign}${value.toFixed(1)}EV`;
 };
 
-// 获取闪光灯状态
-const getFlashStatus = (flashValue: number): string => {
-    const flashModes: { [key: number]: string } = {
+// 获取闪光灯状态 (佳能相机优化)
+const getFlashStatus = (flashValue: number, cameraMake?: string): string => {
+    // 标准闪光灯状态
+    const standardFlashModes: { [key: number]: string } = {
         0: '未闪光',
         1: '闪光',
         5: '强制闪光',
@@ -133,12 +177,45 @@ const getFlashStatus = (flashValue: number): string => {
         29: '自动，闪光',
         31: '自动，闪光，红眼减少模式',
     };
-    return flashModes[flashValue] || '未知';
+
+    // 佳能相机专用闪光灯状态
+    const canonFlashModes: { [key: number]: string } = {
+        0: '未触发',
+        1: '已触发',
+        5: '已触发，强制闪光，未检测到反射',
+        7: '已触发，强制闪光，检测到反射',
+        9: '已触发，强制闪光，红眼减轻',
+        13: '已触发，强制闪光，红眼减轻，未检测到反射',
+        15: '已触发，强制闪光，红眼减轻，检测到反射',
+        16: '未触发，闪光灯禁用',
+        24: '未触发，自动模式',
+        25: '已触发，自动模式',
+        29: '已触发，自动模式，未检测到反射',
+        31: '已触发，自动模式，检测到反射',
+        32: '不支持闪光灯功能',
+        65: '已触发，红眼减轻模式',
+        69: '已触发，红眼减轻模式，未检测到反射',
+        71: '已触发，红眼减轻模式，检测到反射',
+        73: '已触发，强制闪光，红眼减轻模式',
+        77: '已触发，强制闪光，红眼减轻，未检测到反射',
+        79: '已触发，强制闪光，红眼减轻，检测到反射',
+        89: '已触发，自动模式，红眼减轻',
+        93: '已触发，自动模式，红眼减轻，未检测到反射',
+        95: '已触发，自动模式，红眼减轻，检测到反射',
+    };
+
+    // 如果是佳能相机，使用佳能专用映射
+    if (cameraMake && cameraMake.toLowerCase().includes('canon')) {
+        return canonFlashModes[flashValue] || standardFlashModes[flashValue] || '自动';
+    }
+
+    return standardFlashModes[flashValue] || '未知';
 };
 
-// 获取白平衡状态
-const getWhiteBalance = (value: number): string => {
-    const wbModes: { [key: number]: string } = {
+// 获取白平衡状态 (佳能相机优化)
+const getWhiteBalance = (value: number, cameraMake?: string): string => {
+    // 标准白平衡模式
+    const standardWbModes: { [key: number]: string } = {
         0: '自动',
         1: '手动',
         2: '白炽灯',
@@ -152,7 +229,43 @@ const getWhiteBalance = (value: number): string => {
         14: '冷白荧光灯',
         15: '暖白荧光灯',
     };
-    return wbModes[value] || '未知';
+
+    // 佳能相机专用白平衡模式
+    const canonWbModes: { [key: number]: string } = {
+        0: '自动',
+        1: '日光',
+        2: '阴天',
+        3: '钨丝灯',
+        4: '荧光灯',
+        5: '闪光灯',
+        6: '自定义',
+        7: '阴影',
+        8: '色温',
+        9: '自动环境优先',
+        10: '自动白色优先',
+        11: '水中',
+        12: '自定义功能设置',
+        13: 'PC-1',
+        14: 'PC-2',
+        15: 'PC-3',
+        16: '手动',
+        17: '自动（氛围优先）',
+        18: '自动（白色优先）',
+        19: '自动（智能）',
+        20: '日光（色温5200K）',
+        21: '阴天（色温6000K）',
+        22: '阴影（色温7000K）',
+        23: '钨丝灯（色温3200K）',
+        24: '白色荧光灯（色温4000K）',
+        25: '闪光灯（色温6000K）',
+    };
+
+    // 如果是佳能相机，使用佳能专用映射
+    if (cameraMake && cameraMake.toLowerCase().includes('canon')) {
+        return canonWbModes[value] || standardWbModes[value] || '自动';
+    }
+
+    return standardWbModes[value] || '自动';
 };
 
 // 获取色彩空间
@@ -165,9 +278,10 @@ const getColorSpace = (value: number): string => {
     return colorSpaces[value] || '未知';
 };
 
-// 获取曝光程序
-const getExposureProgram = (value: number): string => {
-    const programs: { [key: number]: string } = {
+// 获取曝光程序 (佳能相机优化)
+const getExposureProgram = (value: number, cameraMake?: string): string => {
+    // 标准曝光程序
+    const standardPrograms: { [key: number]: string } = {
         1: '手动',
         2: '程序自动曝光',
         3: '光圈优先',
@@ -177,12 +291,43 @@ const getExposureProgram = (value: number): string => {
         7: '人像模式',
         8: '风景模式',
     };
-    return programs[value] || '未知';
+
+    // 佳能相机专用曝光程序
+    const canonPrograms: { [key: number]: string } = {
+        0: '未定义',
+        1: '手动 (M)',
+        2: '程序自动 (P)',
+        3: '光圈优先 (Av)',
+        4: '快门优先 (Tv)',
+        5: '创意程序',
+        6: '动作程序',
+        7: '人像模式',
+        8: '风景模式',
+        9: '夜景模式',
+        10: '运动模式',
+        11: '微距模式',
+        12: '自动模式',
+        13: '智能场景',
+        14: '创意自动',
+        15: 'Fv模式',
+        16: 'B门',
+        17: 'C1用户自定义',
+        18: 'C2用户自定义',
+        19: 'C3用户自定义',
+    };
+
+    // 如果是佳能相机，使用佳能专用映射
+    if (cameraMake && cameraMake.toLowerCase().includes('canon')) {
+        return canonPrograms[value] || standardPrograms[value] || '程序自动';
+    }
+
+    return standardPrograms[value] || '程序自动';
 };
 
-// 获取测光模式
-const getMeteringMode = (value: number): string => {
-    const modes: { [key: number]: string } = {
+// 获取测光模式 (佳能相机优化)
+const getMeteringMode = (value: number, cameraMake?: string): string => {
+    // 标准测光模式
+    const standardModes: { [key: number]: string } = {
         1: '平均测光',
         2: '中央重点测光',
         3: '点测光',
@@ -190,7 +335,33 @@ const getMeteringMode = (value: number): string => {
         5: '多区域测光',
         6: '部分测光',
     };
-    return modes[value] || '多重测光';
+
+    // 佳能相机专用测光模式
+    const canonModes: { [key: number]: string } = {
+        0: '未知',
+        1: '平均测光',
+        2: '中央重点测光',
+        3: '点测光',
+        4: '多重测光',
+        5: '评价测光',
+        6: '部分测光',
+        7: '中央加权测光',
+        8: '智能测光',
+        9: '区域测光',
+        10: '局部测光',
+        11: 'AF点联动测光',
+        12: '多点测光',
+        13: '大区域AF测光',
+        14: '单点AF测光',
+        15: '自动AF点选择测光',
+    };
+
+    // 如果是佳能相机，使用佳能专用映射
+    if (cameraMake && cameraMake.toLowerCase().includes('canon')) {
+        return canonModes[value] || standardModes[value] || '评价测光';
+    }
+
+    return standardModes[value] || '多重测光';
 };
 
 // 获取感光方式
@@ -221,12 +392,655 @@ const getFujiFilmSimulation = (rawExif: any): string | undefined => {
         '8': 'Acros',
         '9': 'Nostalgic Neg.',
         '10': 'Eterna Bleach Bypass',
+        '11': 'Classic Neg.',
+        '12': 'Eterna/电影',
+        '13': 'PRO Neg. Std',
+        '14': 'Classic Chrome',
+        '15': 'ETERNA BLEACH BYPASS',
+        '16': 'NOSTALGIC Neg.',
     };
 
     if (rawExif.FilmMode) {
         return fujiFilmModes[rawExif.FilmMode.toString()] || rawExif.FilmMode;
     }
     return undefined;
+};
+
+
+// 获取佳能照片风格 (Picture Style)
+const getCanonPictureStyle = (rawExif: any): string | undefined => {
+    // 佳能照片风格映射
+    const canonPictureStyles: { [key: string]: string } = {
+        '0': '标准',
+        '1': '人像',
+        '2': '风景',
+        '3': '中性',
+        '4': '忠实',
+        '5': '单色',
+        '6': '用户定义1',
+        '7': '用户定义2',
+        '8': '用户定义3',
+        '9': '自动',
+        '10': '精细细节',
+        '11': 'Fine Detail',
+        '80': '标准',
+        '81': '人像',
+        '82': '风景',
+        '83': '中性',
+        '84': '忠实',
+        '85': '单色',
+        '86': '用户定义1',
+        '87': '用户定义2',
+        '88': '用户定义3',
+    };
+
+    // 检查多个可能的字段
+    if (rawExif.PictureStyle !== undefined) {
+        return canonPictureStyles[rawExif.PictureStyle.toString()] || `Picture Style ${rawExif.PictureStyle}`;
+    }
+
+    if (rawExif.CanonCs && rawExif.CanonCs.PictureStyle !== undefined) {
+        return canonPictureStyles[rawExif.CanonCs.PictureStyle.toString()] || `Picture Style ${rawExif.CanonCs.PictureStyle}`;
+    }
+
+    return undefined;
+};
+
+// 统一的胶片模拟/照片风格获取函数 (佳能专用)
+const getFilmSimulationOrPictureStyle = (rawExif: any): string | undefined => {
+    // 检测相机品牌
+    const make = rawExif.Make?.toLowerCase();
+
+    if (make?.includes('canon')) {
+        return getCanonPictureStyle(rawExif);
+    }
+
+    // 对于富士相机，仍然支持基础的胶片模拟识别，但不扩展
+    if (make?.includes('fujifilm') || make?.includes('fuji')) {
+        return getFujiFilmSimulation(rawExif);
+    }
+
+    return undefined;
+};
+
+// 佳能相机专用解析函数
+const getCanonImageQuality = (rawExif: any): string | undefined => {
+    const qualities: { [key: string]: string } = {
+        '0': 'RAW',
+        '1': 'sRAW',
+        '2': 'mRAW',
+        '3': 'JPEG Fine',
+        '4': 'JPEG Normal',
+        '5': 'JPEG Basic',
+        '6': 'RAW + JPEG Fine',
+        '7': 'RAW + JPEG Normal',
+        '8': 'sRAW + JPEG Fine',
+        '9': 'sRAW + JPEG Normal',
+        '10': 'HEIF',
+        '130': 'RAW',
+        '131': 'sRAW1',
+        '132': 'sRAW2',
+        '133': 'JPEG Fine',
+        '134': 'JPEG Normal',
+        '135': 'JPEG Basic',
+        '136': 'RAW + JPEG Fine',
+        '137': 'RAW + JPEG Normal',
+    };
+
+    if (rawExif.CanonCs && rawExif.CanonCs.Quality !== undefined) {
+        return qualities[rawExif.CanonCs.Quality.toString()] || `Quality ${rawExif.CanonCs.Quality}`;
+    }
+    return undefined;
+};
+
+const getCanonNoiseReduction = (rawExif: any): string | undefined => {
+    const nrModes: { [key: string]: string } = {
+        '0': '关闭',
+        '1': '低',
+        '2': '标准',
+        '3': '高',
+        '4': '自动',
+        '5': '多重拍摄降噪',
+    };
+
+    if (rawExif.HighISONoiseReduction !== undefined) {
+        return nrModes[rawExif.HighISONoiseReduction.toString()] || `降噪 ${rawExif.HighISONoiseReduction}`;
+    }
+    return undefined;
+};
+
+const getCanonDLO = (rawExif: any): string | undefined => {
+    const dloModes: { [key: string]: string } = {
+        '0': '关闭',
+        '1': '开启',
+        '2': '自动',
+    };
+
+    if (rawExif.CanonCs && rawExif.CanonCs.LensCorrection !== undefined) {
+        return dloModes[rawExif.CanonCs.LensCorrection.toString()] || '关闭';
+    }
+    return undefined;
+};
+
+const getCanonDualPixelRaw = (rawExif: any): string | undefined => {
+    const dpRawModes: { [key: string]: string } = {
+        '0': '关闭',
+        '1': '开启',
+    };
+
+    if (rawExif.CanonCs && rawExif.CanonCs.DualPixelRaw !== undefined) {
+        return dpRawModes[rawExif.CanonCs.DualPixelRaw.toString()] || '关闭';
+    }
+    return undefined;
+};
+
+// 获取佳能对焦模式 (针对R6 Mark II优化)
+const getCanonFocusMode = (rawExif: any): string | undefined => {
+    const focusModes: { [key: string]: string } = {
+        '0': '单次自动对焦 (One Shot)',
+        '1': '人工智能伺服 (AI Servo)',
+        '2': '人工智能对焦 (AI Focus)',
+        '3': '手动对焦 (MF)',
+        '4': '单次',
+        '5': '连续',
+        '6': '手动',
+        '7': '自动',
+        '8': '宏模式',
+        '9': '多区域对焦',
+        '10': '单点对焦',
+        '11': '动态区域对焦',
+    };
+
+    if (rawExif.CanonCs && rawExif.CanonCs.FocusMode !== undefined) {
+        return focusModes[rawExif.CanonCs.FocusMode.toString()] || `对焦模式 ${rawExif.CanonCs.FocusMode}`;
+    }
+    return undefined;
+};
+
+// 获取佳能自动对焦区域模式
+const getCanonAFAreaMode = (rawExif: any): string | undefined => {
+    const afAreaModes: { [key: string]: string } = {
+        '0': '单点AF',
+        '1': '扩展AF区域 (上下左右)',
+        '2': '扩展AF区域 (周围)',
+        '3': '区域AF',
+        '4': '大区域AF (垂直)',
+        '5': '大区域AF (水平)',
+        '6': '全自动45点',
+        '7': '自动选择',
+        '8': '手动选择',
+        '9': '单点+手动',
+        '10': '单点+自动',
+        '11': '多点',
+        '12': '面部+追踪',
+        '13': '追踪',
+        '14': '点对焦',
+        '15': '自动',
+    };
+
+    if (rawExif.CanonCs && rawExif.CanonCs.AFAreaMode !== undefined) {
+        return afAreaModes[rawExif.CanonCs.AFAreaMode.toString()] || `AF区域 ${rawExif.CanonCs.AFAreaMode}`;
+    }
+    return undefined;
+};
+
+// 获取白平衡偏移 (针对佳能优化)
+const getWhiteBalanceBias = (rawExif: any): string | undefined => {
+    // 检查佳能特有的白平衡偏移
+    if (rawExif.CanonCs && rawExif.CanonCs.WhiteBalanceBias !== undefined) {
+        const bias = rawExif.CanonCs.WhiteBalanceBias;
+        if (bias === 0) return '0';
+        const sign = bias > 0 ? '+' : '';
+        return `${sign}${bias}`;
+    }
+
+    // 检查标准白平衡偏移
+    if (rawExif.WhiteBalanceBias !== undefined) {
+        const bias = rawExif.WhiteBalanceBias;
+        if (bias === 0) return '0';
+        const sign = bias > 0 ? '+' : '';
+        return `${sign}${bias}`;
+    }
+
+    return undefined;
+};
+
+// 获取色温
+const getColorTemperature = (rawExif: any): string | undefined => {
+    // 检查佳能色温
+    if (rawExif.CanonCs && rawExif.CanonCs.ColorTemperature !== undefined) {
+        return `${rawExif.CanonCs.ColorTemperature}K`;
+    }
+
+    // 检查标准色温
+    if (rawExif.ColorTemperature !== undefined) {
+        return `${rawExif.ColorTemperature}K`;
+    }
+
+    return undefined;
+};
+
+// 获取对比度设置
+const getContrastSetting = (rawExif: any, cameraMake?: string): string | undefined => {
+    // 佳能Picture Style对比度
+    if (cameraMake?.toLowerCase().includes('canon')) {
+        if (rawExif.CanonCs && rawExif.CanonCs.ContrastSetting !== undefined) {
+            const contrast = rawExif.CanonCs.ContrastSetting;
+            if (contrast === 0) return '标准';
+            if (contrast > 0) return `+${contrast}`;
+            return `${contrast}`;
+        }
+
+        if (rawExif.PictureStyleContrast !== undefined) {
+            const contrast = rawExif.PictureStyleContrast;
+            if (contrast === 0) return '标准';
+            if (contrast > 0) return `+${contrast}`;
+            return `${contrast}`;
+        }
+    }
+
+    // 标准EXIF对比度
+    if (rawExif.Contrast !== undefined) {
+        const contrastMap: { [key: number]: string } = {
+            0: '标准',
+            1: '低',
+            2: '高',
+        };
+        return contrastMap[rawExif.Contrast] || `${rawExif.Contrast}`;
+    }
+
+    return undefined;
+};
+
+// 获取饱和度设置
+const getSaturationSetting = (rawExif: any, cameraMake?: string): string | undefined => {
+    // 佳能Picture Style饱和度
+    if (cameraMake?.toLowerCase().includes('canon')) {
+        if (rawExif.CanonCs && rawExif.CanonCs.SaturationSetting !== undefined) {
+            const saturation = rawExif.CanonCs.SaturationSetting;
+            if (saturation === 0) return '标准';
+            if (saturation > 0) return `+${saturation}`;
+            return `${saturation}`;
+        }
+
+        if (rawExif.PictureStyleSaturation !== undefined) {
+            const saturation = rawExif.PictureStyleSaturation;
+            if (saturation === 0) return '标准';
+            if (saturation > 0) return `+${saturation}`;
+            return `${saturation}`;
+        }
+    }
+
+    // 标准EXIF饱和度
+    if (rawExif.Saturation !== undefined) {
+        const saturationMap: { [key: number]: string } = {
+            0: '标准',
+            1: '低',
+            2: '高',
+        };
+        return saturationMap[rawExif.Saturation] || `${rawExif.Saturation}`;
+    }
+
+    return undefined;
+};
+
+// 获取锐度设置
+const getSharpnessSetting = (rawExif: any, cameraMake?: string): string | undefined => {
+    // 佳能Picture Style锐度
+    if (cameraMake?.toLowerCase().includes('canon')) {
+        if (rawExif.CanonCs && rawExif.CanonCs.SharpnessSetting !== undefined) {
+            const sharpness = rawExif.CanonCs.SharpnessSetting;
+            if (sharpness === 0) return '标准';
+            if (sharpness > 0) return `+${sharpness}`;
+            return `${sharpness}`;
+        }
+
+        if (rawExif.PictureStyleSharpness !== undefined) {
+            const sharpness = rawExif.PictureStyleSharpness;
+            if (sharpness === 0) return '标准';
+            if (sharpness > 0) return `+${sharpness}`;
+            return `${sharpness}`;
+        }
+    }
+
+    // 标准EXIF锐度
+    if (rawExif.Sharpness !== undefined) {
+        const sharpnessMap: { [key: number]: string } = {
+            0: '标准',
+            1: '低',
+            2: '高',
+        };
+        return sharpnessMap[rawExif.Sharpness] || `${rawExif.Sharpness}`;
+    }
+
+    return undefined;
+};
+
+// 获取色调设置 (佳能Color Tone)
+const getColorToneSetting = (rawExif: any): string | undefined => {
+    if (rawExif.CanonCs && rawExif.CanonCs.ColorTone !== undefined) {
+        const tone = rawExif.CanonCs.ColorTone;
+        if (tone === 0) return '标准';
+        if (tone > 0) return `+${tone}`;
+        return `${tone}`;
+    }
+
+    if (rawExif.PictureStyleColorTone !== undefined) {
+        const tone = rawExif.PictureStyleColorTone;
+        if (tone === 0) return '标准';
+        if (tone > 0) return `+${tone}`;
+        return `${tone}`;
+    }
+
+    return undefined;
+};
+
+// 获取镜头详细信息 (增强版)
+const getLensDetails = (rawExif: any): {
+    lensInfo?: string;
+    focalRange?: string;
+    apertureRange?: string;
+    lensFeatures?: string[];
+} => {
+    const details: any = {};
+
+    // 镜头信息字符串 - 多种来源（按优先级顺序）
+    if (rawExif.LensMake && rawExif.LensModel) {
+        details.lensInfo = `${rawExif.LensMake} ${rawExif.LensModel}`;
+    } else if (rawExif.LensModel) {
+        details.lensInfo = rawExif.LensModel;
+    } else if (rawExif.LensInfo) {
+        details.lensInfo = rawExif.LensInfo;
+    } else if (rawExif.Lens) {
+        details.lensInfo = rawExif.Lens;
+    } else if ((rawExif as any)['0xA434']) {
+        // 镜头型号的十六进制标签
+        details.lensInfo = (rawExif as any)['0xA434'];
+    } else if (rawExif.LensType) {
+        details.lensInfo = rawExif.LensType;
+    } else if (rawExif.LensID) {
+        details.lensInfo = rawExif.LensID;
+    }
+
+    // 佳能特有镜头信息
+    if (rawExif.CanonCs && !details.lensInfo) {
+        // 从佳能特有字段获取镜头信息
+        if (rawExif.CanonCs.LensModel) {
+            details.lensInfo = rawExif.CanonCs.LensModel;
+        } else if (rawExif.CanonCs.LensInfo) {
+            details.lensInfo = rawExif.CanonCs.LensInfo;
+        }
+    }
+
+    // 焦距范围 - 多种数据源
+    if (rawExif.LensMinFocalLength && rawExif.LensMaxFocalLength) {
+        if (rawExif.LensMinFocalLength === rawExif.LensMaxFocalLength) {
+            details.focalRange = `${rawExif.LensMinFocalLength}mm`;
+        } else {
+            details.focalRange = `${rawExif.LensMinFocalLength}-${rawExif.LensMaxFocalLength}mm`;
+        }
+    } else if (rawExif.LensSpecification && Array.isArray(rawExif.LensSpecification) && rawExif.LensSpecification.length >= 2) {
+        const [minFocal, maxFocal] = rawExif.LensSpecification;
+        if (minFocal && maxFocal) {
+            if (minFocal === maxFocal) {
+                details.focalRange = `${minFocal}mm`;
+            } else {
+                details.focalRange = `${minFocal}-${maxFocal}mm`;
+            }
+        }
+    } else if (rawExif.CanonCs) {
+        // 从佳能设置中获取焦距信息
+        if (rawExif.CanonCs.MinFocalLength && rawExif.CanonCs.MaxFocalLength) {
+            if (rawExif.CanonCs.MinFocalLength === rawExif.CanonCs.MaxFocalLength) {
+                details.focalRange = `${rawExif.CanonCs.MinFocalLength}mm`;
+            } else {
+                details.focalRange = `${rawExif.CanonCs.MinFocalLength}-${rawExif.CanonCs.MaxFocalLength}mm`;
+            }
+        }
+    }
+
+    // 光圈范围 - 多种数据源
+    if (rawExif.LensMaxAperture && rawExif.LensMinAperture) {
+        if (rawExif.LensMaxAperture === rawExif.LensMinAperture) {
+            details.apertureRange = `f/${rawExif.LensMaxAperture}`;
+        } else {
+            details.apertureRange = `f/${rawExif.LensMaxAperture}-f/${rawExif.LensMinAperture}`;
+        }
+    } else if (rawExif.LensSpecification && Array.isArray(rawExif.LensSpecification) && rawExif.LensSpecification.length >= 4) {
+        const [, , maxAperture, minAperture] = rawExif.LensSpecification;
+        if (maxAperture && minAperture) {
+            if (maxAperture === minAperture) {
+                details.apertureRange = `f/${maxAperture}`;
+            } else {
+                details.apertureRange = `f/${maxAperture}-f/${minAperture}`;
+            }
+        }
+    } else if (rawExif.MaxApertureValue) {
+        // 使用最大光圈值
+        details.apertureRange = `f/${rawExif.MaxApertureValue.toFixed(1)}`;
+    }
+
+    // 镜头特性 (佳能)
+    const features: string[] = [];
+    if (rawExif.CanonCs) {
+        if (rawExif.CanonCs.LensType !== undefined) {
+            const lensTypeMap: { [key: number]: string } = {
+                1: 'EF镜头',
+                2: 'EF-S镜头',
+                3: 'EF-M镜头',
+                4: 'RF镜头',
+                5: 'RF-S镜头',
+                61: 'EF-S镜头',
+                131: 'TS-E镜头',
+                136: 'MP-E镜头',
+                137: 'TS-E镜头',
+                138: 'EF-M镜头',
+                254: 'RF镜头',
+                255: 'RF-S镜头',
+            };
+            const lensType = lensTypeMap[rawExif.CanonCs.LensType];
+            if (lensType) features.push(lensType);
+        }
+
+        // 检查镜头防抖
+        if (rawExif.CanonCs.LensISMode !== undefined && rawExif.CanonCs.LensISMode > 0) {
+            features.push('光学防抖 (IS)');
+        }
+
+        // 检查其他镜头特性
+        if (rawExif.CanonCs.USMLens !== undefined && rawExif.CanonCs.USMLens > 0) {
+            features.push('USM超声波马达');
+        }
+
+        if (rawExif.CanonCs.LensStabilizer !== undefined && rawExif.CanonCs.LensStabilizer > 0) {
+            features.push('镜头稳定器');
+        }
+    }
+
+    // 从镜头型号推断特性
+    if (details.lensInfo) {
+        const lensModel = details.lensInfo.toLowerCase();
+        if (lensModel.includes('is') && !features.some(f => f.includes('防抖'))) {
+            features.push('光学防抖 (IS)');
+        }
+        if (lensModel.includes('usm') && !features.some(f => f.includes('USM'))) {
+            features.push('USM超声波马达');
+        }
+        if (lensModel.includes('stm')) {
+            features.push('STM步进马达');
+        }
+        if (lensModel.includes('nano usm')) {
+            features.push('Nano USM马达');
+        }
+        if (lensModel.includes('l ') || lensModel.endsWith(' l')) {
+            features.push('L级专业镜头');
+        }
+        if (lensModel.includes('macro')) {
+            features.push('微距镜头');
+        }
+        if (lensModel.includes('fisheye')) {
+            features.push('鱼眼镜头');
+        }
+        if (lensModel.includes('ts-e')) {
+            features.push('移轴镜头');
+        }
+    }
+
+    if (features.length > 0) {
+        details.lensFeatures = features;
+    }
+
+    return details;
+};
+
+// 获取镜头校正信息
+const getLensCorrections = (rawExif: any): {
+    digitalLensOptimizer?: string;
+    distortionCorrection?: string;
+    chromaticAberrationCorrection?: string;
+    vignettingCorrection?: string;
+    peripheralIllumination?: string;
+} => {
+    const corrections: any = {};
+
+    if (rawExif.CanonCs) {
+        // 数字镜头优化器
+        if (rawExif.CanonCs.DigitalLensOptimizer !== undefined) {
+            const dloMap: { [key: number]: string } = {
+                0: '关闭',
+                1: '开启',
+                2: '自动',
+            };
+            corrections.digitalLensOptimizer = dloMap[rawExif.CanonCs.DigitalLensOptimizer] || '未知';
+        }
+
+        // 畸变校正
+        if (rawExif.CanonCs.DistortionCorrection !== undefined) {
+            const distortionMap: { [key: number]: string } = {
+                0: '关闭',
+                1: '开启',
+                2: '自动',
+            };
+            corrections.distortionCorrection = distortionMap[rawExif.CanonCs.DistortionCorrection] || '未知';
+        }
+
+        // 色差校正
+        if (rawExif.CanonCs.ChromaticAberrationCorrection !== undefined) {
+            const chromaticMap: { [key: number]: string } = {
+                0: '关闭',
+                1: '开启',
+                2: '自动',
+            };
+            corrections.chromaticAberrationCorrection = chromaticMap[rawExif.CanonCs.ChromaticAberrationCorrection] || '未知';
+        }
+
+        // 暗角校正
+        if (rawExif.CanonCs.VignettingCorrection !== undefined) {
+            const vignettingMap: { [key: number]: string } = {
+                0: '关闭',
+                1: '开启',
+                2: '自动',
+            };
+            corrections.vignettingCorrection = vignettingMap[rawExif.CanonCs.VignettingCorrection] || '未知';
+        }
+
+        // 周边光量校正
+        if (rawExif.CanonCs.PeripheralIllumination !== undefined) {
+            const peripheralMap: { [key: number]: string } = {
+                0: '关闭',
+                1: '开启',
+                2: '自动',
+            };
+            corrections.peripheralIllumination = peripheralMap[rawExif.CanonCs.PeripheralIllumination] || '未知';
+        }
+    }
+
+    return corrections;
+};
+
+// 获取光源类型
+const getLightSource = (value: number): string => {
+    const sources: { [key: number]: string } = {
+        0: '未知',
+        1: '日光',
+        2: '荧光灯',
+        3: '钨丝灯',
+        4: '闪光灯',
+        9: '晴天',
+        10: '阴天',
+        11: '阴影',
+        12: '日光荧光灯',
+        13: '日白荧光灯',
+        14: '冷白荧光灯',
+        15: '暖白荧光灯',
+        17: '标准光A',
+        18: '标准光B',
+        19: '标准光C',
+        20: 'D55',
+        21: 'D65',
+        22: 'D75',
+        23: 'D50',
+        24: 'ISO钨丝灯',
+        255: '其他',
+    };
+    return sources[value] || '未知';
+};
+
+// 获取场景捕获类型 (针对佳能相机优化)
+const getSceneCaptureType = (value: number, cameraMake?: string): string => {
+    // 标准 EXIF 场景类型
+    const standardTypes: { [key: number]: string } = {
+        0: '标准',
+        1: '风景',
+        2: '人像',
+        3: '夜景',
+    };
+
+    // 佳能相机专用场景模式
+    const canonTypes: { [key: number]: string } = {
+        0: '标准',
+        1: '风景',
+        2: '人像',
+        3: '夜景人像',
+        4: '运动',
+        5: '微距',
+        6: '自动',
+        7: '智能场景',
+        8: '儿童',
+        9: '食物',
+        10: '特殊场景',
+        11: '混合自动',
+        12: 'SCN特殊场景',
+        13: '创意自动',
+        14: '手持夜景',
+        15: 'HDR逆光控制',
+        16: '静音',
+        17: '自拍',
+        18: '加影模式',
+        19: '创意滤镜',
+        20: '短片摘要',
+        21: '短片',
+        22: '创意助手',
+        23: 'Fv模式',
+        24: '柔焦',
+        25: '鱼眼效果',
+        26: '油画效果',
+        27: '水彩画效果',
+        28: '玩具相机效果',
+        29: '微缩景观效果',
+        256: '用户自定义1',
+        257: '用户自定义2',
+        258: '用户自定义3',
+        259: 'My Menu',
+    };
+
+    // 如果是佳能相机，使用佳能专用映射
+    if (cameraMake && cameraMake.toLowerCase().includes('canon')) {
+        return canonTypes[value] || standardTypes[value] || '标准';
+    }
+
+    // 其他相机使用标准映射
+    return standardTypes[value] || '标准';
 };
 
 // 转换GPS坐标
@@ -277,17 +1091,182 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                 const rawExif: RawExifData = EXIF.getAllTags(this) as any;
                 console.log('Raw EXIF data:', rawExif);
 
+                // 佳能相机特殊调试信息
+                if (rawExif.Make && rawExif.Make.toLowerCase().includes('canon')) {
+                    console.log('🔍 佳能相机检测到:', rawExif.Make, rawExif.Model);
+                    console.log('📷 场景捕获类型原始值:', rawExif.SceneCaptureType);
+
+                    // 佳能 R6 Mark II 专用调试
+                    if (rawExif.Model && rawExif.Model.toLowerCase().includes('r6')) {
+                        console.log('🎯 佳能 R6 系列相机特殊优化已启用');
+
+                        // 输出原始镜头EXIF数据以便调试
+                        console.log('🔍 原始镜头EXIF数据:');
+                        console.log('  - LensModel:', rawExif.LensModel);
+                        console.log('  - LensMake:', rawExif.LensMake);
+                        console.log('  - LensInfo:', rawExif.LensInfo);
+                        console.log('  - LensSpecification:', rawExif.LensSpecification);
+                        console.log('  - LensSerialNumber:', rawExif.LensSerialNumber);
+                        console.log('  - MaxApertureValue:', rawExif.MaxApertureValue);
+                        console.log('  - FocalLengthIn35mmFilm:', rawExif.FocalLengthIn35mmFilm);
+
+                        // 检查所有可能的镜头相关字段
+                        console.log('🔍 所有EXIF字段搜索:');
+                        Object.keys(rawExif).forEach(key => {
+                            if (key.toLowerCase().includes('lens')) {
+                                console.log(`  - ${key}:`, (rawExif as any)[key]);
+                            }
+                        });
+
+                        // 输出完整的EXIF数据对象（查看所有可用字段）
+                        console.log('🔍 完整EXIF对象:', rawExif);
+
+                        if (rawExif.CanonCs) {
+                            console.log('  - CanonCs.LensType:', rawExif.CanonCs.LensType);
+                            console.log('  - CanonCs.LensModel:', rawExif.CanonCs.LensModel);
+                            console.log('  - CanonCs.LensInfo:', rawExif.CanonCs.LensInfo);
+                            console.log('  - CanonCs.LensISMode:', rawExif.CanonCs.LensISMode);
+                            console.log('  - CanonCs完整对象:', rawExif.CanonCs);
+                        }
+
+                        console.log('📊 佳能特有功能解析结果:');
+                        console.log('  - 图像质量:', getCanonImageQuality(rawExif));
+                        console.log('  - 高ISO降噪:', getCanonNoiseReduction(rawExif));
+                        console.log('  - 数字镜头优化器:', getCanonDLO(rawExif));
+                        console.log('  - 双像素RAW:', getCanonDualPixelRaw(rawExif));
+                        console.log('  - 对焦模式:', getCanonFocusMode(rawExif));
+                        console.log('  - AF区域模式:', getCanonAFAreaMode(rawExif));
+                        console.log('  - Picture Style:', getCanonPictureStyle(rawExif));
+                        console.log('  - 曝光程序:', rawExif.ExposureProgram !== undefined ? getExposureProgram(rawExif.ExposureProgram, rawExif.Make) : '未知');
+                        console.log('  - 测光模式:', rawExif.MeteringMode !== undefined ? getMeteringMode(rawExif.MeteringMode, rawExif.Make) : '未知');
+                        console.log('  - 白平衡:', rawExif.WhiteBalance !== undefined ? getWhiteBalance(rawExif.WhiteBalance, rawExif.Make) : '未知');
+                        console.log('  - 闪光灯状态:', rawExif.Flash !== undefined ? getFlashStatus(rawExif.Flash, rawExif.Make) : '未知');
+
+                        console.log('🎨 色彩和白平衡信息:');
+                        console.log('  - 白平衡偏移:', getWhiteBalanceBias(rawExif) || '无');
+                        console.log('  - 色温:', getColorTemperature(rawExif) || '自动');
+                        console.log('  - 色调:', getColorToneSetting(rawExif) || '标准');
+                        console.log('  - 对比度:', getContrastSetting(rawExif, rawExif.Make) || '标准');
+                        console.log('  - 饱和度:', getSaturationSetting(rawExif, rawExif.Make) || '标准');
+                        console.log('  - 锐度:', getSharpnessSetting(rawExif, rawExif.Make) || '标准');
+
+                        console.log('🔍 镜头详细信息:');
+                        const lensDetails = getLensDetails(rawExif);
+                        console.log('  - 镜头信息:', lensDetails.lensInfo || '未知');
+                        console.log('  - 焦距范围:', lensDetails.focalRange || '未知');
+                        console.log('  - 光圈范围:', lensDetails.apertureRange || '未知');
+                        console.log('  - 镜头特性:', lensDetails.lensFeatures?.join(', ') || '无');
+
+                        // 同时输出构建后的基础lens字段用于对比
+                        const constructedLens = (() => {
+                            if (rawExif.LensMake && rawExif.LensModel) {
+                                return `${rawExif.LensMake} ${rawExif.LensModel}`.trim();
+                            }
+                            if (rawExif.LensModel) {
+                                return rawExif.LensModel;
+                            }
+                            if (lensDetails.lensInfo) {
+                                return lensDetails.lensInfo;
+                            }
+                            if (rawExif.LensInfo) {
+                                return rawExif.LensInfo;
+                            }
+                            return '未知';
+                        })();
+                        console.log('  - 最终构建的lens字段:', constructedLens);
+
+                        console.log('🛠️ 镜头校正信息:');
+                        const lensCorrections = getLensCorrections(rawExif);
+                        console.log('  - 畸变校正:', lensCorrections.distortionCorrection || '未设置');
+                        console.log('  - 色差校正:', lensCorrections.chromaticAberrationCorrection || '未设置');
+                        console.log('  - 暗角校正:', lensCorrections.vignettingCorrection || '未设置');
+                        console.log('  - 周边光量校正:', lensCorrections.peripheralIllumination || '未设置');
+                    }
+
+                    if (rawExif.SceneCaptureType !== undefined) {
+                        console.log('🎯 解析后的场景类型:', getSceneCaptureType(rawExif.SceneCaptureType, rawExif.Make));
+                    }
+                }
+
                 // 构建相机型号字符串
                 const camera = [rawExif.Make, rawExif.Model]
                     .filter(Boolean)
                     .join(' ')
                     .trim() || undefined;
 
-                // 构建镜头型号字符串
-                const lens = [rawExif.LensMake, rawExif.LensModel]
-                    .filter(Boolean)
-                    .join(' ')
-                    .trim() || rawExif.LensModel || undefined;
+                // 提取镜头详细信息
+                const lensDetails = getLensDetails(rawExif);
+                const lensCorrections = getLensCorrections(rawExif);
+
+                // 佳能相机特殊字段解析
+                const canonSpecificData = rawExif.Make?.toLowerCase().includes('canon') ? {
+                    imageQuality: getCanonImageQuality(rawExif),
+                    noiseReduction: getCanonNoiseReduction(rawExif),
+                    digitalLensOptimizer: getCanonDLO(rawExif),
+                    dualPixelRaw: getCanonDualPixelRaw(rawExif),
+                    canonFocusMode: getCanonFocusMode(rawExif),
+                    canonAFAreaMode: getCanonAFAreaMode(rawExif),
+                } : {};
+
+
+
+                // 通用色彩和白平衡信息
+                const colorAndWBData = {
+                    whiteBalanceBias: getWhiteBalanceBias(rawExif),
+                    colorTemperature: getColorTemperature(rawExif),
+                    colorTone: getColorToneSetting(rawExif),
+                    contrastSetting: getContrastSetting(rawExif, rawExif.Make),
+                    saturationSetting: getSaturationSetting(rawExif, rawExif.Make),
+                    sharpnessSetting: getSharpnessSetting(rawExif, rawExif.Make),
+                };
+
+                // 镜头信息
+                const lensData = {
+                    lensInfo: lensDetails.lensInfo,
+                    focalRange: lensDetails.focalRange,
+                    apertureRange: lensDetails.apertureRange,
+                    lensFeatures: lensDetails.lensFeatures,
+                    distortionCorrection: lensCorrections.distortionCorrection,
+                    chromaticAberrationCorrection: lensCorrections.chromaticAberrationCorrection,
+                    vignettingCorrection: lensCorrections.vignettingCorrection,
+                    peripheralIllumination: lensCorrections.peripheralIllumination,
+                };
+
+                // 构建基础镜头型号字符串 (优先使用完整信息)
+                const lens = (() => {
+                    // 1. 首先尝试从 LensMake + LensModel 组合
+                    if (rawExif.LensMake && rawExif.LensModel) {
+                        return `${rawExif.LensMake} ${rawExif.LensModel}`.trim();
+                    }
+                    // 2. 只有 LensModel
+                    if (rawExif.LensModel) {
+                        return rawExif.LensModel;
+                    }
+                    // 3. 从 LensInfo 字段
+                    if (rawExif.LensInfo) {
+                        return rawExif.LensInfo;
+                    }
+                    // 4. 从 Lens 字段（备选）
+                    if (rawExif.Lens) {
+                        return rawExif.Lens;
+                    }
+                    // 5. 从十六进制标签
+                    if ((rawExif as any)['0xA434']) {
+                        return (rawExif as any)['0xA434'];
+                    }
+                    // 6. 从 lensDetails 获取 (如果上面都没有)
+                    if (lensDetails.lensInfo) {
+                        return lensDetails.lensInfo;
+                    }
+                    // 7. 其他备选字段
+                    if (rawExif.LensType) {
+                        return rawExif.LensType;
+                    }
+                    if (rawExif.LensID) {
+                        return rawExif.LensID;
+                    }
+                    return undefined;
+                })();
 
                 // 处理镜头规格
                 const formatLensSpecification = (spec: number[]): string | undefined => {
@@ -309,9 +1288,9 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                     shutterSpeed: rawExif.ExposureTime ? formatExposureTime(rawExif.ExposureTime) : undefined,
                     iso: rawExif.ISO || rawExif.ISOSpeedRatings || undefined,
                     exposureCompensation: rawExif.ExposureCompensation ? formatExposureCompensation(rawExif.ExposureCompensation) : undefined,
-                    flash: rawExif.Flash !== undefined ? getFlashStatus(rawExif.Flash) : undefined,
-                    whiteBalance: rawExif.WhiteBalance !== undefined ? getWhiteBalance(rawExif.WhiteBalance) : undefined,
-                    filmSimulation: getFujiFilmSimulation(rawExif),
+                    flash: rawExif.Flash !== undefined ? getFlashStatus(rawExif.Flash, rawExif.Make) : undefined,
+                    whiteBalance: rawExif.WhiteBalance !== undefined ? getWhiteBalance(rawExif.WhiteBalance, rawExif.Make) : undefined,
+                    filmSimulation: getFilmSimulationOrPictureStyle(rawExif),
                     colorSpace: rawExif.ColorSpace !== undefined ? getColorSpace(rawExif.ColorSpace) : undefined,
                     software: rawExif.Software || undefined,
 
@@ -323,10 +1302,12 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                     xResolution: rawExif.XResolution,
                     yResolution: rawExif.YResolution,
                     resolutionUnit: rawExif.ResolutionUnit === 2 ? 'inches' : 'cm',
-                    exposureProgram: rawExif.ExposureProgram !== undefined ? getExposureProgram(rawExif.ExposureProgram) : undefined,
-                    meteringMode: rawExif.MeteringMode !== undefined ? getMeteringMode(rawExif.MeteringMode) : undefined,
+                    exposureProgram: rawExif.ExposureProgram !== undefined ? getExposureProgram(rawExif.ExposureProgram, rawExif.Make) : undefined,
+                    meteringMode: rawExif.MeteringMode !== undefined ? getMeteringMode(rawExif.MeteringMode, rawExif.Make) : undefined,
+                    lightSource: rawExif.LightSource !== undefined ? getLightSource(rawExif.LightSource) : undefined,
                     sensingMethod: rawExif.SensingMethod !== undefined ? getSensingMethod(rawExif.SensingMethod) : undefined,
                     exposureMode: rawExif.ExposureMode !== undefined ? (rawExif.ExposureMode === 0 ? '自动曝光' : '手动曝光') : undefined,
+                    sceneCaptureType: rawExif.SceneCaptureType !== undefined ? getSceneCaptureType(rawExif.SceneCaptureType, rawExif.Make) : undefined,
 
                     // 详细元数据
                     cameraOwnerName: rawExif.CameraOwnerName,
@@ -350,6 +1331,15 @@ export const extractExifFromFile = (file: File): Promise<IExifData> => {
                     subjectDistance: rawExif.SubjectDistance,
                     digitalZoomRatio: rawExif.DigitalZoomRatio,
                     focalLengthIn35mmFilm: rawExif.FocalLengthIn35mmFilm,
+
+                    // 合并佳能特定字段
+                    ...canonSpecificData,
+
+                    // 合并色彩和白平衡数据
+                    ...colorAndWBData,
+
+                    // 合并镜头数据
+                    ...lensData,
                 };
 
                 // 过滤掉 undefined 值
@@ -399,7 +1389,7 @@ export const extractTechnicalData = (file: File): Promise<ITechnicalData | undef
                 exposureMode: rawExif.ExposureMode !== undefined ?
                     (rawExif.ExposureMode === 0 ? '自动曝光' : '手动曝光') : undefined,
                 meteringMode: rawExif.MeteringMode !== undefined ?
-                    getMeteringMode(rawExif.MeteringMode) : undefined,
+                    getMeteringMode(rawExif.MeteringMode, rawExif.Make) : undefined,
                 compression: rawExif.Compression !== undefined ?
                     (rawExif.Compression === 6 ? 'JPEG' : '未压缩') : undefined,
                 resolution: rawExif.ResolutionUnit === 2 ? 'inches' : 'cm',
@@ -427,7 +1417,7 @@ export const extractFileMetadata = async (file: File): Promise<IFileMetadata> =>
     };
 };
 
-// 简单的图像分析（仅客户端）
+// 完整的图像分析（包含影调分析）
 export const analyzeImage = async (file: File): Promise<IImageAnalysis | undefined> => {
     // 检查是否在浏览器环境中
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -456,9 +1446,9 @@ export const analyzeImage = async (file: File): Promise<IImageAnalysis | undefin
                     return;
                 }
 
-                // 缩小图片以提高分析性能
-                const maxSize = 200;
-                const scale = Math.min(maxSize / img.width, maxSize / img.height);
+                // 使用适当的尺寸进行分析，保持详细度
+                const maxSize = 800;
+                const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
                 canvas.width = img.width * scale;
                 canvas.height = img.height * scale;
 
@@ -467,13 +1457,24 @@ export const analyzeImage = async (file: File): Promise<IImageAnalysis | undefin
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
 
+                // 初始化直方图数组 (0-255)
+                const histogram: IHistogramData = {
+                    red: new Array(256).fill(0),
+                    green: new Array(256).fill(0),
+                    blue: new Array(256).fill(0),
+                    luminance: new Array(256).fill(0)
+                };
+
                 let totalR = 0, totalG = 0, totalB = 0;
                 let totalBrightness = 0;
+                let shadowPixels = 0;
+                let highlightPixels = 0;
                 const pixelCount = data.length / 4;
 
                 // 颜色统计
                 const colorCounts: { [key: string]: number } = {};
 
+                // 遍历每个像素
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const g = data[i + 1];
@@ -483,9 +1484,21 @@ export const analyzeImage = async (file: File): Promise<IImageAnalysis | undefin
                     totalG += g;
                     totalB += b;
 
-                    // 计算亮度 (感知亮度公式)
-                    const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                    // 更新RGB直方图
+                    histogram.red[r]++;
+                    histogram.green[g]++;
+                    histogram.blue[b]++;
+
+                    // 计算亮度 (使用感知亮度公式)
+                    const luminance = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                    histogram.luminance[luminance]++;
+
+                    const brightness = luminance / 255;
                     totalBrightness += brightness;
+
+                    // 统计阴影和高光
+                    if (luminance < 64) shadowPixels++; // 阴影区域 (0-63)
+                    if (luminance > 192) highlightPixels++; // 高光区域 (192-255)
 
                     // 简化的主色调检测
                     const colorKey = `${Math.floor(r / 32) * 32},${Math.floor(g / 32) * 32},${Math.floor(b / 32) * 32}`;
@@ -498,10 +1511,38 @@ export const analyzeImage = async (file: File): Promise<IImageAnalysis | undefin
                     .slice(0, 5)
                     .map(([color]) => `rgb(${color})`);
 
-                // 基于亮度和颜色分布进行简单场景分类
+                // 计算统计数据
                 const avgBrightness = totalBrightness / pixelCount;
-                let scene = '未知';
+                const brightness = Math.round((avgBrightness) * 100);
+                const shadowRatio = Math.round((shadowPixels / pixelCount) * 100);
+                const highlightRatio = Math.round((highlightPixels / pixelCount) * 100);
 
+                // 计算对比度 (基于标准差)
+                let variance = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                    variance += Math.pow(luminance - (avgBrightness * 255), 2);
+                }
+                const standardDeviation = Math.sqrt(variance / pixelCount);
+                const contrast = Math.min(Math.round((standardDeviation / 64) * 100), 100);
+
+                // 判断影调类型
+                let toneType = '正常';
+                if (brightness > 70 && shadowRatio < 20) {
+                    toneType = '高调';
+                } else if (brightness < 30 && highlightRatio < 10) {
+                    toneType = '低调';
+                } else if (contrast < 25) {
+                    toneType = '平调';
+                } else if (contrast > 60) {
+                    toneType = '高对比';
+                }
+
+                // 基于亮度和颜色分布进行简单场景分类
+                let scene = '未知';
                 if (avgBrightness > 0.7) {
                     scene = '明亮场景';
                 } else if (avgBrightness < 0.3) {
@@ -510,13 +1551,24 @@ export const analyzeImage = async (file: File): Promise<IImageAnalysis | undefin
                     scene = '自然风景';
                 }
 
+                // 创建完整的影调分析数据
+                const toneAnalysis: IToneAnalysis = {
+                    toneType,
+                    brightness,
+                    contrast,
+                    shadowRatio,
+                    highlightRatio,
+                    histogram
+                };
+
                 const analysis: IImageAnalysis = {
                     dominantColors: sortedColors,
                     averageBrightness: avgBrightness,
-                    contrast: Math.abs(0.5 - avgBrightness) * 2, // 基于亮度计算对比度
+                    contrast: contrast / 100, // 保持原有的0-1范围用于兼容
                     saturation: 0.7, // 简化值
                     sharpness: 7.5, // 简化值
                     scene,
+                    toneAnalysis // 新增完整的影调分析数据
                 };
 
                 // 清理ObjectURL

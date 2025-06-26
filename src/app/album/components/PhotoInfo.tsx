@@ -1,16 +1,15 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { IPhoto } from '@/app/model/photo';
-import { Card, Divider, Tag, Progress, Tooltip } from 'antd';
+import { Progress, Button } from 'antd';
 import {
     CameraOutlined,
-    EnvironmentOutlined,
     SettingOutlined,
-    FileImageOutlined,
     BarChartOutlined,
     InfoCircleOutlined
 } from '@ant-design/icons';
+import ToneAnalysisDisplay from '@/components/ToneAnalysisDisplay';
 
 interface PhotoInfoProps {
     photo: IPhoto;
@@ -20,9 +19,9 @@ interface PhotoInfoProps {
 
 const PhotoInfo: React.FC<PhotoInfoProps> = ({
     photo,
-    variant = 'sidebar',
     className = ''
 }) => {
+    const [showToneAnalysis, setShowToneAnalysis] = useState(false);
     // 格式化文件大小
     const formatFileSize = (bytes?: number): string => {
         if (!bytes) return '未知';
@@ -110,6 +109,8 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                         <InfoItem label="文件大小" value={formatFileSize(photo.fileMetadata?.fileSize)} />
                         <InfoItem label="像素" value={((photo.width * photo.height) / 1000000).toFixed(1)} unit=" MP" />
                         <InfoItem label="色彩空间" value={photo.exif?.colorSpace} />
+                        <InfoItem label="分辨率" value={photo.exif?.xResolution ? `${photo.exif.xResolution} × ${photo.exif.yResolution} dpi` : undefined} />
+                        <InfoItem label="图像方向" value={photo.exif?.orientation === 1 ? '正常' : `旋转 ${photo.exif?.orientation}`} />
                         <InfoItem label="拍摄时间" value={photo.date} />
                     </div>
                 </div>
@@ -123,8 +124,13 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                             <div className="space-y-1">
                                 <InfoItem label="相机" value={photo.exif?.camera} />
                                 <InfoItem label="镜头" value={photo.exif?.lens} />
+                                <InfoItem label="镜头规格" value={photo.exif?.lensSpecification} />
                                 <InfoItem label="焦距" value={photo.exif?.focalLength} />
                                 <InfoItem label="35mm 等效" value={photo.exif?.focalLengthIn35mmFilm} unit="mm" />
+                                <InfoItem label="焦平面分辨率" value={photo.exif?.focalPlaneXResolution ? `${photo.exif.focalPlaneXResolution.toFixed(1)} × ${photo.exif.focalPlaneYResolution?.toFixed(1)}` : undefined} />
+                                <InfoItem label="镜头序列号" value={photo.exif?.lensSerialNumber} />
+                                <InfoItem label="机身序列号" value={photo.exif?.cameraSerialNumber} />
+                                <InfoItem label="固件版本" value={photo.exif?.firmware} />
                             </div>
                         </div>
                         <Divider />
@@ -141,8 +147,13 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                                 <InfoItem label="快门" value={photo.exif.shutterSpeed} />
                                 <InfoItem label="ISO" value={photo.exif.iso ? `ISO ${photo.exif.iso}` : undefined} />
                                 <InfoItem label="曝光补偿" value={photo.exif.exposureCompensation} />
+                                <InfoItem label="曝光程序" value={photo.exif.exposureProgram} />
                                 <InfoItem label="测光模式" value={photo.exif.meteringMode} />
                                 <InfoItem label="白平衡" value={photo.exif.whiteBalance} />
+                                <InfoItem label="光源" value={photo.exif.lightSource} />
+                                <InfoItem label="曝光模式" value={photo.exif.exposureMode} />
+                                <InfoItem label="场景类型" value={photo.exif.sceneCaptureType} />
+                                <InfoItem label="感光方式" value={photo.exif.sensingMethod} />
                                 <InfoItem label="闪光灯" value={photo.exif.flash} />
                             </div>
                         </div>
@@ -151,10 +162,22 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                 )}
 
                 {/* 图像分析 */}
-                {photo.analysis && (
-                    <>
-                        <div>
-                            {groupTitle(<BarChartOutlined />, '图像分析')}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        {groupTitle(<BarChartOutlined />, '图像分析')}
+                        <Button
+                            size="small"
+                            type={showToneAnalysis ? 'primary' : 'default'}
+                            icon={<BarChartOutlined />}
+                            className={showToneAnalysis ? '' : 'border-gray-600 text-gray-300'}
+                            onClick={() => setShowToneAnalysis(!showToneAnalysis)}
+                        >
+                            影调分析
+                        </Button>
+                    </div>
+
+                    {!showToneAnalysis && photo.analysis && (
+                        <>
                             {/* 主色调显示 */}
                             {photo.analysis.dominantColors && photo.analysis.dominantColors.length > 0 && (
                                 <div className="mb-3">
@@ -209,10 +232,27 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                                     </div>
                                 )}
                             </div>
+                        </>
+                    )}
+
+                    {/* 影调分析展示 */}
+                    {showToneAnalysis && (
+                        <div className="mt-4">
+                            {photo.analysis?.toneAnalysis ? (
+                                <ToneAnalysisDisplay
+                                    data={photo.analysis.toneAnalysis}
+                                    className="border-none bg-transparent"
+                                />
+                            ) : (
+                                <div className="text-center py-8 text-gray-400">
+                                    <div className="mb-2">此照片没有影调分析数据</div>
+                                    <div className="text-sm">需要重新上传照片以生成影调分析数据</div>
+                                </div>
+                            )}
                         </div>
-                        <Divider />
-                    </>
-                )}
+                    )}
+                </div>
+                <Divider />
 
                 {/* 标签 */}
                 {photo.tags && photo.tags.length > 0 && (
@@ -234,12 +274,42 @@ const PhotoInfo: React.FC<PhotoInfoProps> = ({
                     </>
                 )}
 
+                {/* 胶片模拟配方 */}
+                {photo.exif?.filmSimulation && (
+                    <>
+                        <div>
+                            {groupTitle(null, '胶片模拟配方')}
+                            <div className="space-y-1">
+                                <InfoItem label="胶片模式" value={photo.exif.filmSimulation} />
+                                <InfoItem label="动态范围" value="标准" />
+                                <InfoItem label="白平衡" value={photo.exif.whiteBalance} />
+                                <InfoItem label="高光色调" value="0" />
+                                <InfoItem label="阴影色调" value="0" />
+                                <InfoItem label="饱和度" value={photo.exif.saturation || "标准"} />
+                                <InfoItem label="锐度" value={photo.exif.sharpness || "标准"} />
+                                <InfoItem label="降噪" value="0" />
+                                <InfoItem label="清晰度" value="0" />
+                                <InfoItem label="色彩效果" value="强" />
+                                <InfoItem label="彩色 Fx 蓝色" value="强" />
+                                <InfoItem label="白平衡微调" value="红色 -20, 蓝色 +80" />
+                                <InfoItem label="颗粒效果强度" value="关" />
+                                <InfoItem label="颗粒效果大小" value="关" />
+                            </div>
+                        </div>
+                        <Divider />
+                    </>
+                )}
+
                 {/* 软件信息 */}
-                {photo.exif?.software && (
+                {(photo.exif?.software || photo.exif?.artist || photo.exif?.copyright || photo.exif?.cameraOwnerName) && (
                     <div>
-                        {groupTitle(null, '软件')}
-                        <div className="text-sm text-gray-300">
-                            {photo.exif.software}
+                        {groupTitle(null, '软件与版权')}
+                        <div className="space-y-1">
+                            <InfoItem label="编辑软件" value={photo.exif?.software} />
+                            <InfoItem label="EXIF版本" value={photo.exif?.exifVersion} />
+                            <InfoItem label="相机所有者" value={photo.exif?.cameraOwnerName} />
+                            <InfoItem label="摄影师" value={photo.exif?.artist} />
+                            <InfoItem label="版权信息" value={photo.exif?.copyright} />
                         </div>
                     </div>
                 )}
