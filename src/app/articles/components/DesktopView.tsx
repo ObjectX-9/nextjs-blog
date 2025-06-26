@@ -42,7 +42,7 @@ export const DesktopView = (props: DesktopViewProps) => {
   return (
     <div className="flex w-full">
       <div className="w-[22vw] border-r bg-white">
-        <div className="sticky top-0 h-screen overflow-y-auto">
+        <div className="sticky top-0 h-screen overflow-y-auto custom-scrollbar-thin">
           <nav className="p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">技术文档</h2>
@@ -112,7 +112,7 @@ export const DesktopView = (props: DesktopViewProps) => {
       </div>
 
       <div className="flex-1 border-r pl-8 bg-white">
-        <div className="sticky top-0 h-screen overflow-y-auto">
+        <div className="sticky top-0 h-screen overflow-y-auto custom-scrollbar-thin">
           <nav className="p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">

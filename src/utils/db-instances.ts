@@ -3,6 +3,8 @@ import { ArticleDocument } from "@/app/model/article";
 import { ISocialLink } from "@/app/model/social-link";
 import { IWorkExperience } from "@/app/model/work-experience";
 import { IStack } from "@/app/model/stack";
+import { IInspiration } from "@/app/model/inspiration";
+import { IPhoto } from "@/app/model/photo";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -15,6 +17,7 @@ export interface IArticleCategory {
     createdAt: string;
     updatedAt: string;
 }
+
 
 // 数据库实例
 // 文章
@@ -31,3 +34,8 @@ export const workExperienceDb = createDbHelper<IWorkExperience>("workExperiences
 
 // 技术栈
 export const stackDb = createDbHelper<IStack>("stacks");
+
+export const inspirationDb = createDbHelper<IInspiration>("inspirations");
+
+// 照片
+export const photoDb = createDbHelper<IPhoto>("photos");

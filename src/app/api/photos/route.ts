@@ -1,137 +1,89 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
-import { IPhoto, IPhotoDB } from "@/app/model/photo";
+import { IPhoto } from "@/app/model/photo";
+import { ApiErrors, errorResponse, successResponse, withErrorHandler } from "../data";
+import { photoDb } from "@/utils/db-instances";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 
-// Create a new photo
-export async function POST(request: Request) {
-  try {
-    const { photo } = await request.json();
-    const db = await getDb();
+export const GET = withErrorHandler<[Request], { photos: IPhoto[] }>(async () => {
+  const photos = await photoDb.find({}, { sort: { date: -1 } });
+  return successResponse({ photos });
+});
 
-    const photoToInsert = {
-      ...photo,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+export const POST = withErrorHandler<[Request], { photo: IPhoto }>(async (request: Request) => {
+  const data = await parseRequestBody<IPhoto>(request);
+  RequestValidator.validateRequired(data, ['src', 'width', 'height', 'title', 'location', 'date']);
 
-    const result = await db.collection<IPhotoDB>("photos").insertOne(photoToInsert);
+  const photo = {
+    src: data.src,
+    width: data.width,
+    height: data.height,
+    title: data.title,
+    location: data.location,
+    date: data.date,
+    ...(data.exif && { exif: data.exif }),
+    ...(data.gps && { gps: data.gps }),
+    ...(data.technical && { technical: data.technical }),
+    ...(data.analysis && { analysis: data.analysis }),
+    ...(data.fileMetadata && { fileMetadata: data.fileMetadata }),
+    ...(data.tags && { tags: data.tags }),
+    ...(data.description && { description: data.description }),
+    ...(data.photographer && { photographer: data.photographer }),
+    ...(data.copyright && { copyright: data.copyright }),
+    ...(data.rating && { rating: data.rating }),
+    ...(data.favorite !== undefined && { favorite: data.favorite }),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        photo: { ...photoToInsert, _id: result.insertedId },
-      });
-    }
+  const result = await photoDb.insertOne(photo);
 
-    throw new Error("Failed to insert photo");
-  } catch (error) {
-    console.error("Error creating photo:", error);
-    return NextResponse.json(
-      { error: "Failed to create photo" },
-      { status: 500 }
-    );
+  return successResponse({ photo: result });
+});
+
+export const PUT = withErrorHandler<[Request], { photo: IPhoto }>(async (request: Request) => {
+  const data = await parseRequestBody<IPhoto>(request);
+  RequestValidator.validateRequired(data, ['_id', 'src', 'width', 'height', 'title', 'location', 'date']);
+
+  const updateData = {
+    ...(data.src && { src: data.src }),
+    ...(data.width && { width: data.width }),
+    ...(data.height && { height: data.height }),
+    ...(data.title && { title: data.title }),
+    ...(data.location && { location: data.location }),
+    ...(data.date && { date: data.date }),
+    ...(data.exif && { exif: data.exif }),
+    ...(data.gps && { gps: data.gps }),
+    ...(data.technical && { technical: data.technical }),
+    ...(data.analysis && { analysis: data.analysis }),
+    ...(data.fileMetadata && { fileMetadata: data.fileMetadata }),
+    ...(data.tags && { tags: data.tags }),
+    ...(data.description !== undefined && { description: data.description }),
+    ...(data.photographer !== undefined && { photographer: data.photographer }),
+    ...(data.copyright !== undefined && { copyright: data.copyright }),
+    ...(data.rating !== undefined && { rating: data.rating }),
+    ...(data.favorite !== undefined && { favorite: data.favorite }),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await photoDb.updateOne({ _id: data._id }, { $set: updateData });
+
+  if (result.matchedCount > 0) {
+    return successResponse({ photo: result });
   }
-}
 
-// Get all photos
-export async function GET(request: Request) {
-  try {
-    const db = await getDb();
-    const photos = await db
-      .collection<IPhotoDB>("photos")
-      .find()
-      .sort({ date: -1 })
-      .toArray();
+  return errorResponse(ApiErrors.NOT_FOUND('Photo not found'));
+});
 
-    return NextResponse.json({ success: true, photos });
-  } catch (error) {
-    console.error("Error fetching photos:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch photos" },
-      { status: 500 }
-    );
+export const DELETE = withErrorHandler<[Request], { photo: IPhoto }>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const id = apiParams.getString("id");
+
+  RequestValidator.validateRequired({ id }, ['id']);
+
+  const result = await photoDb.deleteOne({ _id: id });
+
+  if (result.deletedCount > 0) {
+    return successResponse({ photo: result });
   }
-}
 
-// Update a photo
-export async function PUT(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Photo ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const { photo } = await request.json();
-    const db = await getDb();
-    const objectId = new ObjectId(id);
-
-    const result = await db
-      .collection<IPhotoDB>("photos")
-      .updateOne(
-        { _id: objectId },
-        {
-          $set: {
-            ...photo,
-            updatedAt: new Date()
-          }
-        }
-      );
-
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        message: "Photo updated successfully"
-      });
-    }
-
-    throw new Error("Failed to update photo");
-  } catch (error) {
-    console.error("Error updating photo:", error);
-    return NextResponse.json(
-      { error: "Failed to update photo" },
-      { status: 500 }
-    );
-  }
-}
-
-// Delete a photo
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Photo ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const objectId = new ObjectId(id);
-    const db = await getDb();
-    const result = await db
-      .collection<IPhotoDB>("photos")
-      .deleteOne({ _id: objectId });
-
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        message: "Photo deleted successfully"
-      });
-    }
-
-    throw new Error("Failed to delete photo");
-  } catch (error) {
-    console.error("Error deleting photo:", error);
-    return NextResponse.json(
-      { error: "Failed to delete photo" },
-      { status: 500 }
-    );
-  }
-}
+  return errorResponse(ApiErrors.NOT_FOUND('Photo not found'));
+});
