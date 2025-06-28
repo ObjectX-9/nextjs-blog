@@ -394,237 +394,9 @@ const ToneTypeExplanation = ({ toneType }: { toneType: string }) => {
     );
 };
 
-// 色温方法对比组件
-const ColorTemperatureComparison = ({ temperatureMethods, finalTemp }: {
-    temperatureMethods: {
-        whitePatch: number;
-        histogramCenter: number;
-    },
-    finalTemp: number
-}) => {
-    const methods = [
-        { name: 'White Patch', key: 'whitePatch', value: temperatureMethods.whitePatch, description: '分析最亮区域的色彩倾向' },
-        { name: '直方图重心', key: 'histogramCenter', value: temperatureMethods.histogramCenter, description: '基于RGB通道分布重心' }
-    ];
 
-    const getColorByTemp = (temp: number) => {
-        if (temp < 3000) return '#ff8c00'; // 橙色（暖）
-        if (temp < 4000) return '#ffd700'; // 金色（暖）
-        if (temp < 5000) return '#ffffe0'; // 浅黄（中性偏暖）
-        if (temp < 6000) return '#f0f8ff'; // 浅蓝（中性偏冷）
-        if (temp < 7000) return '#87ceeb'; // 天蓝（冷）
-        return '#4169e1'; // 蓝色（很冷）
-    };
 
-    const getTempCategory = (temp: number) => {
-        if (temp < 3000) return '暖色调';
-        if (temp < 4500) return '中性偏暖';
-        if (temp < 5500) return '中性';
-        if (temp < 7000) return '中性偏冷';
-        return '冷色调';
-    };
 
-    return (
-        <Card size="small" title="色温计算方法对比">
-            <div className="space-y-4">
-                {/* 最终结果显示 */}
-                <div className="p-4 rounded-lg" style={{ backgroundColor: getColorByTemp(finalTemp) }}>
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <Text strong className="text-lg">最终色温: {finalTemp}K</Text>
-                            <div className="text-sm opacity-75">
-                                {getTempCategory(finalTemp)} | 2种精选方法综合评估
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-xs opacity-75">
-                                标准参考: 烛光1900K | 白炽灯2700K | 日光5500K | 蓝天8000K
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 各方法对比 */}
-                <div className="space-y-3">
-                    <Text strong>各方法详细结果:</Text>
-                    {methods.map((method) => (
-                        <div key={method.key} className="flex items-center justify-between p-3 rounded border">
-                            <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                    <div
-                                        className="w-4 h-4 rounded border"
-                                        style={{ backgroundColor: getColorByTemp(method.value) }}
-                                    ></div>
-                                    <Text strong>{method.name}</Text>
-                                    <Text className="text-xs text-gray-500">({method.description})</Text>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <Text strong className={method.value === finalTemp ? 'text-blue-600' : ''}>
-                                    {method.value}K
-                                </Text>
-                                <div className="text-xs text-gray-500">
-                                    {getTempCategory(method.value)}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* 方法差异分析 */}
-                <div className="p-3 bg-gray-50 rounded">
-                    <Text strong className="text-sm">差异分析:</Text>
-                    <div className="mt-2 text-xs text-gray-600 space-y-1">
-                        {(() => {
-                            const temps = methods.map(m => m.value);
-                            const min = Math.min(...temps);
-                            const max = Math.max(...temps);
-                            const range = max - min;
-                            const std = Math.sqrt(temps.reduce((sum, temp) => sum + Math.pow(temp - finalTemp, 2), 0) / temps.length);
-
-                            return (
-                                <>
-                                    <div>• 方法差异范围: {range}K (最低{min}K - 最高{max}K)</div>
-                                    <div>• 标准偏差: {std.toFixed(0)}K</div>
-                                    <div>• 一致性评估: {range < 500 ? '非常一致' : range < 1000 ? '较为一致' : range < 2000 ? '存在分歧' : '严重分歧'}</div>
-                                </>
-                            );
-                        })()}
-                    </div>
-                </div>
-            </div>
-        </Card>
-    );
-};
-
-// 白平衡分析组件
-const WhiteBalanceAnalysis = ({ whiteBalance }: { whiteBalance: ImageAnalysisResult['whiteBalance'] }) => {
-    const getSeverityColor = (severity: string) => {
-        switch (severity) {
-            case 'none': return '#52c41a'; // 绿色
-            case 'slight': return '#faad14'; // 黄色
-            case 'moderate': return '#fa8c16'; // 橙色
-            case 'severe': return '#f5222d'; // 红色
-            default: return '#d9d9d9';
-        }
-    };
-
-    const getDirectionColor = (direction: string) => {
-        switch (direction) {
-            case 'warm': return '#ff7a45'; // 暖色
-            case 'cool': return '#1890ff'; // 冷色
-            case 'neutral': return '#52c41a'; // 中性绿色
-            default: return '#d9d9d9';
-        }
-    };
-
-    const getDirectionIcon = (direction: string) => {
-        switch (direction) {
-            case 'warm': return '🔥'; // 火焰表示暖
-            case 'cool': return '❄️'; // 雪花表示冷
-            case 'neutral': return '⚖️'; // 天平表示平衡
-            default: return '🎨';
-        }
-    };
-
-    return (
-        <Card size="small" title="白平衡分析" extra={
-            <Text className={`text-xs ${whiteBalance.whiteBalanceAssessment.isCorrect ? 'text-green-600' : 'text-orange-600'}`}>
-                {whiteBalance.whiteBalanceAssessment.isCorrect ? '✅ 正确' : '⚠️ 需调整'}
-            </Text>
-        }>
-            <div className="space-y-4">
-                {/* 色偏总体评估 */}
-                <div className="p-3 rounded-lg border" style={{ backgroundColor: `${getDirectionColor(whiteBalance.colorBias.direction)}15` }}>
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                            <span className="text-lg">{getDirectionIcon(whiteBalance.colorBias.direction)}</span>
-                            <Text strong>色偏评估</Text>
-                        </div>
-                        <Text style={{ color: getDirectionColor(whiteBalance.colorBias.direction) }}>
-                            {whiteBalance.colorBias.overall}
-                        </Text>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                        色偏程度: {whiteBalance.colorBias.degree.toFixed(1)} | 方向: {whiteBalance.colorBias.direction === 'warm' ? '偏暖' : whiteBalance.colorBias.direction === 'cool' ? '偏冷' : '中性'}
-                    </div>
-                </div>
-
-                {/* 白平衡建议 */}
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-start space-x-2">
-                        <div className="text-blue-600 mt-0.5">💡</div>
-                        <div className="flex-1">
-                            <Text strong className="text-blue-700">调整建议</Text>
-                            <div className="mt-1 text-sm text-blue-600">
-                                {whiteBalance.whiteBalanceAssessment.suggestedAdjustment}
-                            </div>
-                            <div className="mt-2 text-xs text-blue-500">
-                                置信度: {(whiteBalance.whiteBalanceAssessment.confidence * 100).toFixed(0)}%
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 中性灰偏差详情 */}
-                <div className="space-y-2">
-                    <Text strong className="text-sm">中性灰偏差分析:</Text>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-2 rounded border">
-                            <div className="text-xs text-gray-500">红色偏差</div>
-                            <div className={`font-bold ${whiteBalance.neutralGrayDeviation.redDeviation > 0 ? 'text-red-500' : whiteBalance.neutralGrayDeviation.redDeviation < 0 ? 'text-blue-500' : 'text-green-500'}`}>
-                                {whiteBalance.neutralGrayDeviation.redDeviation > 0 ? '+' : ''}{whiteBalance.neutralGrayDeviation.redDeviation}
-                            </div>
-                        </div>
-                        <div className="p-2 rounded border">
-                            <div className="text-xs text-gray-500">蓝色偏差</div>
-                            <div className={`font-bold ${whiteBalance.neutralGrayDeviation.blueDeviation > 0 ? 'text-blue-500' : whiteBalance.neutralGrayDeviation.blueDeviation < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                                {whiteBalance.neutralGrayDeviation.blueDeviation > 0 ? '+' : ''}{whiteBalance.neutralGrayDeviation.blueDeviation}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <Text className="text-xs text-gray-500">偏差严重程度:</Text>
-                        <div className="flex items-center space-x-2">
-                            <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: getSeverityColor(whiteBalance.neutralGrayDeviation.severity) }}
-                            ></div>
-                            <Text className="text-xs" style={{ color: getSeverityColor(whiteBalance.neutralGrayDeviation.severity) }}>
-                                {whiteBalance.neutralGrayDeviation.severity === 'none' && '无偏差'}
-                                {whiteBalance.neutralGrayDeviation.severity === 'slight' && '轻微偏差'}
-                                {whiteBalance.neutralGrayDeviation.severity === 'moderate' && '中等偏差'}
-                                {whiteBalance.neutralGrayDeviation.severity === 'severe' && '严重偏差'}
-                            </Text>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 调试信息 */}
-                <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
-                    <Text strong className="text-xs text-yellow-800">🔍 分析过程详情:</Text>
-                    <div className="mt-2 text-xs text-yellow-700 space-y-1">
-                        {whiteBalance.debug.map((info, index) => (
-                            <div key={index} className="font-mono">• {info}</div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 教学说明 */}
-                <div className="p-3 bg-gray-50 rounded border">
-                    <Text strong className="text-xs text-gray-700">💡 白平衡知识:</Text>
-                    <div className="mt-2 text-xs text-gray-600 space-y-1">
-                        <div>• 白平衡是相机设置，用于补偿光源色温差异</div>
-                        <div>• 正确的白平衡让白色物体显示为纯白色</div>
-                        <div>• 偏暖(偏黄)需要降低白平衡K值，偏冷(偏蓝)需要提高K值</div>
-                        <div>• 常见预设: 白炽灯(2700K) | 荧光灯(4000K) | 日光(5500K) | 阴天(7000K)</div>
-                    </div>
-                </div>
-            </div>
-        </Card>
-    );
-};
 
 // 直方图组件
 const HistogramChart = ({ histogram, title }: { histogram: number[], title: string }) => {
@@ -813,26 +585,26 @@ const RGBHistogramChart = ({ rgbHistograms }: { rgbHistograms: { red: number[], 
 
 // 影调匹配度雷达图组件
 const ToneMatchRadarChart = ({ analysisResult }: { analysisResult: ImageAnalysisResult }) => {
-    const { toneAnalysis, contrast, brightness, colors } = analysisResult;
+    const { toneAnalysis, brightness } = analysisResult;
 
     // 计算各种影调的匹配度
     const calculateToneMatches = () => {
         const { zones } = toneAnalysis;
-        const { global, composite } = contrast;
         const { average } = brightness;
         const tonalRange = brightness.max - brightness.min;
+        const simpleContrast = tonalRange / 255; // 简化的对比度计算
 
         return {
-            高长调: Math.min(100, zones.high * 1.2 + (tonalRange > 200 ? 30 : 0) + (global > 0.7 ? 20 : 0)),
+            高长调: Math.min(100, zones.high * 1.2 + (tonalRange > 200 ? 30 : 0) + (simpleContrast > 0.7 ? 20 : 0)),
             高中调: Math.min(100, zones.high * 1.1 + (zones.mid > 20 ? 20 : 0) + (average > 180 ? 20 : 0)),
-            高短调: Math.min(100, zones.high * 1.3 + (tonalRange < 100 ? 30 : 0) + (global < 0.3 ? 20 : 0)),
+            高短调: Math.min(100, zones.high * 1.3 + (tonalRange < 100 ? 30 : 0) + (simpleContrast < 0.3 ? 20 : 0)),
             中长调: Math.min(100, zones.mid * 1.2 + (tonalRange > 200 ? 30 : 0) + (Math.abs(average - 128) < 30 ? 20 : 0)),
-            中中调: Math.min(100, zones.mid * 1.3 + (global < 0.5 ? 20 : 0) + (Math.abs(average - 128) < 20 ? 30 : 0)),
-            中短调: Math.min(100, zones.mid * 1.1 + (tonalRange < 100 ? 30 : 0) + (global < 0.3 ? 25 : 0)),
-            低长调: Math.min(100, zones.low * 1.2 + (tonalRange > 200 ? 30 : 0) + (global > 0.7 ? 20 : 0)),
+            中中调: Math.min(100, zones.mid * 1.3 + (simpleContrast < 0.5 ? 20 : 0) + (Math.abs(average - 128) < 20 ? 30 : 0)),
+            中短调: Math.min(100, zones.mid * 1.1 + (tonalRange < 100 ? 30 : 0) + (simpleContrast < 0.3 ? 25 : 0)),
+            低长调: Math.min(100, zones.low * 1.2 + (tonalRange > 200 ? 30 : 0) + (simpleContrast > 0.7 ? 20 : 0)),
             低中调: Math.min(100, zones.low * 1.1 + (zones.mid > 20 ? 20 : 0) + (average < 100 ? 20 : 0)),
-            低短调: Math.min(100, zones.low * 1.3 + (tonalRange < 100 ? 30 : 0) + (global < 0.3 ? 20 : 0)),
-            全长调: Math.min(100, (zones.low > 25 && zones.high > 25 && zones.mid < 30 ? 80 : 0) + (global > 0.8 ? 20 : 0))
+            低短调: Math.min(100, zones.low * 1.3 + (tonalRange < 100 ? 30 : 0) + (simpleContrast < 0.3 ? 20 : 0)),
+            全长调: Math.min(100, (zones.low > 25 && zones.high > 25 && zones.mid < 30 ? 80 : 0) + (simpleContrast > 0.8 ? 20 : 0))
         };
     };
 
@@ -1014,40 +786,6 @@ interface ImageAnalysisResult {
             green: number[];
             blue: number[];
         };
-    };
-    colors: {
-        dominant: string;
-        temperature: number;
-        temperatureMethods: {
-            whitePatch: number;
-            histogramCenter: number;
-        };
-        warmCoolIndex: number;
-    };
-    whiteBalance: {
-        colorBias: {
-            overall: string;
-            degree: number;
-            direction: 'warm' | 'cool' | 'neutral';
-        };
-        whiteBalanceAssessment: {
-            isCorrect: boolean;
-            suggestedAdjustment: string;
-            confidence: number;
-        };
-        neutralGrayDeviation: {
-            redDeviation: number;
-            blueDeviation: number;
-            severity: 'none' | 'slight' | 'moderate' | 'severe';
-        };
-        debug: string[];
-    };
-    contrast: {
-        global: number;
-        rms: number;
-        michelson: number;
-        weber: number;
-        composite: number;
     };
     toneAnalysis: {
         type: string;
@@ -1264,7 +1002,7 @@ export default function ImageAnalysisTestPage() {
                     className="mt-6"
                 >
                     <Row gutter={16} className="mb-6">
-                        <Col xs={24} sm={6}>
+                        <Col xs={24} sm={8}>
                             <Card size="small">
                                 <Statistic
                                     title="影调类型"
@@ -1279,7 +1017,7 @@ export default function ImageAnalysisTestPage() {
                             </Card>
                         </Col>
 
-                        <Col xs={24} sm={6}>
+                        <Col xs={24} sm={8}>
                             <Card size="small">
                                 <Statistic
                                     title="平均亮度"
@@ -1292,30 +1030,15 @@ export default function ImageAnalysisTestPage() {
                             </Card>
                         </Col>
 
-                        <Col xs={24} sm={6}>
+                        <Col xs={24} sm={8}>
                             <Card size="small">
                                 <Statistic
-                                    title="色温"
-                                    value={analysisResult.colors.temperature}
-                                    suffix="K"
+                                    title="影调记号"
+                                    value={analysisResult.toneAnalysis.notation}
+                                    valueStyle={{ color: '#52c41a', fontSize: '18px' }}
                                 />
                                 <div className="text-xs text-gray-500 mt-1">
-                                    {analysisResult.colors.warmCoolIndex > 0.2 ? '偏暖' :
-                                        analysisResult.colors.warmCoolIndex < -0.2 ? '偏冷' : '中性'}
-                                </div>
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} sm={6}>
-                            <Card size="small">
-                                <Statistic
-                                    title="综合对比度"
-                                    value={analysisResult.contrast.composite}
-                                    precision={2}
-                                />
-                                <div className="text-xs text-gray-500 mt-1">
-                                    {analysisResult.contrast.composite > 0.7 ? '高对比' :
-                                        analysisResult.contrast.composite < 0.3 ? '低对比' : '中等对比'}
+                                    亮度范围: {analysisResult.brightness.max - analysisResult.brightness.min}
                                 </div>
                             </Card>
                         </Col>
@@ -1372,95 +1095,16 @@ export default function ImageAnalysisTestPage() {
                         </Col>
 
                         <Col xs={24} md={12}>
-                            <Card size="small" title="对比度分析">
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
-                                        <span>全局对比度:</span>
-                                        <span>{analysisResult.contrast.global}</span>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                        <span>RMS对比度:</span>
-                                        <span>{analysisResult.contrast.rms}</span>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                        <span>Michelson对比度:</span>
-                                        <span>{analysisResult.contrast.michelson}</span>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                        <span>韦伯对比度:</span>
-                                        <span>{analysisResult.contrast.weber}</span>
-                                    </div>
-
-                                    <div className="pt-2 border-t">
-                                        <div className="flex justify-between font-semibold">
-                                            <span>综合对比度:</span>
-                                            <span className="text-blue-600">{analysisResult.contrast.composite}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        </Col>
-                    </Row>
-
-                    <Row gutter={16} className="mt-4">
-                        <Col xs={24} md={12}>
-                            <Card size="small" title="色彩信息">
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span>主色调:</span>
-                                        <div className="flex items-center">
-                                            <div
-                                                className="w-8 h-8 rounded mr-2 border"
-                                                style={{ backgroundColor: analysisResult.colors.dominant }}
-                                            ></div>
-                                            <span className="text-sm font-mono">{analysisResult.colors.dominant}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                        <span>暖冷指数:</span>
-                                        <span>{analysisResult.colors.warmCoolIndex}</span>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                        <span>色温分类:</span>
-                                        <span>
-                                            {analysisResult.colors.temperature < 4000 ? '暖色调' :
-                                                analysisResult.colors.temperature > 6000 ? '冷色调' : '中性色调'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} md={12}>
-                            <Card size="small" title="算法说明">
+                            <Card size="small" title="分析算法说明">
                                 <div className="space-y-2 text-sm">
-                                    <div><strong>色温算法</strong>: RGB→XYZ→色度坐标→McCamy公式</div>
-                                    <div><strong>暖冷指数</strong>: 基于标准化RGB分量计算</div>
-                                    <div><strong>全局对比度</strong>: (最大-最小)/255</div>
-                                    <div><strong>RMS对比度</strong>: 基于亮度标准差</div>
-                                    <div><strong>Michelson对比度</strong>: (Lmax-Lmin)/(Lmax+Lmin)</div>
-                                    <div><strong>韦伯对比度</strong>: (Lmax-Lmin)/Lavg</div>
-                                    <div><strong>综合对比度</strong>: 多算法加权平均</div>
+                                    <div><strong>影调识别</strong>: 基于摄影十区域系统</div>
+                                    <div><strong>亮度分析</strong>: 256级直方图统计</div>
+                                    <div><strong>RGB通道</strong>: 红绿蓝三通道分布分析</div>
+                                    <div><strong>区域分布</strong>: 按Ansel Adams十区域理论分析</div>
+                                    <div><strong>影调记号</strong>: 第一位数字表示亮度范围，第二位表示主导区域</div>
+                                    <div><strong>置信度</strong>: 基于多因素综合评估</div>
                                 </div>
                             </Card>
-                        </Col>
-                    </Row>
-
-                    {/* 色温方法对比和白平衡分析 */}
-                    <Row gutter={16} className="mt-4">
-                        <Col xs={24} md={12}>
-                            <ColorTemperatureComparison
-                                temperatureMethods={analysisResult.colors.temperatureMethods}
-                                finalTemp={analysisResult.colors.temperature}
-                            />
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <WhiteBalanceAnalysis whiteBalance={analysisResult.whiteBalance} />
                         </Col>
                     </Row>
 
@@ -1530,11 +1174,7 @@ export default function ImageAnalysisTestPage() {
                                 <p>• <strong>置信度</strong>: {Math.round(analysisResult.toneAnalysis.confidence * 100)}% - 基于摄影理论算法分析</p>
                                 <p>• <strong>理论基础</strong>: 按照摄影十区域理论，将亮度分为1-10区，其中1-3为低调区，4-7为中调区，8-10为高调区</p>
                                 <p>• <strong>记号说明</strong>: 第一个数字表示亮度范围(3=短调，6=中调，10=长调)，第二个数字表示主导区域(1=低调，5=中调，9=高调)</p>
-                                <p>• <strong>色温分析</strong>: {analysisResult.colors.temperature}K ({
-                                    analysisResult.colors.temperature < 4000 ? '暖色调' :
-                                        analysisResult.colors.temperature > 6000 ? '冷色调' : '中性色调'
-                                })，暖冷指数: {analysisResult.colors.warmCoolIndex}</p>
-                                <p>• <strong>对比度分析</strong>: 综合对比度 {analysisResult.contrast.composite} (全局:{analysisResult.contrast.global}, RMS:{analysisResult.contrast.rms}, Michelson:{analysisResult.contrast.michelson}, 韦伯:{analysisResult.contrast.weber})</p>
+                                <p>• <strong>亮度分析</strong>: 平均亮度 {analysisResult.brightness.average}/255，亮度范围 {analysisResult.brightness.min}-{analysisResult.brightness.max}</p>
                                 <p>• <strong>直方图分析</strong>: 亮度直方图显示像素在0-255亮度值上的分布，摄影十区域图将亮度按Ansel Adams的区域系统分为10个区域进行分析</p>
                                 <p>• <strong>区域系统</strong>: 区域1-3为阴影(低调)，区域4-7为中间调，区域8-10为高光(高调)。不同影调类型在十区域中会呈现不同的分布模式</p>
                                 <p>• <strong>参考资料</strong>: <a href="https://www.sohu.com/a/409629203_166844" target="_blank" className="text-blue-600 underline">摄影必学：十大影调详解</a></p>

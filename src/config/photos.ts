@@ -1,3 +1,5 @@
+import { Tags } from 'exiftool-vendored';
+
 export interface Photo {
   src: string;
   width: number;
@@ -5,6 +7,7 @@ export interface Photo {
   title: string;
   location: string;
   date: string;
+  exif?: Tags;
 }
 
 export const photos: Photo[] = [
