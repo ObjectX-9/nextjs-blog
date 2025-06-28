@@ -10,6 +10,7 @@ const navItems = [
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },
+  { name: "图像影调分析", href: "/admin/image-analysis" },
   { name: "时间线管理", href: "/admin/timelines" },
   { name: "灵感管理", href: "/admin/inspirations" },
   { name: "项目管理", href: "/admin/projects" },
@@ -86,9 +87,8 @@ export default function AdminLayout({
       {/* 侧边栏 */}
       {!isArticleEditPage && (
         <aside
-          className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${
-            isDrawerOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0`}
+          className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+            } lg:translate-x-0`}
         >
           <div className="p-4 border-b flex justify-between items-center">
             <h1 className="text-xl font-bold">后台管理</h1>
@@ -108,11 +108,10 @@ export default function AdminLayout({
                     <Link
                       href={item.href}
                       onClick={() => setIsDrawerOpen(false)}
-                      className={`block px-4 py-2 rounded-md ${
-                        isActive
-                          ? "bg-gray-200 text-gray-900"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
+                      className={`block px-4 py-2 rounded-md ${isActive
+                        ? "bg-gray-200 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-100"
+                        }`}
                     >
                       {item.name}
                     </Link>

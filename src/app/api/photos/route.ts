@@ -21,6 +21,7 @@ export const POST = withErrorHandler<[Request], { photo: IPhoto }>(async (reques
     date: data.date,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    exif: data.exif,
   };
 
   const result = await photoDb.insertOne(photo);
@@ -39,6 +40,7 @@ export const PUT = withErrorHandler<[Request], { photo: IPhoto }>(async (request
     ...(data.title && { title: data.title }),
     ...(data.location && { location: data.location }),
     ...(data.date && { date: data.date }),
+    ...(data.exif && { exif: data.exif }),
     updatedAt: new Date().toISOString(),
   };
 

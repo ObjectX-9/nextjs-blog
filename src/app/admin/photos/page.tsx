@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IPhoto, IPhotoDB } from "@/app/model/photo";
+import { IPhoto } from "@/app/model/photo";
+import { photosBusiness } from "@/app/business/photos";
 import imageCompression from "browser-image-compression";
 import { Button, Table, Modal, Input, Upload, message, Space } from 'antd';
 import { UploadOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
@@ -9,10 +10,10 @@ import type { UploadProps } from 'antd';
 import Image from 'next/image';
 
 export default function PhotosManagementPage() {
-  const [photos, setPhotos] = useState<IPhotoDB[]>([]);
+  const [photos, setPhotos] = useState<IPhoto[]>([]);
   const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<{
-    photo: IPhotoDB;
+    photo: IPhoto;
   } | null>(null);
   const [newPhoto, setNewPhoto] = useState<IPhoto>({
     src: "",
@@ -20,9 +21,9 @@ export default function PhotosManagementPage() {
     height: 3,
     title: "",
     location: "",
+    exif: {},
     date: new Date().toISOString().split("T")[0],
   });
-  const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -34,11 +35,8 @@ export default function PhotosManagementPage() {
 
   const fetchPhotos = async () => {
     try {
-      const response = await fetch("/api/photos");
-      const data = await response.json();
-      if (data.success) {
-        setPhotos(data.photos);
-      }
+      const photos = await photosBusiness.getPhotos();
+      setPhotos(photos);
     } catch (error) {
       console.error("Error fetching photos:", error);
       alert("获取相册失败，请重试。");
@@ -81,7 +79,7 @@ export default function PhotosManagementPage() {
 
   const compressImage = async (file: File): Promise<File> => {
     const options = {
-      maxSizeMB: 1.9, 
+      maxSizeMB: 1.9,
       maxWidthOrHeight: 1920,
       useWebWorker: true,
       fileType: file.type as string,
@@ -133,29 +131,14 @@ export default function PhotosManagementPage() {
           width: img.width,
           height: img.height,
         });
-        URL.revokeObjectURL(img.src); 
+        URL.revokeObjectURL(img.src);
       };
       img.onerror = () => {
         reject(new Error("Failed to load image"));
-        URL.revokeObjectURL(img.src); 
+        URL.revokeObjectURL(img.src);
       };
       img.src = URL.createObjectURL(file);
     });
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
-      handleFileSelect(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
   };
 
   const handleFileSelect = async (file: File) => {
@@ -175,13 +158,6 @@ export default function PhotosManagementPage() {
     } catch (error: any) {
       console.error("Error processing image:", error);
       alert(error.message || "处理图片时出错");
-    }
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
     }
   };
 
@@ -217,23 +193,7 @@ export default function PhotosManagementPage() {
         src: url,
       };
 
-      const response = await fetch("/api/photos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ photo: photoToAdd }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.error || "添加照片失败");
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || "添加照片失败");
-      }
+      await photosBusiness.createPhoto(photoToAdd);
 
       await fetchPhotos();
       setShowAddPhoto(false);
@@ -245,6 +205,7 @@ export default function PhotosManagementPage() {
         height: 3,
         title: "",
         location: "",
+        exif: {},
         date: new Date().toISOString().split("T")[0],
       });
     } catch (error: any) {
@@ -256,28 +217,10 @@ export default function PhotosManagementPage() {
     }
   };
 
-  const resetFileInput = () => {
-    setSelectedFile(null);
-    setPreviewUrl("");
-  };
-
   const handleEditPhoto = async () => {
     if (editingPhoto && editingPhoto.photo.src && editingPhoto.photo.title) {
       try {
-        const { _id, ...photoWithoutId } = editingPhoto.photo;
-
-        const response = await fetch(`/api/photos?id=${_id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ photo: photoWithoutId }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to update photo");
-        }
-
+        await photosBusiness.updatePhoto(editingPhoto.photo);
         await fetchPhotos();
         setEditingPhoto(null);
       } catch (error: any) {
@@ -296,16 +239,7 @@ export default function PhotosManagementPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const response = await fetch(`/api/photos?id=${id}`, {
-            method: "DELETE",
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "删除照片失败");
-          }
-
+          await photosBusiness.deletePhoto(id);
           await fetchPhotos();
           message.success('删除成功');
         } catch (error: any) {
@@ -352,12 +286,12 @@ export default function PhotosManagementPage() {
     {
       title: '尺寸',
       key: 'size',
-      render: (record: IPhotoDB) => `${record.width}x${record.height}`,
+      render: (record: IPhoto) => `${record.width}x${record.height}`,
     },
     {
       title: '操作',
       key: 'action',
-      render: (record: IPhotoDB) => (
+      render: (record: IPhoto) => (
         <Space direction="vertical" size="small">
           <Button
             type="primary"

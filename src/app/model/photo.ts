@@ -1,5 +1,6 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { ObjectId } from "mongodb";
+import mongoose, { Schema } from "mongoose";
+import { Tags } from 'exiftool-vendored'
+
 
 export interface IPhoto {
   _id?: string;
@@ -11,6 +12,7 @@ export interface IPhoto {
   date: string;
   createdAt?: string;
   updatedAt?: string;
+  exif: Tags;
 }
 
 const photoSchema = new Schema<IPhoto>(
