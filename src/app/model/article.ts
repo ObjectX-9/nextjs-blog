@@ -68,6 +68,8 @@ export interface ArticleCategory {
   isTop?: boolean;
   // 分类状态
   status?: 'completed' | 'in_progress';
+  // 是否仅管理员可见
+  isAdminOnly?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -82,6 +84,7 @@ export interface ArticleCountByCategory {
   updatedAt: string;
   description?: string;
   isTop: boolean;
+  isAdminOnly?: boolean;
 }
 
 export interface PaginatedArticles {

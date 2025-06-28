@@ -5,14 +5,26 @@ import {
   validateRequiredParams
 } from "@/app/api/data";
 import { articleDb, articleCategoryDb, IArticleCategory } from "@/utils/db-instances";
+import { verifyAdmin } from "@/utils/auth";
 
 // 获取所有文章分类
 export const GET = withErrorHandler(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const includeStats = searchParams.get('includeStats') === 'true';
 
+  // 验证是否为管理员
+  const isAdmin = await verifyAdmin();
+
+  // 构建查询条件
+  let query: any = {};
+
+  // 如果不是管理员，则过滤掉被标记为管理员专属的分类
+  if (!isAdmin) {
+    query = { $or: [{ isAdminOnly: { $ne: true } }, { isAdminOnly: { $exists: false } }] };
+  }
+
   // 使用新的db-helpers API
-  const categories = await articleCategoryDb.find({}, {
+  const categories = await articleCategoryDb.find(query, {
     sort: { isTop: -1, order: 1, name: 1 } // 首先按isTop降序排序(置顶在前)，其次按order升序排序，最后按name升序排序
   });
 
@@ -55,7 +67,7 @@ export const GET = withErrorHandler(async (request: Request) => {
 
 // 创建新分类
 export const POST = withErrorHandler<[Request], IArticleCategory>(async (request: Request) => {
-  const { name, description, order, isTop, status } = await request.json();
+  const { name, description, order, isTop, status, isAdminOnly } = await request.json();
 
   validateRequiredParams({ name }, ['name']);
 
@@ -72,6 +84,7 @@ export const POST = withErrorHandler<[Request], IArticleCategory>(async (request
     description,
     isTop: isTop || false, // 默认不置顶
     status: status || 'in_progress', // 默认进行中
+    isAdminOnly: isAdminOnly || false, // 默认不是管理员专属
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -83,7 +96,7 @@ export const POST = withErrorHandler<[Request], IArticleCategory>(async (request
 
 // 更新分类
 export const PUT = withErrorHandler<[Request], IArticleCategory>(async (request: Request) => {
-  const { id, name, description, order, isTop, status } = await request.json();
+  const { id, name, description, order, isTop, status, isAdminOnly } = await request.json();
 
   validateRequiredParams({ id, name }, ['id', 'name']);
 
@@ -110,6 +123,7 @@ export const PUT = withErrorHandler<[Request], IArticleCategory>(async (request:
     order: order !== undefined ? order : category.order,
     isTop: isTop !== undefined ? isTop : category.isTop,
     status: status || category.status,
+    isAdminOnly: isAdminOnly !== undefined ? isAdminOnly : category.isAdminOnly,
     updatedAt: new Date().toISOString(),
   };
 

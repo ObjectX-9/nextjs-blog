@@ -41,6 +41,7 @@ export default function CategoryModal({
   const [newCategoryStatus, setNewCategoryStatus] = useState<
     "completed" | "in_progress"
   >("in_progress");
+  const [newCategoryIsAdminOnly, setNewCategoryIsAdminOnly] = useState<boolean>(false);
 
   // 获取分类列表
   const fetchCategories = async () => {
@@ -48,7 +49,7 @@ export default function CategoryModal({
       const response = await fetch("/api/articles/categories");
       if (!response.ok) throw new Error("获取分类列表失败");
       const data = await response.json();
-      setCategories(data.categories);
+      setCategories(data.data || []);
     } catch (error) {
       console.error("获取分类列表失败:", error);
       message.error("获取分类列表失败");
@@ -79,6 +80,7 @@ export default function CategoryModal({
           order: newCategoryOrder,
           isTop: newCategoryIsTop,
           status: newCategoryStatus,
+          isAdminOnly: newCategoryIsAdminOnly,
         }),
       });
 
@@ -93,6 +95,7 @@ export default function CategoryModal({
       setNewCategoryOrder(0);
       setNewCategoryIsTop(false);
       setNewCategoryStatus("in_progress");
+      setNewCategoryIsAdminOnly(false);
       fetchCategories();
       onCategoriesChange();
     } catch (error: any) {
@@ -121,6 +124,7 @@ export default function CategoryModal({
           order: newCategoryOrder,
           isTop: newCategoryIsTop,
           status: newCategoryStatus,
+          isAdminOnly: newCategoryIsAdminOnly,
         }),
       });
 
@@ -136,6 +140,7 @@ export default function CategoryModal({
       setNewCategoryOrder(0);
       setNewCategoryIsTop(false);
       setNewCategoryStatus("in_progress");
+      setNewCategoryIsAdminOnly(false);
       fetchCategories();
       onCategoriesChange();
     } catch (error: any) {
@@ -182,6 +187,7 @@ export default function CategoryModal({
     setNewCategoryOrder(category.order || 0);
     setNewCategoryIsTop(category.isTop || false);
     setNewCategoryStatus(category.status || "in_progress");
+    setNewCategoryIsAdminOnly(category.isAdminOnly || false);
   };
 
   // 取消编辑
@@ -192,6 +198,7 @@ export default function CategoryModal({
     setNewCategoryOrder(0);
     setNewCategoryIsTop(false);
     setNewCategoryStatus("in_progress");
+    setNewCategoryIsAdminOnly(false);
   };
 
   return (
@@ -251,6 +258,14 @@ export default function CategoryModal({
             >
               <span className="text-gray-700">置顶</span>
             </Checkbox>
+            <Checkbox
+              checked={newCategoryIsAdminOnly}
+              onChange={(e) => setNewCategoryIsAdminOnly(e.target.checked)}
+              disabled={loading}
+              className="hover:text-blue-500"
+            >
+              <span className="text-gray-700">管理员专属</span>
+            </Checkbox>
             <Select
               value={newCategoryStatus}
               onChange={(value) => setNewCategoryStatus(value)}
@@ -282,7 +297,7 @@ export default function CategoryModal({
 
       {/* 分类列表 */}
       <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
-        {categories.map((category) => (
+        {categories?.map((category) => (
           <Card
             key={category._id?.toString()}
             size="small"
@@ -297,6 +312,11 @@ export default function CategoryModal({
                   {category.isTop && (
                     <Tag color="orange" className="rounded-full px-2 py-0">
                       置顶
+                    </Tag>
+                  )}
+                  {category.isAdminOnly && (
+                    <Tag color="red" className="rounded-full px-2 py-0">
+                      管理员专属
                     </Tag>
                   )}
                 </Space>

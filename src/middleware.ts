@@ -61,11 +61,6 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
-  // 开发环境跳过所有检查
-  if (process.env.NODE_ENV === "development") {
-    return NextResponse.next();
-  }
-
   const isAdminRoute = pathname.startsWith("/admin");
   const isLoginPage = pathname === "/login";
   const isApiRoute = pathname.startsWith("/api");

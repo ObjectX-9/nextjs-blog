@@ -14,6 +14,7 @@ export interface IArticleCategory {
     description?: string;
     isTop?: boolean;
     status?: 'completed' | 'in_progress';
+    isAdminOnly?: boolean;
     createdAt: string;
     updatedAt: string;
 }
