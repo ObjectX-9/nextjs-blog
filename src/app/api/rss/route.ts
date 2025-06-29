@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import RSS from "rss";
+import { createApiParams } from "@/utils/api-helpers";
 
 // 使用force-dynamic确保路由在运行时动态生成，而不是尝试静态生成
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get("categoryId");
-    const type = searchParams.get("type") || "bookmarks"; // 默认为书签类型
+    const apiParams = createApiParams(request);
+    const categoryId = apiParams.getString("categoryId") || null;
+    const type = apiParams.getString("type") || "bookmarks"; // 默认为书签类型
 
     // 基础 URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -33,9 +34,13 @@ export async function GET(request: NextRequest) {
 }
 
 // 获取书签的 RSS
-async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
+async function getBookmarksRSS(baseUrl: string, categoryId: string | null): Promise<NextResponse> {
   try {
     const db = await getDb();
+
+    // 获取站点信息
+    const site = await db.collection("sites").findOne({});
+    const avatarUrl = site?.author?.avatar ? `${baseUrl}${site.author.avatar}` : `${baseUrl}/avatar.png`;
 
     // 构建查询条件
     let query: any = {};
@@ -65,7 +70,7 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
       description: `ObjectX 书签导航 - ${categoryName}`,
       feed_url: `${baseUrl}/api/rss?type=bookmarks${categoryId ? `&categoryId=${categoryId}` : ""}`,
       site_url: `${baseUrl}/bookmarks`,
-      image_url: `${baseUrl}/logo.png`,
+      image_url: avatarUrl,
       language: "zh-CN",
       pubDate: new Date(),
     });
@@ -111,9 +116,14 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null) {
 }
 
 // 获取文章的 RSS
-async function getArticlesRSS(baseUrl: string, categoryId: string | null) {
+async function getArticlesRSS(baseUrl: string, categoryId: string | null): Promise<NextResponse> {
   try {
     const db = await getDb();
+
+    // 获取站点信息
+    const site = await db.collection("sites").findOne({});
+    const avatarUrl = site?.author?.avatar ? `${baseUrl}${site.author.avatar}` : `${baseUrl}/avatar.png`;
+    const authorName = site?.author?.name || "ObjectX";
 
     // 构建查询条件
     let query: any = { status: "published" };
@@ -144,22 +154,66 @@ async function getArticlesRSS(baseUrl: string, categoryId: string | null) {
       description: `ObjectX 博客 - ${categoryName}`,
       feed_url: `${baseUrl}/api/rss?type=articles${categoryId ? `&categoryId=${categoryId}` : ""}`,
       site_url: `${baseUrl}/articles`,
-      image_url: `${baseUrl}/logo.png`,
+      image_url: avatarUrl,
       language: "zh-CN",
       pubDate: new Date(),
+      custom_namespaces: {
+        'content': 'http://purl.org/rss/1.0/modules/content/',
+        'dc': 'http://purl.org/dc/elements/1.1/',
+        'media': 'http://search.yahoo.com/mrss/',
+        'article': 'http://objectx.io/article/1.0/'
+      },
+      custom_elements: [
+        {
+          'generator': 'ObjectX RSS Generator'
+        },
+        {
+          'content:format': 'markdown'
+        }
+      ]
     });
 
     // 添加文章到 feed
     if (articles.length > 0) {
       articles.forEach((article: any) => {
+        // 使用完整的 Markdown 内容
+        const markdownContent = article.content || "";
+        const summary = article.summary || "";
+
         feed.item({
           title: article.title,
-          description: article.summary || (article.content ? article.content.substring(0, 200) + "..." : ""),
+          description: summary,
           url: `${baseUrl}/articles/${article._id}`,
           guid: article._id.toString(),
           date: article.updatedAt || article.createdAt,
           categories: [categoryName],
-          author: article.author || "ObjectX",
+          author: authorName,
+          custom_elements: [
+            {
+              'content:encoded': {
+                _cdata: markdownContent
+              }
+            },
+            {
+              'content:type': 'text/markdown'
+            },
+            {
+              'dc:creator': authorName
+            },
+            {
+              'media:thumbnail': {
+                _attr: {
+                  url: avatarUrl
+                }
+              }
+            },
+            {
+              'article:views': article.views || 0
+            },
+            {
+              'article:likes': article.likes || 0
+            }
+          ]
         });
       });
     } else {

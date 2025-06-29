@@ -23,7 +23,6 @@ export interface CaptchaDetail {
   code?: string;
   createdAt: Date;
   expiresAt: Date;
-  isUsed: boolean;
   isActivated?: boolean;
   activatedAt?: Date;
   activationExpiryHours?: number;

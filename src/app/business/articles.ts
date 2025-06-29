@@ -1,5 +1,6 @@
 import { request } from "@/utils/request";
-import { Article, ArticleCountByCategory, PaginatedArticles } from "../model/article";
+import { Article, ArticleCountByCategory, PaginatedArticles, ArticleCategory } from "../model/article";
+
 interface GetArticlesParams {
   page?: number;
   limit?: number;
@@ -8,6 +9,11 @@ interface GetArticlesParams {
   search?: string;
   sortBy?: 'latest' | 'order';
 }
+
+interface GetCategoriesParams {
+  includeStats?: boolean;
+}
+
 class ArticlesBusiness {
   /**
    * 创建新文章
@@ -25,9 +31,6 @@ class ArticlesBusiness {
   ): Promise<PaginatedArticles> {
 
     const { page = 1, limit = 10, status, categoryId, sortBy = 'latest', search } = params;
-
-    // 调试信息：确认传入的参数
-    console.log('🌐 articlesService.getArticles 接收到的参数:', params);
 
     const queryParams: Record<string, string> = {
       page: page.toString(),
@@ -111,8 +114,51 @@ class ArticlesBusiness {
   /**
    * 更新文章点赞数
    */
-  async updateArticleLikes(id: string): Promise<void> {
-    const response = await request.patch<void>(`articles/${id}/like`);
+  async updateArticleLikes(id: string): Promise<{ likes: number }> {
+    const response = await request.post<{ likes: number }>(`articles/${id}/like`);
+    return response.data;
+  }
+
+  /**
+   * 获取文章分类列表
+   */
+  async getCategories(params: GetCategoriesParams = {}): Promise<ArticleCategory[]> {
+    const { includeStats = false } = params;
+
+    const queryParams: Record<string, string> = {};
+
+    if (includeStats) {
+      queryParams.includeStats = 'true';
+    }
+
+    const response = await request.get<ArticleCategory[]>('articles/categories', queryParams);
+    return response.data;
+  }
+
+  /**
+   * 创建文章分类
+   */
+  async createCategory(category: Omit<ArticleCategory, '_id' | 'createdAt' | 'updatedAt'>): Promise<ArticleCategory> {
+    const response = await request.post<ArticleCategory>('articles/categories', category);
+    return response.data;
+  }
+
+  /**
+   * 更新文章分类
+   */
+  async updateCategory(id: string, category: Partial<Omit<ArticleCategory, '_id' | 'createdAt' | 'updatedAt'>>): Promise<ArticleCategory> {
+    const response = await request.put<ArticleCategory>('articles/categories', {
+      id,
+      ...category
+    });
+    return response.data;
+  }
+
+  /**
+   * 删除文章分类
+   */
+  async deleteCategory(id: string): Promise<void> {
+    const response = await request.delete<void>(`articles/categories?id=${id}`);
     return response.data;
   }
 }

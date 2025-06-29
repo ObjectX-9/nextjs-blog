@@ -1,5 +1,10 @@
 export interface Captcha {
   /**
+   * 文档ID
+   */
+  _id?: string;
+
+  /**
    * 验证码内容
    */
   code: string;
@@ -14,10 +19,7 @@ export interface Captcha {
    */
   expiresAt: Date;
 
-  /**
-   * 验证码是否已被使用
-   */
-  isUsed: boolean;
+
 
   /**
    * 验证码关联的用户标识（如邮箱或手机号）
@@ -38,6 +40,11 @@ export interface Captcha {
    * 验证码激活有效期（小时）
    */
   activationExpiryHours?: number;
+
+  /**
+   * 最后访问时间
+   */
+  lastAccessedAt?: Date;
 }
 
 /**

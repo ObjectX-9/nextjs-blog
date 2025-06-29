@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { message } from 'antd';
 import { debounce } from 'lodash-es';
-import { request } from '@/utils/request';
+import { articlesService } from '@/app/business/articles';
 
 function useLocalStorage<T>(key: string, initialValue: T) {
   // 获取值
@@ -43,7 +43,8 @@ const LikeIcon = ({ isLiked, isLiking }: { isLiked: boolean; isLiking: boolean }
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className={isLiking ? "animate-pulse" : ""}
+    className={`flex-shrink-0 ${isLiking ? "animate-pulse" : ""}`}
+    style={{ verticalAlign: 'baseline' }}
     aria-hidden="true"
   >
     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
@@ -83,19 +84,9 @@ export default function LikeButton({ articleId, initialLikes }: LikeButtonProps)
   // 防抖处理的点赞请求函数
   const sendLikeRequest = useCallback(async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-
-      const response = await request.post<{likes: number}>(`articles/${articleId}/like`, {}, {
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      return { success: true, likes: response.data.likes };
+      const response = await articlesService.updateArticleLikes(articleId);
+      return { success: true, likes: response.likes };
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return { success: false, error: '请求超时' };
-      }
       return { success: false, error: error instanceof Error ? error.message : '未知错误' };
     }
   }, [articleId]);

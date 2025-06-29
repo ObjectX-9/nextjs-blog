@@ -308,6 +308,9 @@ dependencies:
   react-lite-youtube-embed:
     specifier: ^2.4.0
     version: 2.4.0(react-dom@18.3.1)(react@18.3.1)
+  react-masonry-css:
+    specifier: ^1.0.16
+    version: 1.0.16(react@18.3.1)
   react-photo-album:
     specifier: ^3.0.2
     version: 3.0.2(@types/react@18.3.18)(react@18.3.1)
@@ -8615,6 +8618,14 @@ packages:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+    dev: false
+
+  /react-masonry-css@1.0.16(react@18.3.1):
+    resolution: {integrity: sha512-KSW0hR2VQmltt/qAa3eXOctQDyOu7+ZBevtKgpNDSzT7k5LA/0XntNa9z9HKCdz3QlxmJHglTZ18e4sX4V8zZQ==}
+    peerDependencies:
+      react: '>=16.0.0'
+    dependencies:
+      react: 18.3.1
     dev: false
 
   /react-photo-album@3.0.2(@types/react@18.3.18)(react@18.3.1):

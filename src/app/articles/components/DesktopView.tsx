@@ -2,6 +2,8 @@ import { Article, ArticleCountByCategory } from '@/app/model/article';
 import { ArticleSkeletonDesktop } from './Skeletons';
 import Link from 'next/link';
 import { RssIcon } from '@/components/icons/RssIcon';
+import LikeButton from '@/components/HomePage/LikeButton';
+import ViewCounter from '@/components/HomePage/ViewCounter';
 
 interface DesktopViewProps {
   /**
@@ -135,15 +137,25 @@ export const DesktopView = (props: DesktopViewProps) => {
             ) : filteredArticles.length > 0 ? (
               filteredArticles.map((article) => (
                 <button
-                  key={article.categoryId}
+                  key={article._id?.toString()}
                   onClick={() => handleArticleClick(article)}
                   className="w-full text-left p-2 rounded-lg mb-2 hover:bg-gray-100"
                 >
                   <div className="flex flex-col">
                     <span className="font-medium truncate">{article.title}</span>
-                    <span className="text-sm opacity-60">
-                      {new Date(article.createdAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm opacity-60">
+                        {new Date(article.createdAt).toLocaleDateString()}
+                      </span>
+                      <div className="flex items-center text-gray-500 text-xs gap-4">
+                        <div className="flex items-center justify-center w-8">
+                          <LikeButton articleId={article._id?.toString() || ""} initialLikes={article.likes || 0} />
+                        </div>
+                        <div className="flex items-center justify-center w-8">
+                          <ViewCounter initialViews={article.views || 0} />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </button>
               ))

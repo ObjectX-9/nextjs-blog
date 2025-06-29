@@ -9,6 +9,7 @@ import { useSiteStore } from "@/store/site";
 import Image from "next/image";
 import { useLocalCache } from "@/app/hooks/useLocalCache";
 import { articlesService } from "@/app/business/articles";
+import { verifyService } from "@/app/business/verify";
 import { scrollToHeading } from "@/utils/heading-utils";
 
 // 缓存键常量
@@ -157,65 +158,45 @@ export default function ArticleDetailPage() {
     }
 
     try {
-      // 通过验证码查询状态
-      const response = await fetch(
-        `/api/captcha/available?code=${verificationCode}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // 先获取可用的验证码并检查输入的验证码是否匹配
+      const availableResult = await verifyService.getAvailableCaptcha();
 
-      const data = await response.json();
-      console.log("🚀 ~ handleVerification ~ data:", data);
-
-      if (
-        data.success &&
-        data.captcha &&
-        !data.captcha?.isUsed &&
-        !data.captcha?.isActivated
-      ) {
-        // 更新验证码状态为激活
-        const activateResponse = await fetch(
-          `/api/captcha/${data.captcha._id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              code: data.captcha.code, // 使用从查询结果中获取的code
-              target: "article_verification",
-              isActivated: true,
-              activatedAt: new Date().toISOString(),
-              activationExpiryHours: site?.verificationCodeExpirationTime || 24, // 设置24小时的激活有效期
-            }),
-          }
-        );
-
-        const activateData = await activateResponse.json();
-        console.log("🚀 ~ handleVerification ~ activateData:", activateData);
-        if (!activateData.success) {
-          setVerificationError("验证码状态更新失败，请重试");
-          return;
-        }
-
-        setIsVerified(true);
-        setShowVerification(false);
-        setVerificationError("");
-        setVerificationCode("");
-
-        // 存储验证状态
-        const verification: VerificationState = {
-          verified: true,
-          expireTime: activateData.expireTime,
-        };
-        setCache(CACHE_KEYS.ARTICLE_VERIFICATION, verification);
-      } else {
-        setVerificationError(data.message || "验证码无效，请重试");
+      if (!availableResult.success || !availableResult.captcha) {
+        setVerificationError("当前没有可用的验证码，请联系管理员");
+        return;
       }
+
+      // 检查验证码是否匹配
+      if (availableResult.captcha.code !== verificationCode) {
+        setVerificationError("验证码不正确，请重新输入");
+        return;
+      }
+
+      // 检查验证码状态
+      if (availableResult.captcha.isActivated) {
+        setVerificationError("验证码已被使用或已激活，请获取新的验证码");
+        return;
+      }
+
+      // 验证验证码（这会激活验证码并返回过期时间）
+      const verifyResult = await verifyService.verifyCaptcha(availableResult.captcha._id!);
+
+      if (!verifyResult.success) {
+        setVerificationError("验证码状态更新失败，请重试");
+        return;
+      }
+
+      setIsVerified(true);
+      setShowVerification(false);
+      setVerificationError("");
+      setVerificationCode("");
+
+      // 存储验证状态
+      const verification: VerificationState = {
+        verified: true,
+        expireTime: verifyResult.expireTime,
+      };
+      setCache(CACHE_KEYS.ARTICLE_VERIFICATION, verification);
     } catch (error) {
       console.error("验证过程出错:", error);
       setVerificationError("验证过程出错，请稍后重试");

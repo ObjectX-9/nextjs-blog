@@ -112,6 +112,7 @@
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
     "react-lite-youtube-embed": "^2.4.0",
+    "react-masonry-css": "^1.0.16",
     "react-photo-album": "^3.0.2",
     "react-tweet": "^3.2.1",
     "rehype-highlight": "^7.0.0",

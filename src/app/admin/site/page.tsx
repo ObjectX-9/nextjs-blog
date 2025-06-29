@@ -111,7 +111,7 @@ export default function SiteManagementPage() {
             handleInputChange={handleInputChange}
             captchas={captchas}
             isLoadingCaptchas={isLoadingCaptchas}
-            api={api}
+            generateCaptcha={fetchAllCaptchas}
           />
         ),
       },

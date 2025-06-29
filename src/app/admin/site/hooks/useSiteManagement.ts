@@ -3,11 +3,11 @@ import { message } from "antd";
 import { SiteWithId, EditableSite, CaptchaDetail, FileState } from "../types";
 import { api } from "../api";
 import { useLocalCache } from "../../../hooks/useLocalCache";
+import { verifyService } from "@/app/business/verify";
 
 // 缓存键常量
 const CACHE_KEYS = {
   SITE_INFO: 'admin_site_info',
-  CAPTCHAS: 'admin_captchas',
 };
 
 // 缓存时间常量（30分钟）
@@ -65,7 +65,7 @@ export const useSiteManagement = () => {
   });
   const [captchas, setCaptchas] = useState<CaptchaDetail[]>([]);
   const [isLoadingCaptchas, setIsLoadingCaptchas] = useState(false);
-  
+
   // 使用本地缓存钩子
   const { getFromCache, setCache, clearCache } = useLocalCache(CACHE_DURATION);
 
@@ -75,13 +75,11 @@ export const useSiteManagement = () => {
       // 先尝试从缓存获取
       const cachedSite = getFromCache<SiteWithId>(CACHE_KEYS.SITE_INFO);
       if (cachedSite) {
-        console.log('从缓存获取网站信息');
         setSite(cachedSite);
         setEditedSite(cachedSite as EditableSite);
         return;
       }
 
-      console.log('从API获取网站信息');
       const data = await api.fetchSite();
       if (data.success && data.site) {
         const siteWithDefaults = {
@@ -97,12 +95,11 @@ export const useSiteManagement = () => {
         };
         setSite(siteWithDefaults);
         setEditedSite(siteWithDefaults as EditableSite);
-        
+
         // 缓存网站信息
         setCache(CACHE_KEYS.SITE_INFO, siteWithDefaults);
       }
     } catch (error) {
-      console.error("获取网站信息失败:", error);
       messageApi.error("获取网站信息失败");
     }
   }, [messageApi, getFromCache, setCache]);
@@ -137,16 +134,13 @@ export const useSiteManagement = () => {
   }, []);
 
   const handleFileSelect = useCallback(async (field: string, file: File) => {
-    console.log('handleFileSelect called with:', field, file);
     try {
       if (!file) {
-        console.error('No file selected');
         messageApi.error('请选择文件');
         return;
       }
 
       if (!file.type.startsWith("image/")) {
-        console.error('Invalid file type:', file.type);
         messageApi.error("请选择图片文件");
         return;
       }
@@ -160,7 +154,6 @@ export const useSiteManagement = () => {
 
         // 创建新的预览URL
         const previewUrl = URL.createObjectURL(file);
-        console.log('Created preview URL:', previewUrl);
 
         return {
           ...prev,
@@ -172,13 +165,11 @@ export const useSiteManagement = () => {
         };
       });
     } catch (error) {
-      console.error("处理图片失败:", error);
       messageApi.error("处理图片时出错");
     }
   }, [messageApi]);
 
   const uploadFile = useCallback(async (field: string, file: File) => {
-    console.log(`开始上传文件: ${field}, 文件名: ${file.name}, 大小: ${file.size} bytes`);
     try {
       setFileState((prev) => ({
         ...prev,
@@ -186,7 +177,6 @@ export const useSiteManagement = () => {
       }));
 
       const data = await api.uploadFile(file);
-      console.log(`文件上传响应:`, data);
 
       if (!data.url) {
         throw new Error('上传响应中没有URL');
@@ -194,7 +184,6 @@ export const useSiteManagement = () => {
 
       return data.url;
     } catch (error: any) {
-      console.error(`上传文件失败: ${field}`, error);
       messageApi.error(`上传${field}失败：${error.message}`);
       throw error;
     } finally {
@@ -232,12 +221,9 @@ export const useSiteManagement = () => {
           .filter(isValidImageField)
           .map(async (field) => {
             try {
-              console.log(`开始上传图片: ${field}`);
               const url = await uploadFile(field, fileState.selectedFiles[field]);
-              console.log(`图片上传成功: ${field}, url: ${url}`);
               return { field, url };
             } catch (error) {
-              console.error(`上传图片失败: ${field}`, error);
               throw error;
             }
           })
@@ -298,7 +284,6 @@ export const useSiteManagement = () => {
         },
       };
 
-      console.log('Saving site data:', finalSiteData);
       const data = await api.saveSite(finalSiteData);
 
       if (data.success) {
@@ -310,7 +295,7 @@ export const useSiteManagement = () => {
           isUploading: {},
         });
         setIsEditing(false);
-        
+
         // 清除缓存，确保下次获取最新数据
         clearCache(CACHE_KEYS.SITE_INFO);
         await fetchSite();
@@ -318,7 +303,6 @@ export const useSiteManagement = () => {
         messageApi.error(data.errors.join("、"));
       }
     } catch (error: any) {
-      console.error("更新网站信息失败:", error);
       messageApi.error(error.message || "更新网站信息失败");
     }
   }, [editedSite, fileState.selectedFiles, uploadFile, messageApi, fetchSite, clearCache]);
@@ -336,18 +320,9 @@ export const useSiteManagement = () => {
   const fetchAllCaptchas = useCallback(async () => {
     try {
       setIsLoadingCaptchas(true);
-      
-      // 先尝试从缓存获取
-      const cachedCaptchas = getFromCache<CaptchaDetail[]>(CACHE_KEYS.CAPTCHAS);
-      if (cachedCaptchas) {
-        console.log('从缓存获取验证码列表');
-        setCaptchas(cachedCaptchas);
-        setIsLoadingCaptchas(false);
-        return;
-      }
-      
-      console.log('从API获取验证码列表');
-      const data = await api.getAllCaptchas();
+
+      const data = await verifyService.getAllCaptchas();
+
       if (data.success) {
         const formattedCaptchas = data.captchas.map((captcha: any) => ({
           ...captcha,
@@ -355,19 +330,18 @@ export const useSiteManagement = () => {
           expiresAt: new Date(captcha.expiresAt),
           activatedAt: captcha.activatedAt ? new Date(captcha.activatedAt) : undefined,
         }));
-        
+
         setCaptchas(formattedCaptchas);
-        
-        // 缓存验证码列表（使用较短的缓存时间，因为验证码可能会频繁变化）
-        setCache(CACHE_KEYS.CAPTCHAS, formattedCaptchas, 5 * 60 * 1000); // 5分钟
+      } else {
+        setCaptchas([]);
       }
     } catch (error) {
-      console.error("获取验证码列表失败:", error);
       messageApi.error("获取验证码列表失败");
+      setCaptchas([]);
     } finally {
       setIsLoadingCaptchas(false);
     }
-  }, [messageApi, getFromCache, setCache]);
+  }, [messageApi]);
 
   return {
     site,

@@ -1,13 +1,11 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import { Captcha, CaptchaType } from "@/app/model/captcha";
-import { ISite } from "@/app/model/site";
+import { successResponse, withErrorHandler } from "../data";
+import { captchaDb, siteDb } from "@/utils/db-instances";
+import { parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 
 // 获取站点设置
 async function getSiteSettings() {
-  const db = await getDb();
-  const site = await db.collection<ISite>("sites").findOne({});
+  const site = await siteDb.findOne({});
   return site || { verificationCodeExpirationTime: 24 }; // 默认24小时
 }
 
@@ -27,120 +25,91 @@ function generateCode(type: CaptchaType): string {
 }
 
 // 创建新验证码
-export async function POST(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
+export const POST = withErrorHandler<[Request], { captcha: Captcha }>(async (request: Request) => {
+  const data = await parseRequestBody<{ type?: CaptchaType; target?: string }>(request);
 
-    // 检查是否存在未过期且未使用的验证码
-    const existingCaptcha = await db.collection<Captcha>("captchas").findOne({
-      target: data.target,
-      isUsed: false,
-      expiresAt: { $gt: new Date() },
-    });
-
-    if (existingCaptcha) {
-      // 返回验证码内容
-      return NextResponse.json({
-        success: true,
-        captcha: existingCaptcha,
-      });
-    }
-
-    // 获取站点设置
-    const site = await getSiteSettings();
-
-    // 创建新验证码
-    const now = new Date();
-    const captcha: Captcha = {
-      code: generateCode(data.type || CaptchaType.NUMBER),
-      createdAt: now,
-      expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5分钟有效期
-      isUsed: false,
-      target: data.target,
-      isActivated: false,
-      activationExpiryHours: site.verificationCodeExpirationTime || 24, // 使用站点设置的有效期
-    };
-
-    // 使用原子操作插入新验证码
-    await db.collection<Captcha>("captchas").insertOne(captcha);
-
-    // 返回验证码信息（包含验证码内容）
-    return NextResponse.json({
-      success: true,
-      captcha: captcha,
-    });
-  } catch (error) {
-    console.error("Error creating captcha:", error);
-    return NextResponse.json({ error: "验证码创建失败" }, { status: 500 });
+  // 验证target字段
+  if (data.target) {
+    RequestValidator.validateRequired(data, ['target']);
   }
-}
+
+  // 不再检查现有验证码，每次都生成新的
+
+  // 获取站点设置
+  const site = await getSiteSettings();
+
+  // 创建新验证码
+  const now = new Date();
+  const captcha: Captcha = {
+    code: generateCode(data.type || CaptchaType.ALPHANUMERIC),
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5分钟有效期
+    target: data.target || undefined,
+    isActivated: false,
+    activationExpiryHours: site.verificationCodeExpirationTime || 24,
+  };
+
+  const result = await captchaDb.insertOne(captcha);
+  return successResponse({ captcha: result });
+});
 
 // 获取所有验证码
-export async function GET(request: Request) {
-  try {
-    const db = await getDb();
-    const captchas = await db
-      .collection<Captcha>("captchas")
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+export const GET = withErrorHandler<[Request], { captchas: (Captcha & { status: string })[] }>(async () => {
+  const captchas = await captchaDb.find({}, { sort: { createdAt: -1 } });
 
-    // 返回完整的验证码信息
-    const captchasWithStatus = captchas.map((captcha) => {
-      const now = new Date();
-      const isExpired = captcha.expiresAt < now;
-      return {
-        ...captcha,
-        status: captcha.isUsed ? "used" : isExpired ? "expired" : "valid",
-      };
-    });
+  // 返回完整的验证码信息，包含状态
+  const captchasWithStatus = captchas.map((captcha) => {
+    const now = new Date();
+    let status = "valid";
 
-    return NextResponse.json({
-      success: true,
-      captchas: captchasWithStatus,
-    });
-  } catch (error) {
-    console.error("Error fetching captchas:", error);
-    return NextResponse.json({ error: "获取验证码列表失败" }, { status: 500 });
-  }
-}
+    if (captcha.isActivated && captcha.activatedAt) {
+      // 已激活：显示为已使用，但还需要检查是否过期
+      const activationExpiryTime = new Date(
+        captcha.activatedAt.getTime() + (captcha.activationExpiryHours || 24) * 60 * 60 * 1000
+      );
+      status = activationExpiryTime < now ? "expired" : "used";
+    } else {
+      // 未激活：检查是否超过5分钟
+      status = captcha.expiresAt < now ? "expired" : "valid";
+    }
+
+    return {
+      ...captcha,
+      status,
+    };
+  });
+
+  return successResponse({ captchas: captchasWithStatus });
+});
 
 // 删除过期验证码（定期清理）
-export async function DELETE() {
-  try {
-    const db = await getDb();
-    const now = new Date();
-    const result = await db.collection<Captcha>("captchas").deleteMany({
-      $or: [
-        // 对于未激活的验证码，使用原始过期时间
-        { isActivated: false, expiresAt: { $lt: now } },
-        // 对于已激活的验证码，使用激活后的过期时间
-        {
-          isActivated: true,
-          $expr: {
-            $lt: [
-              "$expiresAt",
-              {
-                $add: [
-                  "$activatedAt",
-                  { $multiply: ["$activationExpiryHours", 60, 60, 1000] },
-                ],
-              },
-            ],
-          },
-        },
-        // 已使用的验证码
-        { isUsed: true },
-      ],
-    });
+export const DELETE = withErrorHandler<[Request], { deletedCount: number }>(async () => {
+  const now = new Date();
 
-    return NextResponse.json({
-      success: true,
-      deletedCount: result.deletedCount,
-    });
-  } catch (error) {
-    console.error("Error cleaning up captchas:", error);
-    return NextResponse.json({ error: "清理过期验证码失败" }, { status: 500 });
+  // 先找到真正过期的验证码
+  const captchas = await captchaDb.find({});
+  const expiredIds: string[] = [];
+
+  for (const captcha of captchas) {
+    let shouldDelete = false;
+
+    if (captcha.isActivated && captcha.activatedAt) {
+      // 已激活：只有超过激活有效期才删除
+      const activationExpiryTime = new Date(
+        captcha.activatedAt.getTime() + (captcha.activationExpiryHours || 24) * 60 * 60 * 1000
+      );
+      shouldDelete = activationExpiryTime < now;
+    } else {
+      // 未激活：超过5分钟就删除
+      shouldDelete = captcha.expiresAt < now;
+    }
+
+    if (shouldDelete && captcha._id) {
+      expiredIds.push(captcha._id);
+    }
   }
-}
+
+  // 删除过期的验证码
+  const result = await captchaDb.deleteMany({ _id: { $in: expiredIds } });
+  return successResponse({ deletedCount: result.deletedCount });
+});

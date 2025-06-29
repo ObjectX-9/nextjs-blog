@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ArticleCategory } from "@/app/model/article";
+import { articlesService } from "@/app/business/articles";
 import {
   Modal,
   Input,
@@ -46,13 +47,10 @@ export default function CategoryModal({
   // 获取分类列表
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/articles/categories");
-      if (!response.ok) throw new Error("获取分类列表失败");
-      const data = await response.json();
-      setCategories(data.data || []);
+      const categories = await articlesService.getCategories();
+      setCategories(categories || []);
     } catch (error) {
-      console.error("获取分类列表失败:", error);
-      message.error("获取分类列表失败");
+      message.error((error as Error).message || "获取分类列表失败");
     }
   };
 
@@ -71,23 +69,14 @@ export default function CategoryModal({
 
     setLoading(true);
     try {
-      const response = await fetch("/api/articles/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newCategoryName.trim(),
-          description: newCategoryDescription.trim() || undefined,
-          order: newCategoryOrder,
-          isTop: newCategoryIsTop,
-          status: newCategoryStatus,
-          isAdminOnly: newCategoryIsAdminOnly,
-        }),
+      await articlesService.createCategory({
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim() || undefined,
+        order: newCategoryOrder,
+        isTop: newCategoryIsTop,
+        status: newCategoryStatus,
+        isAdminOnly: newCategoryIsAdminOnly,
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "添加分类失败");
-      }
 
       message.success("添加分类成功");
       setNewCategoryName("");
@@ -98,8 +87,8 @@ export default function CategoryModal({
       setNewCategoryIsAdminOnly(false);
       fetchCategories();
       onCategoriesChange();
-    } catch (error: any) {
-      message.error(error.message);
+    } catch (error) {
+      message.error((error as Error).message || "添加分类失败");
     } finally {
       setLoading(false);
     }
@@ -114,24 +103,14 @@ export default function CategoryModal({
 
     setLoading(true);
     try {
-      const response = await fetch("/api/articles/categories", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingCategory._id,
-          name: newCategoryName.trim(),
-          description: newCategoryDescription.trim() || undefined,
-          order: newCategoryOrder,
-          isTop: newCategoryIsTop,
-          status: newCategoryStatus,
-          isAdminOnly: newCategoryIsAdminOnly,
-        }),
+      await articlesService.updateCategory(editingCategory._id!.toString(), {
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim() || undefined,
+        order: newCategoryOrder,
+        isTop: newCategoryIsTop,
+        status: newCategoryStatus,
+        isAdminOnly: newCategoryIsAdminOnly,
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "更新分类失败");
-      }
 
       message.success("更新分类成功");
       setEditingCategory(null);
@@ -143,8 +122,8 @@ export default function CategoryModal({
       setNewCategoryIsAdminOnly(false);
       fetchCategories();
       onCategoriesChange();
-    } catch (error: any) {
-      message.error(error.message);
+    } catch (error) {
+      message.error((error as Error).message || "更新分类失败");
     } finally {
       setLoading(false);
     }
@@ -158,20 +137,12 @@ export default function CategoryModal({
       onOk: async () => {
         setLoading(true);
         try {
-          const response = await fetch(`/api/articles/categories?id=${id}`, {
-            method: "DELETE",
-          });
-
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || "删除分类失败");
-          }
-
+          await articlesService.deleteCategory(id);
           message.success("删除分类成功");
           fetchCategories();
           onCategoriesChange();
-        } catch (error: any) {
-          message.error(error.message);
+        } catch (error) {
+          message.error((error as Error).message || "删除分类失败");
         } finally {
           setLoading(false);
         }

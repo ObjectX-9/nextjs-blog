@@ -58,9 +58,6 @@ export const GET = withErrorHandler<[Request], Article | PaginatedArticles>(asyn
   const sortBy = params.getString("sortBy") || 'latest';
   const { page, limit } = params.getPagination();
 
-  // 调试信息：确认API接收到的参数
-  console.log('🔍 API接收到的分页参数:', { page, limit, status, categoryId, search, sortBy });
-
   // 如果有 ID，获取单篇文章
   if (id) {
     const article = await articleDb.findById(id);

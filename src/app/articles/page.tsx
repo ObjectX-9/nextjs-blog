@@ -78,8 +78,11 @@ export default function ArticlesPage() {
   }, []);
 
   const handleCategorySelect = useCallback(async (categoryId: string) => {
-    // 防止重复选择同一分类
-    if (selectedCategory === categoryId) {
+    console.log('handleCategorySelect被调用:', categoryId, '当前选中:', selectedCategory, '是否移动端:', isMobileView);
+
+    // 在移动端，即使是同一分类也要切换视图
+    if (selectedCategory === categoryId && !isMobileView) {
+      console.log('桌面端重复选择同一分类，返回');
       return;
     }
 
@@ -93,18 +96,26 @@ export default function ArticlesPage() {
     window.history.replaceState({}, '', url.toString());
 
     try {
-      const articles = await fetchArticles(categoryId);
-      // 直接设置文章列表
-      setCurSelectArticles(articles);
+      // 如果是同一分类且是移动端，直接使用缓存的文章
+      if (selectedCategory === categoryId && isMobileView && cacheArticles[categoryId]) {
+        console.log('移动端同一分类，使用缓存文章');
+        setCurSelectArticles(cacheArticles[categoryId]);
+      } else {
+        console.log('获取文章数据');
+        const articles = await fetchArticles(categoryId);
+        // 直接设置文章列表
+        setCurSelectArticles(articles);
+      }
     } catch (error) {
       console.error('获取文章失败:', error);
       setCurSelectArticles([]);
     }
 
     if (isMobileView) {
+      console.log('移动端切换到文章视图');
       setCurrentView('articles');
     }
-  }, [fetchArticles, isMobileView, selectedCategory]);
+  }, [fetchArticles, isMobileView, selectedCategory, cacheArticles]);
 
   const handleArticleClick = (article: Article) => {
     if (isMobileView) {

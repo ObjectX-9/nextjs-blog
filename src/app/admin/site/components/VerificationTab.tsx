@@ -1,9 +1,11 @@
 "use client";
 
-import { Form, Switch, InputNumber, Spin } from "antd";
+import { Form, Switch, InputNumber, Spin, Button, Space } from "antd";
 import { format } from "date-fns";
 import { EditableSite } from "../types";
 import { CaptchaDetail } from "../types";
+import { verifyService } from "@/app/business/verify";
+import { CaptchaType } from "@/app/model/captcha";
 
 interface VerificationTabProps {
   editedSite: EditableSite;
@@ -11,9 +13,7 @@ interface VerificationTabProps {
   handleInputChange: (field: string, value: any) => void;
   captchas: CaptchaDetail[];
   isLoadingCaptchas: boolean;
-  api: {
-    generateCaptcha: () => Promise<any>;
-  };
+  generateCaptcha: () => Promise<any>;
 }
 
 export const VerificationTab: React.FC<VerificationTabProps> = ({
@@ -22,18 +22,45 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
   handleInputChange,
   captchas,
   isLoadingCaptchas,
-  api,
+  generateCaptcha,
 }) => {
+
+  const handleGenerateCaptcha = async () => {
+    try {
+      await verifyService.createCaptcha({
+        type: CaptchaType.ALPHANUMERIC,
+        target: 'verify-page'
+      });
+      // 生成成功后刷新验证码列表
+      await generateCaptcha();
+    } catch (error) {
+      console.error("生成验证码失败:", error);
+    }
+  };
+
+  const handleCleanExpiredCaptchas = async () => {
+    try {
+      await verifyService.cleanExpiredCaptchas();
+      // 清理后刷新验证码列表
+      await generateCaptcha();
+    } catch (error) {
+      console.error("清理过期验证码失败:", error);
+    }
+  };
+
   return (
     <Form layout="vertical" className="space-y-6">
       <Form.Item label="开启文章验证">
         <Switch
           checked={editedSite.isOpenVerifyArticle === true}
           onChange={(checked) => {
-            console.log("Switch onChange:", checked, typeof checked);
             handleInputChange("isOpenVerifyArticle", checked);
+            // 只有在开启验证且当前没有有效验证码时才生成新的
             if (checked) {
-              api.generateCaptcha();
+              const hasValidCaptcha = captchas.some(captcha => captcha.status === 'valid');
+              if (!hasValidCaptcha) {
+                handleGenerateCaptcha();
+              }
             }
           }}
           disabled={!isEditing}
@@ -65,10 +92,32 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
           </Form.Item>
 
           <Form.Item label="已生成的验证码列表">
+            {isEditing && (
+              <div className="mb-4">
+                <Space>
+                  <Button
+                    type="primary"
+                    onClick={handleGenerateCaptcha}
+                    size="small"
+                  >
+                    生成新验证码
+                  </Button>
+                  <Button
+                    onClick={handleCleanExpiredCaptchas}
+                    size="small"
+                    danger
+                  >
+                    清理过期验证码
+                  </Button>
+                </Space>
+              </div>
+            )}
             <div className="bg-white rounded-lg border">
               {isLoadingCaptchas ? (
                 <div className="p-4 text-center">
-                  <Spin tip="加载中..." />
+                  <Spin tip="加载中..." spinning={true}>
+                    <div className="h-20"></div>
+                  </Spin>
                 </div>
               ) : captchas.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -128,9 +177,9 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
                           <td className="hidden lg:table-cell px-4 py-3 text-sm">
                             {captcha.activatedAt
                               ? format(
-                                  captcha.activatedAt,
-                                  "yyyy-MM-dd HH:mm:ss"
-                                )
+                                captcha.activatedAt,
+                                "yyyy-MM-dd HH:mm:ss"
+                              )
                               : "-"}
                           </td>
                           <td className="hidden md:table-cell px-4 py-3 text-sm">
@@ -138,10 +187,9 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
                           </td>
                           <td className="hidden sm:table-cell px-4 py-3 text-sm">
                             {captcha.activatedAt
-                              ? `${
-                                  editedSite.verificationCodeExpirationTime ||
-                                  24
-                                }小时`
+                              ? `${editedSite.verificationCodeExpirationTime ||
+                              24
+                              }小时`
                               : "5分钟"}
                           </td>
                           <td className="px-4 py-3 text-sm">
@@ -150,20 +198,19 @@ export const VerificationTab: React.FC<VerificationTabProps> = ({
                                 状态：
                               </div>
                               <span
-                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium ${
-                                  captcha.status === "valid"
-                                    ? "bg-green-50 text-green-700"
-                                    : captcha.status === "used"
-                                    ? "bg-gray-50 text-gray-700"
+                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium ${captcha.status === "valid"
+                                  ? "bg-green-50 text-green-700"
+                                  : captcha.status === "used"
+                                    ? "bg-blue-50 text-blue-700"
                                     : "bg-red-50 text-red-700"
-                                }`}
+                                  }`}
                                 style={{ minWidth: "60px" }}
                               >
                                 {captcha.status === "valid"
                                   ? "有效"
                                   : captcha.status === "used"
-                                  ? "已使用"
-                                  : "已过期"}
+                                    ? "已使用"
+                                    : "已过期"}
                               </span>
                             </div>
                           </td>

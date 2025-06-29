@@ -5,6 +5,8 @@ import { IWorkExperience } from "@/app/model/work-experience";
 import { IStack } from "@/app/model/stack";
 import { IInspiration } from "@/app/model/inspiration";
 import { IPhoto } from "@/app/model/photo";
+import { Captcha } from "@/app/model/captcha";
+import { ISite } from "@/app/model/site";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -40,3 +42,9 @@ export const inspirationDb = createDbHelper<IInspiration>("inspirations");
 
 // 照片
 export const photoDb = createDbHelper<IPhoto>("photos");
+
+// 验证码
+export const captchaDb = createDbHelper<Captcha>("captchas");
+
+// 站点设置
+export const siteDb = createDbHelper<ISite>("sites");

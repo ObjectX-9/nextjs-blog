@@ -176,14 +176,6 @@ const ArticlesPage = () => {
       }
 
       const response = await articlesService.getArticles(requestParams);
-
-      // 调试信息：确认分页数据
-      console.log('🌐 API请求参数:', requestParams);
-      console.log('🌐 API响应数据:', {
-        itemsCount: response.items?.length || 0,
-        pagination: response.pagination
-      });
-
       // 缓存数据
       articleCache.set(requestParams, response);
 
@@ -193,7 +185,6 @@ const ArticlesPage = () => {
         total: response.pagination.total || 0,
       }));
     } catch (error) {
-      console.error('获取文章列表失败:', error);
       antMessage.error('获取文章列表失败');
       setArticles([]);
       setPagination(prev => ({ ...prev, total: 0 }));
@@ -238,7 +229,6 @@ const ArticlesPage = () => {
         refreshParams.search = searchDebounced;
       }
 
-      console.log('🗑️ 删除后刷新当前页:', refreshParams);
       fetchArticles(refreshParams);
     } catch (error) {
       antMessage.error('删除失败');
@@ -247,11 +237,7 @@ const ArticlesPage = () => {
 
   // 处理分页变化
   const handleTableChange = useCallback((paginationConfig: { current: number; pageSize: number }) => {
-    console.log('📄 分页变化参数:', paginationConfig);
-
     const { current: newCurrent, pageSize: newPageSize } = paginationConfig;
-
-    console.log('📄 新的分页参数:', { newCurrent, newPageSize });
 
     // 先更新分页状态
     setPagination(prev => ({
@@ -278,14 +264,11 @@ const ArticlesPage = () => {
       newParams.search = searchDebounced;
     }
 
-    console.log('📄 立即请求新页面数据:', newParams);
     fetchArticles(newParams);
   }, [statusFilter, categoryFilter, searchDebounced, fetchArticles]);
 
   // 处理筛选条件变化
   useEffect(() => {
-    console.log('🔍 筛选条件变化，重置到第一页');
-
     // 重置到第一页并立即请求数据
     const resetParams: any = {
       page: 1,
@@ -309,7 +292,6 @@ const ArticlesPage = () => {
 
   // 首次加载数据
   useEffect(() => {
-    console.log('🚀 首次加载数据');
     fetchArticles();
   }, []);
 
@@ -394,11 +376,9 @@ const ArticlesPage = () => {
           showQuickJumper: true,
           pageSizeOptions: ['10', '20', '50', '100'],
           onChange: (page, pageSize) => {
-            console.log('📄 分页onChange:', { page, pageSize });
             handleTableChange({ current: page, pageSize });
           },
           onShowSizeChange: (current, size) => {
-            console.log('📄 分页大小变化:', { current, size });
             handleTableChange({ current, pageSize: size });
           },
         }}
