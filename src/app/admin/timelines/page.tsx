@@ -343,7 +343,7 @@ export default function TimelinesAdmin() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <Typography.Title level={2} style={{ margin: 0 }}>
-          时间轴管理
+          时间笔记管理
         </Typography.Title>
         <Space>
           <Button icon={<PlusOutlined />} onClick={handleAddEvent}>
@@ -351,7 +351,7 @@ export default function TimelinesAdmin() {
           </Button>
           <Link href="/admin/timelines/new">
             <Button type="primary" icon={<FileTextOutlined />}>
-              新建详情
+              新建笔记
             </Button>
           </Link>
         </Space>

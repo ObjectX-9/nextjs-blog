@@ -81,7 +81,7 @@ export default function Timeline() {
       <div className="h-full overflow-y-auto custom-scrollbar-thin px-4 sm:px-4 py-8 sm:py-16">
         <div className="w-full max-w-3xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
-            时间轴
+            时间笔记
           </h1>
           <div className="mb-4 sm:mb-6 last:mb-0 text-sm sm:text-base">
             记录了生活中的重要时刻
