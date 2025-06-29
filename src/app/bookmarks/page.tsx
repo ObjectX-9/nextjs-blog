@@ -31,11 +31,6 @@ export default function Bookmarks() {
     setSearchResults(results);
     setIsSearchMode(isSearching);
     setSearchQuery(query);
-
-    // 如果搜索被清空，隐藏搜索框
-    if (!isSearching && !query) {
-      setShowSearchBox(false);
-    }
   }, []);
 
   // 切换搜索框显示状态
