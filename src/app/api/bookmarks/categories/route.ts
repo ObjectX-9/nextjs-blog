@@ -1,134 +1,82 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
-import { IBookmarkCategory, IBookmark } from "@/app/model/bookmark";
+import { IBookmarkCategory } from "@/app/model/bookmark";
+import { ApiErrors, errorResponse, successResponse, withErrorHandler } from "../../data";
+import { bookmarkDb, bookmarkCategoryDb } from "@/utils/db-instances";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
 
-// Get all bookmark categories with their bookmarks
-export async function GET(request: Request) {
-  try {
-    const db = await getDb();
-    
-    // First get all categories
-    const categories = await db
-      .collection<IBookmarkCategory>("bookmarkCategories")
-      .find()
-      .toArray();
+export const GET = withErrorHandler<[Request], { categories: IBookmarkCategory[] }>(async (request: Request) => {
+  // 获取所有分类
+  const categories = await bookmarkCategoryDb.find({}, { sort: { createdAt: -1 } });
 
-    // Then get all bookmarks
-    const bookmarks = await db
-      .collection<IBookmark>("bookmarks")
-      .find()
-      .toArray();
+  // 为每个分类获取对应的收藏夹
+  const categoriesWithBookmarksPromises = categories.map(async (category) => {
+    const bookmarks = await bookmarkDb.find({ categoryId: category._id }, { sort: { createdAt: -1 } });
 
-    // Create a map of bookmarks by category
-    const bookmarksByCategory = bookmarks.reduce((acc, bookmark) => {
-      const categoryId = bookmark.categoryId.toString();
-      if (!acc[categoryId]) {
-        acc[categoryId] = [];
-      }
-      acc[categoryId].push(bookmark);
-      return acc;
-    }, {} as Record<string, IBookmark[]>);
-
-    // Combine categories with their bookmarks
-    const categoriesWithBookmarks = categories.map(category => ({
+    return {
       ...category,
-      bookmarks: bookmarksByCategory[category._id.toString()] || []
-    }));
-
-    // Return the categories array wrapped in an object with a categories field
-    return NextResponse.json({ categories: categoriesWithBookmarks });
-  } catch (error) {
-    console.error("Get bookmark categories error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-// Create a new bookmark category
-export async function POST(request: Request) {
-  try {
-    const data = await request.json();
-    const db = await getDb();
-
-    if (!data.name) {
-      return NextResponse.json(
-        { error: "Category name is required" },
-        { status: 400 }
-      );
-    }
-
-    const category: Omit<IBookmarkCategory, "_id"> = {
-      name: data.name,
-      bookmarks: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      bookmarks
     };
+  });
 
-    const result = await db
-      .collection<IBookmarkCategory>("bookmarkCategories")
-      .insertOne(category as IBookmarkCategory);
+  const categoriesWithBookmarks = await Promise.all(categoriesWithBookmarksPromises);
 
-    if (result.acknowledged) {
-      return NextResponse.json({
-        success: true,
-        category: { ...category, _id: result.insertedId },
-      });
-    } else {
-      return NextResponse.json(
-        { error: "Failed to create category" },
-        { status: 500 }
-      );
-    }
-  } catch (error) {
-    console.error("Create bookmark category error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  return successResponse({ categories: categoriesWithBookmarks }, '获取收藏夹分类成功');
+});
+
+export const POST = withErrorHandler<[Request], { category: IBookmarkCategory }>(async (request: Request) => {
+  const data = await parseRequestBody<{ name: string }>(request);
+  RequestValidator.validateRequired(data, ['name']);
+
+  const category = {
+    name: data.name,
+    bookmarks: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await bookmarkCategoryDb.insertOne(category);
+
+  return successResponse({ category: result }, '创建收藏夹分类成功');
+});
+
+export const PUT = withErrorHandler<[Request], { category: any }>(async (request: Request) => {
+  const data = await parseRequestBody<IBookmarkCategory>(request);
+  RequestValidator.validateRequired(data, ['_id', 'name']);
+
+  const updateData = {
+    name: data.name,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await bookmarkCategoryDb.updateById(data._id!, { $set: updateData });
+
+  if (result.matchedCount > 0) {
+    return successResponse({ category: result }, '更新收藏夹分类成功');
   }
-}
 
-// Delete a bookmark category
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+  return errorResponse(ApiErrors.NOT_FOUND('收藏夹分类不存在'));
+});
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "Category ID is required" },
-        { status: 400 }
-      );
-    }
+export const DELETE = withErrorHandler<[Request], { category: any }>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const id = apiParams.getString("id");
 
-    const db = await getDb();
+  RequestValidator.validateRequired({ id }, ['id']);
 
-    // First delete all bookmarks in this category
-    await db.collection("bookmarks").deleteMany({
-      categoryId: new ObjectId(id),
-    });
-
-    // Then delete the category
-    const result = await db
-      .collection<IBookmarkCategory>("bookmarkCategories")
-      .deleteOne({ _id: new ObjectId(id) });
-
-    if (result.deletedCount > 0) {
-      return NextResponse.json({ success: true });
-    } else {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
-    }
-  } catch (error) {
-    console.error("Delete bookmark category error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  // 检查分类是否存在
+  const category = await bookmarkCategoryDb.findById(id!);
+  if (!category) {
+    return errorResponse(ApiErrors.NOT_FOUND('收藏夹分类不存在'));
   }
-}
+
+  // 删除该分类下的所有收藏夹
+  await bookmarkDb.deleteMany({ categoryId: id });
+
+  // 删除分类
+  const result = await bookmarkCategoryDb.deleteById(id!);
+
+  if (result.deletedCount > 0) {
+    return successResponse({ category: result }, '删除收藏夹分类成功');
+  }
+
+  return errorResponse(ApiErrors.NOT_FOUND('收藏夹分类不存在'));
+});

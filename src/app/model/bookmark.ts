@@ -1,7 +1,37 @@
 import { ObjectId } from 'mongodb';
 
-// API interfaces (for frontend use)
+// 前端使用的接口，符合 FrontendDocument 约束
 export interface IBookmark {
+  _id?: string;
+  title: string;
+  url: string;
+  description: string;
+  imageUrl?: string;
+  categoryId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface IBookmarkCategory {
+  _id?: string;
+  name: string;
+  bookmarks: IBookmark[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// 收藏夹分类统计接口
+export interface BookmarkCountByCategory {
+  _id?: string;
+  categoryId: string;
+  categoryName: string;
+  count: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 数据库接口（用于 MongoDB）
+export interface IBookmarkDB {
   _id?: ObjectId;
   title: string;
   url: string;
@@ -12,19 +42,10 @@ export interface IBookmark {
   updatedAt: Date;
 }
 
-export interface IBookmarkCategory {
+export interface IBookmarkCategoryDB {
   _id?: ObjectId;
   name: string;
-  bookmarks: IBookmark[];
+  bookmarks: ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-}
-
-// Database interfaces (for MongoDB)
-export interface IBookmarkDB extends Omit<IBookmark, 'categoryId'> {
-  categoryId: ObjectId;
-}
-
-export interface IBookmarkCategoryDB extends Omit<IBookmarkCategory, 'bookmarks'> {
-  bookmarks: ObjectId[];
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
+import { bookmarksBusiness } from "@/app/business/bookmarks";
 import {
   Button,
   Input,
@@ -25,13 +26,6 @@ interface EditingBookmark {
   newCategoryId: string;
   bookmarkId: string;
   bookmark: Partial<IBookmark>;
-}
-
-interface ActionModalBookmark {
-  categoryId: string;
-  bookmarkId: string;
-  bookmark: IBookmark;
-  categoryName: string;
 }
 
 // 提取错误处理函数
@@ -82,64 +76,64 @@ const createBookmarkColumns = (
   ) => void,
   handleDeleteBookmark: (id: string) => void
 ) => [
-  {
-    title: "标题",
-    dataIndex: "title",
-    key: "title",
-  },
-  {
-    title: "链接",
-    dataIndex: "url",
-    key: "url",
-    render: (url: string) => (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600"
-      >
-        {url}
-      </a>
-    ),
-  },
-  {
-    title: "分类",
-    key: "category",
-    dataIndex: "categoryName",
-  },
-  {
-    title: "操作",
-    key: "action",
-    render: (_: unknown, record: IBookmark & { categoryName: string }) => {
-      const category = categories.find((c) =>
-        c.bookmarks.some((b) => b._id?.toString() === record._id?.toString())
-      );
-      return (
-        <Space>
-          <Button
-            onClick={() =>
-              startEditingBookmark(
-                category?._id?.toString() || "",
-                record._id?.toString() || "",
-                record
-              )
-            }
-            icon={<EditOutlined />}
-          >
-            编辑
-          </Button>
-          <Button
-            danger
-            onClick={() => handleDeleteBookmark(record._id?.toString() || "")}
-            icon={<DeleteOutlined />}
-          >
-            删除
-          </Button>
-        </Space>
-      );
+    {
+      title: "标题",
+      dataIndex: "title",
+      key: "title",
     },
-  },
-];
+    {
+      title: "链接",
+      dataIndex: "url",
+      key: "url",
+      render: (url: string) => (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600"
+        >
+          {url}
+        </a>
+      ),
+    },
+    {
+      title: "分类",
+      key: "category",
+      dataIndex: "categoryName",
+    },
+    {
+      title: "操作",
+      key: "action",
+      render: (_: unknown, record: IBookmark & { categoryName: string }) => {
+        const category = categories.find((c) =>
+          c.bookmarks.some((b) => b._id?.toString() === record._id?.toString())
+        );
+        return (
+          <Space>
+            <Button
+              onClick={() =>
+                startEditingBookmark(
+                  category?._id?.toString() || "",
+                  record._id?.toString() || "",
+                  record
+                )
+              }
+              icon={<EditOutlined />}
+            >
+              编辑
+            </Button>
+            <Button
+              danger
+              onClick={() => handleDeleteBookmark(record._id?.toString() || "")}
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Space>
+        );
+      },
+    },
+  ];
 
 // Modal 配置
 const modalConfig = {
@@ -176,21 +170,16 @@ export default function BookmarksManagementPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [editingBookmark, setEditingBookmark] =
     useState<EditingBookmark | null>(null);
-  const [actionModalBookmark, setActionModalBookmark] =
-    useState<ActionModalBookmark | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
   const [filterCategoryId, setFilterCategoryId] = useState<string>("all");
 
   // 使用 useCallback 优化回调函数
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch("/api/bookmarks/categories");
-      const data = await response.json();
-      if (data?.categories) {
-        setCategories(data.categories);
-        if (data.categories.length > 0 && !selectedCategoryId) {
-          setSelectedCategoryId(data.categories[0]._id.toString());
-        }
+      const data = await bookmarksBusiness.getBookmarkCategories();
+      setCategories(data);
+      if (data.length > 0 && !selectedCategoryId) {
+        setSelectedCategoryId(data[0]._id!.toString());
       }
     } catch (error) {
       handleApiError(error, messageApi, "获取分类失败");
@@ -209,17 +198,7 @@ export default function BookmarksManagementPage() {
         onOk: async () => {
           setIsUpdating(true);
           try {
-            const response = await fetch(
-              `/api/bookmarks/categories?id=${categoryId}`,
-              {
-                method: "DELETE",
-              }
-            );
-
-            if (!response.ok) {
-              throw new Error("Failed to delete category");
-            }
-
+            await bookmarksBusiness.deleteBookmarkCategory(categoryId);
             await fetchCategories();
             messageApi.success("分类删除成功");
           } catch (error) {
@@ -241,14 +220,7 @@ export default function BookmarksManagementPage() {
         onOk: async () => {
           setIsUpdating(true);
           try {
-            const response = await fetch(`/api/bookmarks?id=${bookmarkId}`, {
-              method: "DELETE",
-            });
-
-            if (!response.ok) {
-              throw new Error("Failed to delete bookmark");
-            }
-
+            await bookmarksBusiness.deleteBookmark(bookmarkId);
             await fetchCategories();
             messageApi.success("书签删除成功");
           } catch (error) {
@@ -294,8 +266,8 @@ export default function BookmarksManagementPage() {
       filterCategoryId === "all"
         ? allBookmarks
         : allBookmarks.filter(
-            (bookmark) => bookmark.categoryId.toString() === filterCategoryId
-          ),
+          (bookmark) => bookmark.categoryId.toString() === filterCategoryId
+        ),
     [allBookmarks, filterCategoryId]
   );
 
@@ -319,16 +291,7 @@ export default function BookmarksManagementPage() {
     if (newCategory.name?.trim()) {
       setIsUpdating(true);
       try {
-        const response = await fetch("/api/bookmarks/categories", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: newCategory.name }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to create category");
-        }
-
+        await bookmarksBusiness.createBookmarkCategory({ name: newCategory.name });
         await fetchCategories();
         setNewCategory({ name: "" });
         messageApi.success("分类创建成功");
@@ -344,19 +307,10 @@ export default function BookmarksManagementPage() {
     if (newBookmark.title && newBookmark.url && selectedCategoryId) {
       setIsUpdating(true);
       try {
-        const response = await fetch("/api/bookmarks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...newBookmark,
-            categoryId: selectedCategoryId,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to create bookmark");
-        }
-
+        await bookmarksBusiness.createBookmark({
+          ...newBookmark,
+          categoryId: selectedCategoryId,
+        } as Omit<IBookmark, '_id' | 'createdAt' | 'updatedAt'>);
         await fetchCategories();
         setNewBookmark({ title: "", url: "", description: "" });
         setShowAddBookmark(false);
@@ -373,20 +327,11 @@ export default function BookmarksManagementPage() {
     if (editingBookmark) {
       setIsUpdating(true);
       try {
-        const response = await fetch(`/api/bookmarks`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            _id: editingBookmark.bookmarkId,
-            ...editingBookmark.bookmark,
-            categoryId: editingBookmark.newCategoryId,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to update bookmark");
-        }
-
+        await bookmarksBusiness.updateBookmark({
+          _id: editingBookmark.bookmarkId,
+          ...editingBookmark.bookmark,
+          categoryId: editingBookmark.newCategoryId,
+        } as IBookmark);
         await fetchCategories();
         setEditingBookmark(null);
         messageApi.success("书签更新成功");

@@ -45,7 +45,7 @@ async function getBookmarksRSS(baseUrl: string, categoryId: string | null): Prom
     // 构建查询条件
     let query: any = {};
     if (categoryId) {
-      query.categoryId = new ObjectId(categoryId);
+      query.categoryId = categoryId;
     }
 
     // 获取书签数据

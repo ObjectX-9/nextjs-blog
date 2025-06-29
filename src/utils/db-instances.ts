@@ -8,6 +8,7 @@ import { IPhoto } from "@/app/model/photo";
 import { Captcha } from "@/app/model/captcha";
 import { ISite } from "@/app/model/site";
 import { IWorkspaceItem } from "@/app/model/workspace-item";
+import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -52,3 +53,9 @@ export const siteDb = createDbHelper<ISite>("sites");
 
 // 工作空间物品
 export const workspaceItemDb = createDbHelper<IWorkspaceItem>("workspaceItems");
+
+// 收藏夹
+export const bookmarkDb = createDbHelper<IBookmark>("bookmarks");
+
+// 收藏夹分类
+export const bookmarkCategoryDb = createDbHelper<IBookmarkCategory>("bookmarkCategories");

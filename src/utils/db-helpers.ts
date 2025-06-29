@@ -23,7 +23,7 @@ export class IdHelper {
   }
 
   /**
-   * 转换查询条件中的_id字段
+   * 转换查询条件中的_id字段和其他常见的ObjectId字段
    */
   static convertFilterIds(filter: any): any {
     if (!filter || typeof filter !== 'object') {
@@ -32,30 +32,35 @@ export class IdHelper {
 
     const converted = { ...filter };
 
-    if (converted._id !== undefined) {
-      if (typeof converted._id === 'object' && converted._id !== null && !ObjectId.isValid(converted._id)) {
-        // 处理查询操作符，如 { $in: [...], $ne: "..." }
-        const operators: any = {};
-        for (const [op, opValue] of Object.entries(converted._id)) {
-          if (op.startsWith('$')) {
-            if (op === '$in' || op === '$nin') {
-              // 处理数组操作符
-              operators[op] = Array.isArray(opValue)
-                ? opValue.map(id => this.toObjectId(id as string | ObjectId))
-                : [this.toObjectId(opValue as string | ObjectId)];
+    // 常见的 ObjectId 字段
+    const objectIdFields = ['_id'];
+
+    objectIdFields.forEach(field => {
+      if (converted[field] !== undefined) {
+        if (typeof converted[field] === 'object' && converted[field] !== null && !ObjectId.isValid(converted[field])) {
+          // 处理查询操作符，如 { $in: [...], $ne: "..." }
+          const operators: any = {};
+          for (const [op, opValue] of Object.entries(converted[field])) {
+            if (op.startsWith('$')) {
+              if (op === '$in' || op === '$nin') {
+                // 处理数组操作符
+                operators[op] = Array.isArray(opValue)
+                  ? opValue.map(id => this.toObjectId(id as string | ObjectId))
+                  : [this.toObjectId(opValue as string | ObjectId)];
+              } else {
+                operators[op] = this.toObjectId(opValue as string | ObjectId);
+              }
             } else {
-              operators[op] = this.toObjectId(opValue as string | ObjectId);
+              operators[op] = opValue;
             }
-          } else {
-            operators[op] = opValue;
           }
+          converted[field] = operators;
+        } else if (typeof converted[field] === 'string' || converted[field] instanceof ObjectId) {
+          // 直接的字段值
+          converted[field] = this.toObjectId(converted[field]);
         }
-        converted._id = operators;
-      } else {
-        // 直接的 _id 值
-        converted._id = this.toObjectId(converted._id);
       }
-    }
+    });
 
     return converted;
   }
