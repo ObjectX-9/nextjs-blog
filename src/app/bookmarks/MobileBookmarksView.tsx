@@ -132,14 +132,19 @@ export function MobileBookmarksView({
         }, 0);
     }, [bookmarks]);
 
-    // 当选中分类或进入搜索模式时，显示书签列表
+    // 只有在搜索模式时，显示书签列表，选择分类不自动跳转
     useEffect(() => {
-        if (selectedCategory || isSearchMode) {
+        if (isSearchMode) {
             setShowMobileList(true);
         } else {
             setShowMobileList(false);
         }
-    }, [selectedCategory, isSearchMode]);
+    }, [isSearchMode]);
+
+    const handleCategoryClick = (category: IBookmarkCategory) => {
+        setSelectedCategory(category._id?.toString() || null);
+        setShowMobileList(true);
+    }
 
     return (
         <>
@@ -324,22 +329,22 @@ export function MobileBookmarksView({
                     <div className="space-y-2">
                         {Array.isArray(categories) &&
                             categories.map((category) => (
-                                <button
+                                <div
                                     key={category._id?.toString()}
-                                    onClick={() => {
-                                        setSelectedCategory(category._id?.toString() || null);
-                                    }}
-                                    className="w-full p-3 rounded-lg border border-gray-200 text-left"
+                                    className="w-full p-3 rounded-lg border border-gray-200"
+                                    onClick={() => handleCategoryClick(category)}
                                 >
                                     <div className="flex justify-between items-center">
-                                        <span>{category.name}</span>
-                                        <span className="text-sm text-gray-500">
-                                            {categoryBookmarkCounts[category._id?.toString() || ""] ||
-                                                0}{" "}
-                                            个站点
-                                        </span>
+                                        <div className="flex-1">
+                                            <div className="font-medium">{category.name}</div>
+                                            <div className="text-sm text-gray-500">
+                                                {categoryBookmarkCounts[category._id?.toString() || ""] ||
+                                                    0}{" "}
+                                                个站点
+                                            </div>
+                                        </div>
                                     </div>
-                                </button>
+                                </div>
                             ))}
                     </div>
                 </div>
