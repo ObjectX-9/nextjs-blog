@@ -5,6 +5,11 @@ import { RssIcon } from '@/components/icons/RssIcon';
 import LikeButton from '@/components/HomePage/LikeButton';
 import ViewCounter from '@/components/HomePage/ViewCounter';
 
+interface TouchableButtonElement extends HTMLButtonElement {
+  touchStartY?: number;
+  touchStartX?: number;
+}
+
 interface MobileViewProps {
   currentView: 'categories' | 'articles';
   categories: ArticleCountByCategory[];
@@ -60,9 +65,33 @@ export const MobileView = (props: MobileViewProps) => {
                       e.stopPropagation();
                       handleCategorySelect(category.categoryId!);
                     }}
+                    onTouchStart={(e) => {
+                      // 记录触摸开始位置
+                      const touch = e.touches[0];
+                      const button = e.currentTarget as TouchableButtonElement;
+                      button.touchStartY = touch.clientY;
+                      button.touchStartX = touch.clientX;
+                    }}
                     onTouchEnd={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+
+                      // 检查是否是滚动操作
+                      const touch = e.changedTouches[0];
+                      const button = e.currentTarget as TouchableButtonElement;
+                      const startY = button.touchStartY;
+                      const startX = button.touchStartX;
+
+                      if (startY !== undefined && startX !== undefined) {
+                        const deltaY = Math.abs(touch.clientY - startY);
+                        const deltaX = Math.abs(touch.clientX - startX);
+
+                        // 如果移动距离超过阈值，认为是滚动，不触发点击
+                        if (deltaY > 10 || deltaX > 10) {
+                          return;
+                        }
+                      }
+
                       handleCategorySelect(category.categoryId!);
                     }}
                     className="w-full text-left p-4 pr-16 block touch-manipulation relative z-10"
