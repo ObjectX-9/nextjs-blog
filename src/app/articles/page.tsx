@@ -133,7 +133,7 @@ export default function ArticlesPage() {
 
   if (!categories.length) {
     return (
-      <div className="w-full flex">
+      <div className="w-full">
         <div className="md:hidden w-full">
           <div
             className={`fixed inset-0 bg-white transition-transform duration-300 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'}`}
@@ -187,7 +187,7 @@ export default function ArticlesPage() {
   );
 
   return (
-    <div className="min-h-screen w-full flex relative">
+    <div className="w-full">
       {isMobileView ? renderMobileView() : renderDesktopView()}
     </div>
   );

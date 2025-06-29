@@ -30,7 +30,7 @@ export const MobileView = (props: MobileViewProps) => {
   return (
     <div className="w-full">
       <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 z-40 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-0 bg-white transition-transform duration-300 z-30 ${currentView === 'categories' ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex flex-col h-full">
           <div className="p-4 border-b bg-white sticky top-0 z-10">
@@ -122,7 +122,7 @@ export const MobileView = (props: MobileViewProps) => {
       </div>
 
       <div
-        className={`fixed inset-0 bg-white transition-transform duration-300 z-50 ${currentView === 'articles' ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-0 bg-white transition-transform duration-300 z-40 ${currentView === 'articles' ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="flex flex-col h-full">
           <button

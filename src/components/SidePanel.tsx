@@ -120,7 +120,7 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-zinc-50 p-3">
+    <div className="flex h-full w-full flex-col p-3">
       <div className="mb-4 p-2 flex flex-row flex-nowrap gap-2">
         <Avatar>
           <AvatarImage
