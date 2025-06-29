@@ -1,14 +1,25 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IWorkspaceItem extends Document {
-  // _id?: string;  // 使用可选的 _id
+// 前端使用的接口，符合 FrontendDocument 约束
+export interface IWorkspaceItem {
+  _id?: string;
+  product: string;
+  specs: string;
+  buyAddress: string;
+  buyLink: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// mongoose 文档接口
+export interface IWorkspaceItemDocument extends Document {
   product: string;
   specs: string;
   buyAddress: string;
   buyLink: string;
 }
 
-const workspaceItemSchema = new Schema<IWorkspaceItem>(
+const workspaceItemSchema = new Schema<IWorkspaceItemDocument>(
   {
     product: { type: String, required: true },
     specs: { type: String, required: true },
@@ -22,4 +33,4 @@ const workspaceItemSchema = new Schema<IWorkspaceItem>(
 
 export const WorkspaceItem =
   mongoose.models.WorkspaceItem ||
-  mongoose.model<IWorkspaceItem>("WorkspaceItem", workspaceItemSchema);
+  mongoose.model<IWorkspaceItemDocument>("WorkspaceItem", workspaceItemSchema);

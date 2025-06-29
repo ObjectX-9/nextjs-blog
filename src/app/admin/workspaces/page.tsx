@@ -23,38 +23,26 @@ import {
   ShopOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
+import { workspaceBusiness } from "@/app/business/workspace";
+import { IWorkspaceItem } from "@/app/model/workspace-item";
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
-interface WorkspaceItem {
-  _id: string;
-  product: string;
-  specs: string;
-  buyAddress: string;
-  buyLink: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export default function WorkspacesPage() {
-  const [items, setItems] = useState<WorkspaceItem[]>([]);
-  const [editingItem, setEditingItem] = useState<WorkspaceItem | null>(null);
+  const [items, setItems] = useState<IWorkspaceItem[]>([]);
+  const [editingItem, setEditingItem] = useState<IWorkspaceItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [form] = Form.useForm();
 
   const fetchWorkspaceItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/workspaces`);
-      if (response.ok) {
-        const data = await response.json();
-        setItems(data.workspaceItems);
-      } else {
-        throw new Error("Failed to fetch workspace items");
-      }
+      const data = await workspaceBusiness.getWorkspaceItems();
+      // 确保返回的是数组而不是分页对象
+      const itemsArray = Array.isArray(data) ? data : [];
+      setItems(itemsArray);
     } catch (error) {
-      console.error("Error fetching workspace items:", error);
       message.error("获取工作空间列表失败，请刷新重试");
     } finally {
       setIsLoading(false);
@@ -68,34 +56,24 @@ export default function WorkspacesPage() {
   const handleSaveItem = useCallback(async () => {
     try {
       const values = await form.validateFields();
-      const method = editingItem?._id ? "PUT" : "POST";
-      const response = await fetch("/api/workspaces", {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...editingItem, ...values }),
-      });
 
-      const data = await response.json();
-      if (data.success) {
-        if (method === "POST") {
-          setItems((prev) => [data.workspaceItem, ...prev]);
-        } else {
-          setItems((prev) =>
-            prev.map((item) =>
-              item._id === editingItem?._id ? { ...item, ...values } : item
-            )
-          );
-        }
-        setEditingItem(null);
-        form.resetFields();
-        message.success(`${method === "POST" ? "添加" : "更新"}成功`);
+      if (editingItem?._id) {
+        setItems((prev) =>
+          prev.map((item) =>
+            item._id === editingItem._id ? { ...item, ...values } : item
+          )
+        );
+        message.success("更新成功");
       } else {
-        throw new Error(data.error || "Failed to save workspace item");
+        // 创建新项目
+        const newItem = await workspaceBusiness.createWorkspaceItem(values);
+        setItems((prev) => [newItem, ...prev]);
+        message.success("添加成功");
       }
+
+      setEditingItem(null);
+      form.resetFields();
     } catch (error) {
-      console.error("Error saving workspace item:", error);
       message.error("保存失败，请重试");
     }
   }, [editingItem, form]);
@@ -109,19 +87,10 @@ export default function WorkspacesPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const response = await fetch(`/api/workspaces?id=${id}`, {
-            method: "DELETE",
-          });
-
-          const data = await response.json();
-          if (data.success) {
-            setItems((prev) => prev.filter((item) => item._id !== id));
-            message.success("删除成功");
-          } else {
-            throw new Error(data.error || "Failed to delete workspace item");
-          }
+          await workspaceBusiness.deleteWorkspaceItem(id);
+          setItems((prev) => prev.filter((item) => item._id !== id));
+          message.success("删除成功");
         } catch (error) {
-          console.error("Error deleting workspace item:", error);
           message.error("删除失败，请重试");
         }
       },
@@ -140,7 +109,7 @@ export default function WorkspacesPage() {
   }, [form]);
 
   const handleEditItem = useCallback(
-    (item: WorkspaceItem) => {
+    (item: IWorkspaceItem) => {
       form.setFieldsValue(item);
       setEditingItem(item);
     },
@@ -189,7 +158,7 @@ export default function WorkspacesPage() {
                             type="link"
                             danger
                             icon={<DeleteOutlined />}
-                            onClick={() => handleDeleteItem(item._id)}
+                            onClick={() => handleDeleteItem(item._id!)}
                           >
                             删除
                           </Button>

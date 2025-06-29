@@ -4,89 +4,56 @@ import { useState, useEffect } from "react";
 import { ItemType, Table } from "@/components/Table";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { useLocalCache } from "@/app/hooks/useLocalCache";
 import { WorkspaceSkeleton } from "@/components/workspace/WorkspaceSkeleton";
-
-// 缓存键常量
-const CACHE_KEYS = {
-  WORKSPACE_ITEMS: "workspace_items",
-  SITE_INFO: "site_info",
-};
-
-// 缓存时间设置
-const CACHE_DURATION = 5 * 60 * 1000; // 5分钟
+import { workspaceBusiness } from "@/app/business/workspace";
+import { useSiteStore } from "@/store/site";
+import { ISite } from "../model/site";
 
 export default function Workspace() {
   const [workspaceItems, setWorkspaceItems] = useState<ItemType[]>([]);
   const [bgImages, setBgImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { getFromCache, setCache } = useLocalCache(CACHE_DURATION);
+  const { site } = useSiteStore();
 
   // 获取站点信息
   useEffect(() => {
-    const fetchSiteInfo = async () => {
-      const cachedSite = getFromCache(CACHE_KEYS.SITE_INFO);
-      if (cachedSite) {
-        updateBackgroundImages(cachedSite);
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/site", {
-          headers: {
-            "Cache-Control": "no-store",
-            Pragma: "no-cache",
-          },
-        });
-        const data = await response.json();
-        if (data.site) {
-          setCache(CACHE_KEYS.SITE_INFO, data.site);
-          updateBackgroundImages(data.site);
-        }
-      } catch (error) {
-        console.error("Error fetching site info:", error);
-      }
-    };
-
-    const updateBackgroundImages = (site: any) => {
+    const updateBackgroundImages = (site: ISite) => {
       const images = [];
       if (site.workspaceBgUrl1) images.push(site.workspaceBgUrl1);
       if (site.workspaceBgUrl2) images.push(site.workspaceBgUrl2);
-      
+
       // 如果没有设置背景图，使用默认图片
       if (images.length === 0) {
         images.push("/example1.jpg", "/example2.jpg");
       }
-      
+
       setBgImages(images);
     };
 
-    fetchSiteInfo();
-  }, [getFromCache, setCache]);
+    if (site) {
+      updateBackgroundImages(site);
+    }
+  }, [site]);
 
   useEffect(() => {
     const fetchWorkspaceItems = async () => {
       setIsLoading(true);
-      
-      const cached = getFromCache<ItemType[]>(CACHE_KEYS.WORKSPACE_ITEMS);
-      if (cached) {
-        setWorkspaceItems(cached);
-        setIsLoading(false);
-        return;
-      }
 
       try {
-        const response = await fetch("/api/workspaceItems", {
-          headers: {
-            "Cache-Control": "no-store",
-            Pragma: "no-cache",
-          },
-        });
-        const data = await response.json();
-        if (data.success) {
-          setWorkspaceItems(data.items);
-          setCache(CACHE_KEYS.WORKSPACE_ITEMS, data.items);
-        }
+        const items = await workspaceBusiness.getWorkspaceItems();
+        // 确保返回的是数组而不是分页对象
+        const workspaceItemsArray = Array.isArray(items) ? items : [];
+
+        // 转换为 ItemType 格式
+        const itemsForTable: ItemType[] = workspaceItemsArray.map(item => ({
+          id: item._id || '',
+          product: item.product,
+          specs: item.specs,
+          buyAddress: item.buyAddress,
+          buyLink: item.buyLink,
+        }));
+
+        setWorkspaceItems(itemsForTable);
       } catch (error) {
         console.error("Error fetching workspace items:", error);
       } finally {
@@ -95,7 +62,7 @@ export default function Workspace() {
     };
 
     fetchWorkspaceItems();
-  }, [getFromCache, setCache]);
+  }, []);
 
   const fields = [
     { key: "product", label: "产品" },
