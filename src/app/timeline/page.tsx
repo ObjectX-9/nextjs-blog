@@ -1,91 +1,22 @@
 "use client";
 
 import { TimelineEvent as TimelineEventComponent } from "./TimelineEvent";
-import { ObjectId } from 'mongodb';
+import { ITimelineEvent } from "@/app/model/timeline";
+import { timelinesBusiness } from "@/app/business/timelines";
 import { useState, useEffect } from 'react';
 
-interface TimelineLink {
-  text: string;
-  url: string;
-}
-
-interface TimelineEvent {
-  _id: string | ObjectId;
-  year: number;
-  month: number;
-  title: string;
-  location?: string;
-  description: string;
-  tweetUrl?: string;
-  imageUrl?: string;
-  links?: TimelineLink[];
-}
-
-// Cache management
-const CACHE_KEYS = {
-  TIMELINE_EVENTS: 'timeline_events',
-  LAST_FETCH: 'timeline_last_fetch',
-};
-
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-function getFromCache<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
-  const cached = localStorage.getItem(key);
-  if (!cached) return null;
-
-  try {
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function setCache(key: string, data: any): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(
-    key,
-    JSON.stringify({
-      data,
-      timestamp: Date.now(),
-    })
-  );
-}
-
 export default function Timeline() {
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<ITimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTimelineEvents = async () => {
-      // Try to get from cache first
-      const cached = getFromCache<TimelineEvent[]>(CACHE_KEYS.TIMELINE_EVENTS);
-      if (cached) {
-        setTimelineEvents(cached);
-        setLoading(false);
-        return;
-      }
-
       try {
-        const protocol = window.location.protocol;
-        const host = window.location.host;
-        const res = await fetch(`${protocol}//${host}/api/timelines`);
-        
-        if (!res.ok) {
-          throw new Error('Failed to fetch timeline events');
-        }
-
-        const data = await res.json();
-        setTimelineEvents(data.events);
-        setCache(CACHE_KEYS.TIMELINE_EVENTS, data.events);
+        const events = await timelinesBusiness.getTimelineEvents();
+        setTimelineEvents(events);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch timeline events');
+        setError(err instanceof Error ? err.message : '获取时间线事件失败');
       } finally {
         setLoading(false);
       }
@@ -101,7 +32,7 @@ export default function Timeline() {
     }
     acc[event.year].push(event);
     return acc;
-  }, {} as Record<number, TimelineEvent[]>);
+  }, {} as Record<number, ITimelineEvent[]>);
 
   // Sort years in descending order
   const years = Object.keys(eventsByYear)
@@ -111,7 +42,7 @@ export default function Timeline() {
   if (loading) {
     return (
       <main className="flex-1 h-screen overflow-hidden">
-        <div className="h-full overflow-y-auto px-4 sm:px-4 py-8 sm:py-16">
+        <div className="h-full overflow-y-auto custom-scrollbar-thin px-4 sm:px-4 py-8 sm:py-16">
           <div className="w-full max-w-3xl mx-auto">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
@@ -136,7 +67,7 @@ export default function Timeline() {
   if (error) {
     return (
       <main className="flex-1 h-screen overflow-hidden">
-        <div className="h-full overflow-y-auto px-4 sm:px-4 py-8 sm:py-16">
+        <div className="h-full overflow-y-auto custom-scrollbar-thin px-4 sm:px-4 py-8 sm:py-16">
           <div className="w-full max-w-3xl mx-auto">
             <div className="text-red-500">Error: {error}</div>
           </div>
@@ -147,7 +78,7 @@ export default function Timeline() {
 
   return (
     <main className="flex-1 h-screen overflow-hidden">
-      <div className="h-full overflow-y-auto px-4 sm:px-4 py-8 sm:py-16">
+      <div className="h-full overflow-y-auto custom-scrollbar-thin px-4 sm:px-4 py-8 sm:py-16">
         <div className="w-full max-w-3xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
             时间轴
@@ -164,7 +95,7 @@ export default function Timeline() {
                 {eventsByYear[year]
                   .sort((a, b) => b.month - a.month)
                   .map((event) => (
-                    <TimelineEventComponent key={event._id.toString()} event={event} />
+                    <TimelineEventComponent key={event._id || `${event.year}-${event.month}-${event.day}-${event.title}`} event={event} />
                   ))}
               </div>
             </div>

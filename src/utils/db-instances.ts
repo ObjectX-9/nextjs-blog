@@ -9,6 +9,7 @@ import { Captcha } from "@/app/model/captcha";
 import { ISite } from "@/app/model/site";
 import { IWorkspaceItem } from "@/app/model/workspace-item";
 import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
+import { ITimelineEvent } from "@/app/model/timeline";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -59,3 +60,6 @@ export const bookmarkDb = createDbHelper<IBookmark>("bookmarks");
 
 // 收藏夹分类
 export const bookmarkCategoryDb = createDbHelper<IBookmarkCategory>("bookmarkCategories");
+
+// 时间线事件
+export const timelineDb = createDbHelper<ITimelineEvent>("timelines");

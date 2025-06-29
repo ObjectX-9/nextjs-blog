@@ -30,10 +30,12 @@ export default function AdminLayout({
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 检查是否是新建或编辑文章页面
-  const isArticleEditPage =
+  // 检查是否是新建或编辑页面（文章、时间轴）
+  const isFullScreenEditPage =
     pathname === "/admin/articles/new" ||
-    pathname.includes("/admin/articles/edit/");
+    pathname.includes("/admin/articles/edit/") ||
+    pathname === "/admin/timelines/new" ||
+    pathname.includes("/admin/timelines/edit/");
 
   const handleLogout = async () => {
     try {
@@ -52,7 +54,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen flex-1">
-      {!isArticleEditPage && (
+      {!isFullScreenEditPage && (
         <>
           {/* 移动端遮罩层 */}
           {isDrawerOpen && (
@@ -85,7 +87,7 @@ export default function AdminLayout({
       )}
 
       {/* 侧边栏 */}
-      {!isArticleEditPage && (
+      {!isFullScreenEditPage && (
         <aside
           className={`fixed lg:static w-64 h-full bg-gray-50 border-r z-30 transform transition-transform duration-300 ease-in-out ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"
             } lg:translate-x-0`}
@@ -124,8 +126,11 @@ export default function AdminLayout({
       )}
 
       {/* 主内容区 */}
-      <main className="flex-1 bg-white lg:ml-0 p-4 lg:p-6 overflow-auto h-[100vh]">
-        <div className="max-w-7xl mx-auto">{children}</div>
+      <main className={`flex-1 bg-white overflow-auto h-[100vh] ${isFullScreenEditPage ? 'p-0' : 'p-4 lg:p-6 lg:ml-0'
+        }`}>
+        <div className={isFullScreenEditPage ? '' : 'max-w-7xl mx-auto'}>
+          {children}
+        </div>
       </main>
     </div>
   );

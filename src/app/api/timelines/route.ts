@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import { ITimelineEvent } from "@/app/model/timeline";
+import { ApiErrors, errorResponse, successResponse, withErrorHandler } from "../data";
+import { timelineDb } from "@/utils/db-instances";
+import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api-helpers";
+import { verifyAdmin } from "@/utils/auth";
 
 interface TimelineResponse {
-  success: boolean;
-  events?: ITimelineEvent[];
-  error?: string;
+  events: ITimelineEvent[];
   pagination?: {
     total: number;
     page: number;
@@ -15,191 +14,149 @@ interface TimelineResponse {
   };
 }
 
-// Create or update timeline events
-export async function POST(request: Request) {
-  try {
-    const { events } = await request.json();
-    const db = await getDb();
-    const collection = db.collection<ITimelineEvent>("timelines");
+export const GET = withErrorHandler<[Request], TimelineResponse>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const page = Math.max(1, parseInt(apiParams.getString("page") || "1"));
+  const limit = Math.max(1, Math.min(50, parseInt(apiParams.getString("limit") || "20")));
 
-    // Validate events
-    if (!Array.isArray(events) || events.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Invalid events data" },
-        { status: 400 }
-      );
+  // 检查用户是否为管理员
+  const isAdmin = await verifyAdmin();
+
+  // 构建查询条件：非管理员只能看到非私有的时间线事件
+  const filter = isAdmin ? {} : { $or: [{ isAdminOnly: { $ne: true } }, { isAdminOnly: { $exists: false } }] };
+
+  const [events, total] = await Promise.all([
+    timelineDb.find(filter, {
+      sort: { year: -1, month: -1, day: -1 },
+      skip: (page - 1) * limit,
+      limit
+    }),
+    timelineDb.countDocuments(filter)
+  ]);
+
+  const response: TimelineResponse = {
+    events,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+
+  return successResponse(response);
+});
+
+export const POST = withErrorHandler<[Request], { event?: ITimelineEvent; insertedCount?: number }>(async (request: Request) => {
+  const data = await parseRequestBody<{ events?: ITimelineEvent[]; } & ITimelineEvent>(request);
+
+  // 检查是否是批量创建
+  if (data.events && Array.isArray(data.events)) {
+    RequestValidator.validateRequired({ events: data.events }, ['events']);
+
+    if (data.events.length === 0) {
+      return errorResponse(ApiErrors.VALIDATION_ERROR('事件列表不能为空'));
     }
 
-    // Insert new events with timestamps
-    const result = await collection.insertMany(
-      events.map((event: ITimelineEvent) => ({
-        ...event,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }))
-    );
-
-    if (!result.acknowledged) {
-      throw new Error("Failed to add timeline events");
-    }
-
-    return NextResponse.json({
-      success: true,
-      insertedCount: result.insertedCount,
+    // 验证每个事件
+    data.events.forEach((event, index) => {
+      RequestValidator.validateRequired(event, ['year', 'month', 'day', 'title', 'description']);
     });
-  } catch (error) {
-    console.error("Error adding timeline events:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to add timeline events" },
-      { status: 500 }
-    );
-  }
-}
 
-// Get all timeline events with pagination
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.max(1, Math.min(50, parseInt(searchParams.get('limit') || '20')));
-    const skip = (page - 1) * limit;
+    const eventsToInsert = data.events.map(event => ({
+      year: event.year,
+      month: event.month,
+      day: event.day,
+      title: event.title,
+      description: event.description,
+      ...(event.location && { location: event.location }),
+      ...(event.ossPath && { ossPath: event.ossPath }),
+      ...(event.tweetUrl && { tweetUrl: event.tweetUrl }),
+      ...(event.imageUrl && { imageUrl: event.imageUrl }),
+      ...(event.links && { links: event.links }),
+      ...(event.isAdminOnly !== undefined && { isAdminOnly: event.isAdminOnly }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
 
-    const db = await getDb();
-    const collection = db.collection<ITimelineEvent>("timelines");
+    const result = await timelineDb.insertMany(eventsToInsert);
 
-    const [events, total] = await Promise.all([
-      collection
-        .find({})
-        .sort({ year: -1, month: -1, day: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      collection.countDocuments()
-    ]);
+    return successResponse({ insertedCount: result.length });
+  } else {
+    // 单个创建
+    RequestValidator.validateRequired(data, ['year', 'month', 'day', 'title', 'description']);
 
-    const response: TimelineResponse = {
-      success: true,
-      events,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
+    const event = {
+      year: data.year,
+      month: data.month,
+      day: data.day,
+      title: data.title,
+      description: data.description,
+      ...(data.location && { location: data.location }),
+      ...(data.ossPath && { ossPath: data.ossPath }),
+      ...(data.tweetUrl && { tweetUrl: data.tweetUrl }),
+      ...(data.imageUrl && { imageUrl: data.imageUrl }),
+      ...(data.links && { links: data.links }),
+      ...(data.isAdminOnly !== undefined && { isAdminOnly: data.isAdminOnly }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error("Error fetching timeline events:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch timeline events" },
-      { status: 500 }
-    );
+    const result = await timelineDb.insertOne(event);
+
+    return successResponse({ event: result });
   }
-}
+});
 
-// Update a timeline event
-export async function PUT(request: Request) {
-  try {
-    const data = await request.json();
-    const { _id, ...updateData } = data;
+export const PUT = withErrorHandler<[Request], { event: ITimelineEvent }>(async (request: Request) => {
+  const data = await parseRequestBody<ITimelineEvent>(request);
+  RequestValidator.validateRequired(data, ['_id', 'year', 'month', 'day', 'title', 'description']);
 
-    if (!_id) {
-      return NextResponse.json(
-        { success: false, error: "Timeline event ID is required" },
-        { status: 400 }
-      );
+  const updateData = {
+    ...(data.year !== undefined && { year: data.year }),
+    ...(data.month !== undefined && { month: data.month }),
+    ...(data.day !== undefined && { day: data.day }),
+    ...(data.title && { title: data.title }),
+    ...(data.description && { description: data.description }),
+    ...(data.location !== undefined && { location: data.location }),
+    ...(data.ossPath !== undefined && { ossPath: data.ossPath }),
+    ...(data.tweetUrl !== undefined && { tweetUrl: data.tweetUrl }),
+    ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+    ...(data.links !== undefined && { links: data.links }),
+    ...(data.isAdminOnly !== undefined && { isAdminOnly: data.isAdminOnly }),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updateResult = await timelineDb.updateOne({ _id: data._id }, { $set: updateData });
+
+  if (updateResult.matchedCount > 0) {
+    // 获取更新后的文档
+    const updatedEvent = await timelineDb.findById(data._id!);
+    if (updatedEvent) {
+      return successResponse({ event: updatedEvent });
     }
-
-    const validationErrors = validateTimelineEvent(updateData);
-    if (validationErrors.length > 0) {
-      return NextResponse.json(
-        { success: false, error: validationErrors.join(", ") },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDb();
-    const collection = db.collection<ITimelineEvent>("timelines");
-
-    const result = await collection.updateOne(
-      { _id: new ObjectId(_id) },
-      {
-        $set: {
-          ...updateData,
-          updatedAt: new Date(),
-        },
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { success: false, error: "Timeline event not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      modifiedCount: result.modifiedCount,
-    });
-  } catch (error) {
-    console.error("Error updating timeline event:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to update timeline event" },
-      { status: 500 }
-    );
   }
-}
 
-// Delete a timeline event
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+  return errorResponse(ApiErrors.NOT_FOUND('时间线事件未找到'));
+});
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: "Timeline event ID is required" },
-        { status: 400 }
-      );
-    }
+export const DELETE = withErrorHandler<[Request], { event: ITimelineEvent }>(async (request: Request) => {
+  const apiParams = createApiParams(request);
+  const id = apiParams.getString("id");
 
-    const db = await getDb();
-    const collection = db.collection<ITimelineEvent>("timelines");
+  RequestValidator.validateRequired({ id }, ['id']);
 
-    const result = await collection.deleteOne({
-      _id: new ObjectId(id)
-    });
-
-    if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { success: false, error: "Timeline event not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Timeline event deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting timeline event:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to delete timeline event" },
-      { status: 500 }
-    );
+  // 先获取要删除的文档
+  const eventToDelete = await timelineDb.findById(id!);
+  if (!eventToDelete) {
+    return errorResponse(ApiErrors.NOT_FOUND('时间线事件未找到'));
   }
-}
 
-function validateTimelineEvent(event: Partial<ITimelineEvent>): string[] {
-  const errors: string[] = [];
-  
-  if (!event.year) errors.push("Year is required");
-  if (!event.month) errors.push("Month is required");
-  if (!event.day) errors.push("Day is required");
-  if (!event.title) errors.push("Title is required");
-  if (!event.description) errors.push("Description is required");
-  
-  return errors;
-}
+  const result = await timelineDb.deleteOne({ _id: id });
+
+  if (result.deletedCount > 0) {
+    return successResponse({ event: eventToDelete });
+  }
+
+  return errorResponse(ApiErrors.NOT_FOUND('时间线事件未找到'));
+});

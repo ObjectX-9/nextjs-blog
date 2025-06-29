@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import imageCompression from "browser-image-compression";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Button,
   Modal,
@@ -15,6 +16,7 @@ import {
   message,
   Typography,
   Popconfirm,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
@@ -22,34 +24,20 @@ import {
   DeleteOutlined,
   UploadOutlined,
   EnvironmentOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { timelinesBusiness } from "@/app/business/timelines";
+import { ITimelineEvent, ITimelineLink } from "@/app/model/timeline";
 
 const { Text, Paragraph } = Typography;
 
-interface TimelineLink {
-  text: string;
-  url: string;
-}
-
-interface TimelineEvent {
-  _id?: string;
-  year: number;
-  month: number;
-  day: number;
-  title: string;
-  location?: string;
-  description: string;
-  tweetUrl?: string;
-  imageUrl?: string;
-  links?: TimelineLink[];
-}
+// 使用已定义的接口类型
 
 export default function TimelinesAdmin() {
   const [form] = Form.useForm();
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
-  const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [events, setEvents] = useState<ITimelineEvent[]>([]);
+  const [editingEvent, setEditingEvent] = useState<ITimelineEvent | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<{
     [key: number]: boolean;
   }>({});
@@ -61,15 +49,11 @@ export default function TimelinesAdmin() {
   // Fetch events on component mount
   const fetchEvents = useCallback(async () => {
     try {
-      const response = await fetch("/api/timelines");
-      if (!response.ok) {
-        throw new Error("Failed to fetch timeline events");
-      }
-      const data = await response.json();
-      setEvents(sortEvents(data.events));
+      const events = await timelinesBusiness.getTimelineEvents();
+      setEvents(sortEvents(events));
     } catch (error) {
       console.error("Error fetching timeline events:", error);
-      alert("加载失败，请刷新页面重试");
+      message.error("加载失败，请刷新页面重试");
     }
   }, []);
 
@@ -87,13 +71,11 @@ export default function TimelinesAdmin() {
       description: "",
       links: [],
     });
-    setEditingIndex(null);
     form.resetFields();
   };
 
-  const handleEditEvent = (event: TimelineEvent, index: number) => {
+  const handleEditEvent = (event: ITimelineEvent, index: number) => {
     setEditingEvent({ ...event });
-    setEditingIndex(index);
     form.setFieldsValue({
       date: dayjs(
         `${event.year}-${String(event.month).padStart(2, "0")}-${String(
@@ -105,28 +87,17 @@ export default function TimelinesAdmin() {
       description: event.description,
       tweetUrl: event.tweetUrl || "",
       links: event.links || [],
+      isAdminOnly: event.isAdminOnly || false,
     });
   };
 
-  const handleDeleteEvent = async (event: TimelineEvent) => {
+  const handleDeleteEvent = async (event: ITimelineEvent) => {
     if (!event._id) return;
 
     try {
-      const response = await fetch(`/api/timelines?id=${event._id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete timeline event");
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        message.success("删除成功");
-        await fetchEvents();
-      } else {
-        throw new Error("Failed to delete timeline event");
-      }
+      await timelinesBusiness.deleteTimelineEvent(event._id);
+      message.success("删除成功");
+      await fetchEvents();
     } catch (error) {
       console.error("Error deleting timeline event:", error);
       message.error("删除失败，请重试");
@@ -224,39 +195,27 @@ export default function TimelinesAdmin() {
         tweetUrl: values.tweetUrl,
         imageUrl: finalImageUrl,
         links: values.links,
+        isAdminOnly: values.isAdminOnly || false,
       };
 
-      const method = eventToSave._id ? "PUT" : "POST";
-      const url = "/api/timelines";
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(
-          eventToSave._id ? eventToSave : { events: [eventToSave] }
-        ),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save timeline event");
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        message.success("保存成功");
-        await fetchEvents();
-        setEditingEvent(null);
-        setEditingIndex(null);
-        form.resetFields();
-        if (previewUrl) {
-          URL.revokeObjectURL(previewUrl);
-          setPreviewUrl("");
-        }
-        setSelectedFile(null);
+      // 保存事件
+      if (eventToSave._id) {
+        // 更新事件
+        await timelinesBusiness.updateTimelineEvent(eventToSave);
       } else {
-        throw new Error("Failed to save timeline event");
+        // 创建事件
+        await timelinesBusiness.createTimelineEvent(eventToSave);
       }
+
+      message.success("保存成功");
+      await fetchEvents();
+      setEditingEvent(null);
+      form.resetFields();
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl("");
+      }
+      setSelectedFile(null);
     } catch (error) {
       console.error("Error saving timeline event:", error);
       message.error("保存失败，请重试");
@@ -281,7 +240,7 @@ export default function TimelinesAdmin() {
 
   const handleUpdateLink = (
     index: number,
-    field: keyof TimelineLink,
+    field: keyof ITimelineLink,
     value: string
   ) => {
     if (!editingEvent?.links) return;
@@ -317,7 +276,7 @@ export default function TimelinesAdmin() {
       .padStart(2, "0")}`;
   };
 
-  const sortEvents = (events: TimelineEvent[]) => {
+  const sortEvents = (events: ITimelineEvent[]) => {
     return [...events].sort((a, b) => {
       const dateA = new Date(a.year, a.month - 1, a.day || 1);
       const dateB = new Date(b.year, b.month - 1, b.day || 1);
@@ -386,9 +345,16 @@ export default function TimelinesAdmin() {
         <Typography.Title level={2} style={{ margin: 0 }}>
           时间轴管理
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddEvent}>
-          添加事件
-        </Button>
+        <Space>
+          <Button icon={<PlusOutlined />} onClick={handleAddEvent}>
+            快速添加
+          </Button>
+          <Link href="/admin/timelines/new">
+            <Button type="primary" icon={<FileTextOutlined />}>
+              新建详情
+            </Button>
+          </Link>
+        </Space>
       </div>
 
       <div className="space-y-4">
@@ -400,20 +366,35 @@ export default function TimelinesAdmin() {
                   <Text type="secondary" className="whitespace-nowrap">
                     {event.year}年{event.month}月{event.day}日
                   </Text>
-                  <Typography.Title 
-                    level={4} 
-                    style={{ 
-                      margin: 0,
-                      maxWidth: '100%',
-                    }}
-                    ellipsis={{ 
-                      tooltip: event.title 
-                    }}
-                  >
-                    {event.title}
-                  </Typography.Title>
+                  <div className="flex items-center gap-2">
+                    <Typography.Title
+                      level={4}
+                      style={{
+                        margin: 0,
+                        maxWidth: '100%',
+                      }}
+                      ellipsis={{
+                        tooltip: event.title
+                      }}
+                    >
+                      {event.title}
+                    </Typography.Title>
+                    <div className="flex items-center gap-2">
+                      {event.ossPath && (
+                        <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded text-xs whitespace-nowrap">
+                          <FileTextOutlined className="mr-1" />
+                          有详情
+                        </div>
+                      )}
+                      {event.isAdminOnly && (
+                        <div className="flex items-center bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs whitespace-nowrap">
+                          🔒 仅管理员可见
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </Space>
-                
+
                 {event.location && (
                   <div>
                     <Space>
@@ -465,14 +446,28 @@ export default function TimelinesAdmin() {
                 )}
               </div>
 
-              <Space className="justify-end">
+              <Space className="justify-end" wrap>
                 <Button
-                  type="primary"
+                  type="default"
                   icon={<EditOutlined />}
                   onClick={() => handleEditEvent(event, index)}
                 >
-                  编辑
+                  编辑基本信息
                 </Button>
+                {event._id && (
+                  <Link href={`/admin/timelines/edit/${event._id}/content`}>
+                    <Button
+                      type="primary"
+                      icon={<FileTextOutlined />}
+                      style={{
+                        background: event.ossPath ? '#52c41a' : '#1890ff',
+                        borderColor: event.ossPath ? '#52c41a' : '#1890ff'
+                      }}
+                    >
+                      {event.ossPath ? '编辑详情' : '添加详情'}
+                    </Button>
+                  </Link>
+                )}
                 <Popconfirm
                   title="确定要删除这个时间轴事件吗？"
                   onConfirm={() => handleDeleteEvent(event)}
@@ -494,7 +489,6 @@ export default function TimelinesAdmin() {
         open={!!editingEvent}
         onCancel={() => {
           setEditingEvent(null);
-          setEditingIndex(null);
           form.resetFields();
           if (previewUrl) {
             URL.revokeObjectURL(previewUrl);
@@ -507,7 +501,6 @@ export default function TimelinesAdmin() {
             key="cancel"
             onClick={() => {
               setEditingEvent(null);
-              setEditingIndex(null);
               form.resetFields();
               if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
@@ -535,16 +528,17 @@ export default function TimelinesAdmin() {
           initialValues={{
             date: editingEvent
               ? dayjs(
-                  `${editingEvent.year}-${String(editingEvent.month).padStart(
-                    2,
-                    "0"
-                  )}-${String(editingEvent.day).padStart(2, "0")}`
-                )
+                `${editingEvent.year}-${String(editingEvent.month).padStart(
+                  2,
+                  "0"
+                )}-${String(editingEvent.day).padStart(2, "0")}`
+              )
               : dayjs(),
             title: editingEvent?.title || "",
             location: editingEvent?.location || "",
             description: editingEvent?.description || "",
             tweetUrl: editingEvent?.tweetUrl || "",
+            isAdminOnly: editingEvent?.isAdminOnly || false,
           }}
         >
           <Form.Item
@@ -573,6 +567,14 @@ export default function TimelinesAdmin() {
             rules={[{ required: true, message: "请输入描述" }]}
           >
             <Input.TextArea rows={4} />
+          </Form.Item>
+
+          <Form.Item
+            label="仅管理员可见"
+            name="isAdminOnly"
+            valuePropName="checked"
+          >
+            <Switch />
           </Form.Item>
 
           <Form.Item
