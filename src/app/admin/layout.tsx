@@ -30,12 +30,13 @@ export default function AdminLayout({
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 检查是否是新建或编辑页面（文章、时间轴）
+  // 检查是否是新建或编辑页面（文章、时间轴、项目需求编辑）
   const isFullScreenEditPage =
     pathname === "/admin/articles/new" ||
     pathname.includes("/admin/articles/edit/") ||
     pathname === "/admin/timelines/new" ||
-    pathname.includes("/admin/timelines/edit/");
+    pathname.includes("/admin/timelines/edit/") ||
+    pathname.includes("/admin/project-requirements/edit/");
 
   const handleLogout = async () => {
     try {

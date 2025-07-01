@@ -9,13 +9,15 @@ import {
   Square,
   Clock,
   AlertCircle,
-  Pause,
+  Pause, 
   Plus,
   Filter,
   Calendar,
   Code,
   Briefcase,
-  User
+  User,
+  Edit,
+  FileText
 } from "lucide-react";
 import { IProjectRequirements, ProjectRequirementsStatus, ProjectRequirementsType } from "@/app/model/project-requirements";
 import { projectRequirementsBusiness } from "../business/project-requirements";
@@ -193,10 +195,46 @@ const ProjectRequirementItem = ({
                 {requirement.todos.length} 任务
               </div>
             )}
+
+            {/* 技术方案状态 */}
+            {requirement.techSolutionOssPath && (
+              <div className="flex items-center gap-1 text-xs text-blue-600">
+                <Edit size={14} />
+                有方案
+              </div>
+            )}
+
+            {/* 反思笔记状态 */}
+            {requirement.reflectionOssPath && (
+              <div className="flex items-center gap-1 text-xs text-purple-600">
+                <FileText size={14} />
+                有反思
+              </div>
+            )}
           </div>
 
           {/* 操作按钮 */}
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = `/admin/project-requirements/edit/${requirement._id}/tech-solution`}
+              className={requirement.techSolutionOssPath ? "text-blue-600 hover:text-blue-700 bg-blue-50" : "text-blue-600 hover:text-blue-700"}
+              title={requirement.techSolutionOssPath ? "编辑技术方案" : "创建技术方案"}
+            >
+              <Edit size={14} className="mr-1" />
+              {requirement.techSolutionOssPath ? "方案✓" : "方案"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = `/admin/project-requirements/edit/${requirement._id}/reflection`}
+              className={requirement.reflectionOssPath ? "text-purple-600 hover:text-purple-700 bg-purple-50" : "text-purple-600 hover:text-purple-700"}
+              title={requirement.reflectionOssPath ? "编辑反思笔记" : "创建反思笔记"}
+            >
+              <FileText size={14} className="mr-1" />
+              {requirement.reflectionOssPath ? "反思✓" : "反思"}
+            </Button>
             <Button
               variant="outline"
               size="sm"
