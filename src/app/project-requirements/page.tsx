@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, Tag, message, Modal, Form, Input, DatePicker } from "antd";
+import { Button as UIButton } from "@/components/ui/button";
+import { Select, Tag, message, Modal, Form, Input, DatePicker, Button } from "antd";
+import dayjs from 'dayjs';
+
 import {
   Target,
   Square,
   Clock,
   AlertCircle,
-  Pause, 
+  Pause,
   Plus,
   Filter,
   Calendar,
@@ -17,10 +19,17 @@ import {
   Briefcase,
   User,
   Edit,
-  FileText
+  FileText,
+  Settings,
+  CheckCircle,
+  Circle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { IProjectRequirements, ProjectRequirementsStatus, ProjectRequirementsType } from "@/app/model/project-requirements";
 import { projectRequirementsBusiness } from "../business/project-requirements";
+import { ITodo, TodoStatus } from "@/app/model/todo";
+import { todosBusiness } from "../business/todos";
 
 // 状态配置
 const statusConfig = {
@@ -40,7 +49,7 @@ const typeConfig = {
 };
 
 // 难度级别配置
-const difficultyConfig = {
+const difficultyConfig: Record<number, { label: string; color: string }> = {
   1: { label: "简单", color: "bg-green-100 text-green-800" },
   2: { label: "中等", color: "bg-yellow-100 text-yellow-800" },
   3: { label: "困难", color: "bg-orange-100 text-orange-800" },
@@ -81,6 +90,70 @@ const getDifficultyColor = (level: number) => {
   }
 };
 
+// Todo 优先级颜色配置
+const getTodoPriorityColor = (priority: number) => {
+  switch (priority) {
+    case 1: return 'green';
+    case 2: return 'blue';
+    case 3: return 'gold';
+    case 4: return 'orange';
+    case 5: return 'red';
+    default: return 'default';
+  }
+};
+
+// Todo 状态颜色配置
+const getTodoStatusColor = (status: TodoStatus) => {
+  switch (status) {
+    case TodoStatus.TODO: return 'default';
+    case TodoStatus.IN_PROGRESS: return 'blue';
+    case TodoStatus.COMPLETED: return 'green';
+    case TodoStatus.DELAYED: return 'orange';
+    case TodoStatus.CANCELLED: return 'red';
+    case TodoStatus.DELETED: return 'default';
+    case TodoStatus.ARCHIVED: return 'purple';
+    default: return 'default';
+  }
+};
+
+// Todo 迷你展示组件
+const TodoMiniItem = ({ todo, onStatusChange }: { todo: ITodo; onStatusChange?: (id: string, status: TodoStatus) => void }) => {
+  const handleToggleComplete = () => {
+    if (onStatusChange) {
+      const newStatus = todo.status === TodoStatus.COMPLETED ? TodoStatus.TODO : TodoStatus.COMPLETED;
+      onStatusChange(todo._id!, newStatus);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 py-1 px-2 bg-gray-50 rounded text-sm">
+      <button
+        onClick={handleToggleComplete}
+        className="flex-shrink-0"
+      >
+        {todo.status === TodoStatus.COMPLETED ? (
+          <CheckCircle size={14} className="text-green-600" />
+        ) : (
+          <Circle size={14} className="text-gray-400" />
+        )}
+      </button>
+      <span className={`flex-1 truncate ${todo.status === TodoStatus.COMPLETED ? 'line-through text-gray-500' : ''}`}>
+        {todo.title}
+      </span>
+      <div className="flex gap-1">
+        <Tag color={getTodoStatusColor(todo.status)}>
+          {todo.status === TodoStatus.TODO ? '待办' :
+            todo.status === TodoStatus.IN_PROGRESS ? '进行中' :
+              todo.status === TodoStatus.COMPLETED ? '完成' : '其他'}
+        </Tag>
+        <Tag color={getTodoPriorityColor(todo.priority || 3)}>
+          P{todo.priority || 3}
+        </Tag>
+      </div>
+    </div>
+  );
+};
+
 // 项目需求骨架屏组件
 const ProjectRequirementSkeleton = () => {
   return (
@@ -108,12 +181,22 @@ const ProjectRequirementSkeleton = () => {
 const ProjectRequirementItem = ({
   requirement,
   onStatusChange,
-  onDelete
+  onDelete,
+  onEdit,
+  todoStat,
+  onTodoUpdated
 }: {
   requirement: IProjectRequirements;
   onStatusChange: (id: string, status: ProjectRequirementsStatus) => void;
   onDelete: (id: string) => void;
+  onEdit: (requirement: IProjectRequirements) => void;
+  todoStat?: { total: number; completed: number };
+  onTodoUpdated?: () => void;
 }) => {
+  const [todos, setTodos] = useState<ITodo[]>([]);
+  const [loadingTodos, setLoadingTodos] = useState(false);
+  const [showTodos, setShowTodos] = useState(false);
+
   const StatusIcon = statusConfig[requirement.status].icon;
   const TypeIcon = typeConfig[requirement.type].icon;
   const isOverdue = requirement.endDate && new Date(requirement.endDate) < new Date() &&
@@ -132,6 +215,42 @@ const ProjectRequirementItem = ({
     const newStatus = requirement.status === ProjectRequirementsStatus.COMPLETED ?
       ProjectRequirementsStatus.TODO : ProjectRequirementsStatus.COMPLETED;
     onStatusChange(requirement._id!, newStatus);
+  };
+
+  // 获取项目相关的todo任务
+  const fetchProjectTodos = async () => {
+    if (!requirement._id) return;
+
+    try {
+      setLoadingTodos(true);
+      const projectTodos = await todosBusiness.getProjectTodos(requirement._id);
+      setTodos(projectTodos);
+    } catch (error) {
+      console.error("获取项目todo失败:", error);
+    } finally {
+      setLoadingTodos(false);
+    }
+  };
+
+  // 处理todo状态变更
+  const handleTodoStatusChange = async (todoId: string, status: TodoStatus) => {
+    try {
+      await todosBusiness.updateTodo(todoId, { status });
+      // 重新获取todo列表
+      await fetchProjectTodos();
+      // 通知父组件更新统计
+      onTodoUpdated?.();
+    } catch (error) {
+      console.error("更新todo状态失败:", error);
+    }
+  };
+
+  // 切换显示todo列表
+  const toggleShowTodos = () => {
+    setShowTodos(!showTodos);
+    if (!showTodos && todos.length === 0) {
+      fetchProjectTodos();
+    }
   };
 
   return (
@@ -189,12 +308,18 @@ const ProjectRequirementItem = ({
             )}
 
             {/* 关联 Todo 数量 */}
-            {requirement.todos && requirement.todos.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Target size={14} />
-                {requirement.todos.length} 任务
-              </div>
-            )}
+            <div className="flex items-center gap-1 text-xs text-blue-600 cursor-pointer" onClick={toggleShowTodos}>
+              <Target size={14} />
+              <span>
+                {showTodos ? todos.length : (todoStat?.total || 0)} 任务
+                {todoStat && todoStat.total > 0 && (
+                  <span className="text-green-600 ml-1">
+                    ({todoStat.completed}/{todoStat.total})
+                  </span>
+                )}
+              </span>
+              {showTodos ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </div>
 
             {/* 技术方案状态 */}
             {requirement.techSolutionOssPath && (
@@ -216,8 +341,17 @@ const ProjectRequirementItem = ({
           {/* 操作按钮 */}
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              size="sm"
+              type="default"
+              size="small"
+              onClick={() => onEdit(requirement)}
+              title="编辑基本信息"
+            >
+              <Settings size={14} className="mr-1" />
+              编辑
+            </Button>
+            <Button
+              type="default"
+              size="small"
               onClick={() => window.location.href = `/admin/project-requirements/edit/${requirement._id}/tech-solution`}
               className={requirement.techSolutionOssPath ? "text-blue-600 hover:text-blue-700 bg-blue-50" : "text-blue-600 hover:text-blue-700"}
               title={requirement.techSolutionOssPath ? "编辑技术方案" : "创建技术方案"}
@@ -226,8 +360,8 @@ const ProjectRequirementItem = ({
               {requirement.techSolutionOssPath ? "方案✓" : "方案"}
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              type="default"
+              size="small"
               onClick={() => window.location.href = `/admin/project-requirements/edit/${requirement._id}/reflection`}
               className={requirement.reflectionOssPath ? "text-purple-600 hover:text-purple-700 bg-purple-50" : "text-purple-600 hover:text-purple-700"}
               title={requirement.reflectionOssPath ? "编辑反思笔记" : "创建反思笔记"}
@@ -236,23 +370,51 @@ const ProjectRequirementItem = ({
               {requirement.reflectionOssPath ? "反思✓" : "反思"}
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              type="default"
+              size="small"
               onClick={() => onStatusChange(requirement._id!, ProjectRequirementsStatus.IN_PROGRESS)}
               disabled={requirement.status === ProjectRequirementsStatus.IN_PROGRESS}
             >
               开始
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              type="default"
+              size="small"
               onClick={() => onDelete(requirement._id!)}
-              className="text-red-600 hover:text-red-700"
+              danger
             >
               删除
             </Button>
           </div>
         </div>
+
+        {/* Todo 任务列表 */}
+        {showTodos && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700">相关任务</h4>
+                {loadingTodos && <span className="text-xs text-gray-500">加载中...</span>}
+              </div>
+
+              {!loadingTodos && todos.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {todos.map(todo => (
+                    <TodoMiniItem
+                      key={todo._id}
+                      todo={todo}
+                      onStatusChange={handleTodoStatusChange}
+                    />
+                  ))}
+                </div>
+              ) : !loadingTodos && todos.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-2">
+                  暂无相关任务
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -267,6 +429,10 @@ export default function ProjectRequirementsPage() {
   const [stats, setStats] = useState<any>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createForm] = Form.useForm();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingRequirement, setEditingRequirement] = useState<IProjectRequirements | null>(null);
+  const [editForm] = Form.useForm();
+  const [todoStats, setTodoStats] = useState<Record<string, { total: number; completed: number }>>({});
 
   // 获取项目需求列表
   const fetchProjectRequirements = useCallback(async () => {
@@ -305,6 +471,23 @@ export default function ProjectRequirementsPage() {
     }
   }, []);
 
+  // 获取所有项目的todo统计
+  const fetchTodoStats = useCallback(async () => {
+    try {
+      const allProjectStats = await todosBusiness.getProjectsStats();
+      const statsMap: Record<string, { total: number; completed: number }> = {};
+      allProjectStats.forEach(stat => {
+        statsMap[stat.projectId] = {
+          total: stat.total,
+          completed: stat.completed
+        };
+      });
+      setTodoStats(statsMap);
+    } catch (error) {
+      console.error("获取todo统计失败:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProjectRequirements();
   }, [fetchProjectRequirements]);
@@ -312,6 +495,10 @@ export default function ProjectRequirementsPage() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  useEffect(() => {
+    fetchTodoStats();
+  }, [fetchTodoStats]);
 
   // 处理状态变更
   const handleStatusChange = async (id: string, status: ProjectRequirementsStatus) => {
@@ -336,6 +523,53 @@ export default function ProjectRequirementsPage() {
       message.error("删除失败: " + error);
     }
   };
+
+  // 处理编辑
+  const handleEdit = (requirement: IProjectRequirements) => {
+    setEditingRequirement(requirement);
+    setIsEditModalOpen(true);
+    editForm.setFieldsValue({
+      title: requirement.title,
+      description: requirement.description,
+      type: requirement.type,
+      difficultyLevel: requirement.difficultyLevel,
+      difficulty: requirement.difficulty,
+      startDate: requirement.startDate ? dayjs(requirement.startDate) : null,
+      endDate: requirement.endDate ? dayjs(requirement.endDate) : null,
+    });
+  };
+
+  // 处理编辑项目需求
+  const handleEditProjectRequirement = async (values: any) => {
+    if (!editingRequirement?._id) return;
+
+    try {
+      const requirementData = {
+        title: values.title,
+        description: values.description,
+        type: values.type,
+        difficultyLevel: values.difficultyLevel || 2,
+        ...(values.startDate && { startDate: values.startDate.toDate() }),
+        ...(values.endDate && { endDate: values.endDate.toDate() }),
+        ...(values.difficulty && { difficulty: values.difficulty }),
+      };
+
+      await projectRequirementsBusiness.updateProjectRequirement(editingRequirement._id, requirementData);
+      message.success("更新成功");
+      setIsEditModalOpen(false);
+      setEditingRequirement(null);
+      editForm.resetFields();
+      fetchProjectRequirements();
+      fetchStats();
+    } catch (error) {
+      message.error("更新失败: " + error);
+    }
+  };
+
+  // 处理todo更新后的回调
+  const handleTodoUpdated = useCallback(() => {
+    fetchTodoStats();
+  }, [fetchTodoStats]);
 
   // 处理创建项目需求
   const handleCreateProjectRequirement = async (values: any) => {
@@ -373,10 +607,10 @@ export default function ProjectRequirementsPage() {
             <p className="text-gray-600 mt-1">管理您的项目需求和开发计划</p>
           </div>
           <Button
-            className="flex items-center gap-2"
+            type="primary"
             onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus size={16} />}
           >
-            <Plus size={16} />
             新建需求
           </Button>
         </div>
@@ -470,6 +704,9 @@ export default function ProjectRequirementsPage() {
                 requirement={requirement}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
+                todoStat={todoStats[requirement._id!]}
+                onTodoUpdated={handleTodoUpdated}
               />
             ))}
           </div>
@@ -582,6 +819,114 @@ export default function ProjectRequirementsPage() {
               </Button>
               <Button type="primary" htmlType="submit">
                 创建需求
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 编辑项目需求模态框 */}
+      <Modal
+        title="编辑项目需求"
+        open={isEditModalOpen}
+        onCancel={() => {
+          setIsEditModalOpen(false);
+          setEditingRequirement(null);
+          editForm.resetFields();
+        }}
+        footer={null}
+        width={700}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleEditProjectRequirement}
+        >
+          <Form.Item
+            name="title"
+            label="需求标题"
+            rules={[{ required: true, message: '请输入需求标题' }]}
+          >
+            <Input placeholder="输入需求标题" />
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="需求描述"
+            rules={[{ required: true, message: '请输入需求描述' }]}
+          >
+            <Input.TextArea rows={3} placeholder="输入需求描述" />
+          </Form.Item>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="type"
+              label="需求类型"
+              rules={[{ required: true, message: '请选择需求类型' }]}
+              style={{ flex: 1 }}
+            >
+              <Select placeholder="选择需求类型">
+                <Select.Option value={ProjectRequirementsType.work}>工作</Select.Option>
+                <Select.Option value={ProjectRequirementsType.personal}>个人</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="difficultyLevel"
+              label="难度级别"
+              style={{ flex: 1 }}
+            >
+              <Select placeholder="选择难度级别">
+                <Select.Option value={1}>简单</Select.Option>
+                <Select.Option value={2}>中等</Select.Option>
+                <Select.Option value={3}>困难</Select.Option>
+                <Select.Option value={4}>极难</Select.Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            name="difficulty"
+            label="技术难点"
+          >
+            <Input.TextArea rows={2} placeholder="描述技术难点（可选）" />
+          </Form.Item>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="startDate"
+              label="开始日期"
+              style={{ flex: 1 }}
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                placeholder="选择开始日期"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="endDate"
+              label="结束日期"
+              style={{ flex: 1 }}
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                placeholder="选择结束日期"
+              />
+            </Form.Item>
+          </div>
+
+          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <Button onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingRequirement(null);
+                editForm.resetFields();
+              }}>
+                取消
+              </Button>
+              <Button type="primary" htmlType="submit">
+                更新需求
               </Button>
             </div>
           </Form.Item>
