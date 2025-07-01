@@ -40,8 +40,21 @@ const EditReflection = ({ params }: { params: { id: string } }) => {
             const contentResponse = await fetch(`/api/proxy-content?url=${encodeURIComponent(response.reflectionOssPath)}`);
             if (contentResponse.ok) {
               const contentText = await contentResponse.text();
-              setInitialContentState(contentText);
-              setContent(contentText);
+
+              // 尝试解析 JSON，如果是 JSON 格式则提取 content 字段
+              let markdownContent = contentText;
+              try {
+                const parsedContent = JSON.parse(contentText);
+                if (parsedContent && typeof parsedContent.content === 'string') {
+                  markdownContent = parsedContent.content;
+                }
+              } catch (jsonError) {
+                // 如果不是 JSON 格式，直接使用原内容
+                console.log("内容不是 JSON 格式，直接使用原内容");
+              }
+
+              setInitialContentState(markdownContent);
+              setContent(markdownContent);
             }
           } catch (error) {
             console.error("获取反思笔记内容失败:", error);
