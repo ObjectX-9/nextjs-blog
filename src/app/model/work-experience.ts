@@ -31,5 +31,5 @@ const workExperienceSchema = new Schema<IWorkExperience>(
 );
 
 export const WorkExperience =
-  mongoose.models.WorkExperience ||
+  (mongoose.models && mongoose.models.WorkExperience) ||
   mongoose.model<IWorkExperience>("WorkExperience", workExperienceSchema);

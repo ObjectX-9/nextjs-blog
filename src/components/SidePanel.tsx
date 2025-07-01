@@ -21,6 +21,8 @@ import {
   BookOpen,
   Blocks,
   Lightbulb, // 添加 Lightbulb 图标
+  CheckSquare, // 添加 CheckSquare 图标用于 Todo
+  Target, // 添加 Target 图标用于项目需求
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -49,6 +51,8 @@ const navList = [
   { title: "导航站", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
   { title: "时间笔记", href: "/timeline", prefix: <History size={16} /> },
   { title: "项目", href: "/projects", prefix: <Folder size={16} /> },
+  { title: "待办事项", href: "/todos", prefix: <CheckSquare size={16} /> },
+  { title: "项目需求", href: "/project-requirements", prefix: <Target size={16} /> },
   { title: "demo", href: "/demos", prefix: <Blocks size={16} /> },
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];

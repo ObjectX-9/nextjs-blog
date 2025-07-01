@@ -10,6 +10,8 @@ import { ISite } from "@/app/model/site";
 import { IWorkspaceItem } from "@/app/model/workspace-item";
 import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
 import { ITimelineEvent } from "@/app/model/timeline";
+import { ITodo } from "@/app/model/todo";
+import { IProjectRequirements } from "@/app/model/project-requirements";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -63,3 +65,9 @@ export const bookmarkCategoryDb = createDbHelper<IBookmarkCategory>("bookmarkCat
 
 // 时间线事件
 export const timelineDb = createDbHelper<ITimelineEvent>("timelines");
+
+// Todo 任务
+export const todoDb = createDbHelper<ITodo>("todos");
+
+// 项目需求
+export const projectRequirementsDb = createDbHelper<IProjectRequirements>("projectRequirements");

@@ -20,4 +20,4 @@ const socialLinkSchema = new Schema<ISocialLink>({
   timestamps: true
 });
 
-export const SocialLink = mongoose.models.SocialLink || mongoose.model<ISocialLink>('SocialLink', socialLinkSchema);
+export const SocialLink = (mongoose.models && mongoose.models.SocialLink) || mongoose.model<ISocialLink>('SocialLink', socialLinkSchema);

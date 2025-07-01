@@ -32,5 +32,5 @@ const workspaceItemSchema = new Schema<IWorkspaceItemDocument>(
 );
 
 export const WorkspaceItem =
-  mongoose.models.WorkspaceItem ||
+  (mongoose.models && mongoose.models.WorkspaceItem) ||
   mongoose.model<IWorkspaceItemDocument>("WorkspaceItem", workspaceItemSchema);

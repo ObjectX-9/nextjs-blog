@@ -24,4 +24,4 @@ const friendSchema = new Schema<IFriend>({
   timestamps: true
 });
 
-export const Friend = mongoose.models.Friend || mongoose.model<IFriend>('Friend', friendSchema);
+export const Friend = (mongoose.models && mongoose.models.Friend) || mongoose.model<IFriend>('Friend', friendSchema);

@@ -17,4 +17,4 @@ const stackSchema = new Schema<IStack>({
   timestamps: true
 });
 
-export const Stack = mongoose.models.Stack || mongoose.model<IStack>('Stack', stackSchema);
+export const Stack = (mongoose.models && mongoose.models.Stack) || mongoose.model<IStack>('Stack', stackSchema);

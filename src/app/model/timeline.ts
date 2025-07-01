@@ -63,4 +63,4 @@ const timelineEventSchema = new Schema<ITimelineEvent>({
   timestamps: true
 });
 
-export const TimelineEvent = mongoose.models.TimelineEvent || mongoose.model<ITimelineEvent>('TimelineEvent', timelineEventSchema);
+export const TimelineEvent = (mongoose.models && mongoose.models.TimelineEvent) || mongoose.model<ITimelineEvent>('TimelineEvent', timelineEventSchema);

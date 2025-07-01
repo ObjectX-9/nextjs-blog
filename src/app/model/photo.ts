@@ -67,4 +67,4 @@ const photoSchema = new Schema<IPhoto>(
 );
 
 export const Photo =
-  mongoose.models.Photo || mongoose.model<IPhoto>("Photo", photoSchema);
+  (mongoose.models && mongoose.models.Photo) || mongoose.model<IPhoto>("Photo", photoSchema);

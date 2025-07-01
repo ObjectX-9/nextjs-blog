@@ -79,5 +79,5 @@ const projectCategorySchema = new Schema<IProjectCategory>({
 });
 
 // Check if models exist before creating new ones
-export const Project = mongoose.models.Project || mongoose.model<IProject>('Project', projectSchema);
-export const ProjectCategory = mongoose.models.ProjectCategory || mongoose.model<IProjectCategory>('ProjectCategory', projectCategorySchema);
+export const Project = (mongoose.models && mongoose.models.Project) || mongoose.model<IProject>('Project', projectSchema);
+export const ProjectCategory = (mongoose.models && mongoose.models.ProjectCategory) || mongoose.model<IProjectCategory>('ProjectCategory', projectCategorySchema);
