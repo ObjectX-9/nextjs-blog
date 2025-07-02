@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Article } from "@/app/model/article";
-import { MarkdownRenderer } from "@/components/customMdRender/core/MarkdownRenderer";
 import "@/styles/markdown.css";
 import { useParams, useRouter } from "next/navigation";
 import { useSiteStore } from "@/store/site";
@@ -11,6 +11,23 @@ import { useLocalCache } from "@/app/hooks/useLocalCache";
 import { articlesService } from "@/app/business/articles";
 import { verifyService } from "@/app/business/verify";
 import { scrollToHeading } from "@/utils/heading-utils";
+
+// 动态导入 MarkdownRenderer 组件，禁用 SSR
+const MarkdownRenderer = dynamic(
+  () => import("@/components/customMdRender/core/MarkdownRenderer").then(mod => ({ default: mod.MarkdownRenderer })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="prose max-w-none">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+        </div>
+      </div>
+    )
+  }
+);
 
 // 缓存键常量
 const CACHE_KEYS = {

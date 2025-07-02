@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Layout,
   Button,
@@ -13,8 +14,22 @@ import {
 } from "antd";
 
 import { ArticleStatus, ArticleCountByCategory } from "@/app/model/article";
-import { MarkdownEditor } from "@/components/customMdRender/components/MarkdownEditor";
 import "@/styles/markdown.css";
+
+const MarkdownEditor = dynamic(
+  () => import('@/components/customMdRender/components/MarkdownEditor').then(mod => ({ default: mod.MarkdownEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center">
+          <Spin size="large" />
+          <div className="mt-2 text-gray-600">正在加载编辑器...</div>
+        </div>
+      </div>
+    )
+  }
+);
 import { articlesService } from "@/app/business/articles";
 
 const { Header, Content } = Layout;
