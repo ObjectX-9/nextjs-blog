@@ -29,22 +29,22 @@ import dayjs from "dayjs";
 
 // 状态配置
 const statusConfig = {
-  [TodoStatus.TODO]: { label: "待办", color: "bg-gray-100 text-gray-800", icon: Square },
-  [TodoStatus.IN_PROGRESS]: { label: "进行中", color: "bg-blue-100 text-blue-800", icon: Clock },
-  [TodoStatus.COMPLETED]: { label: "已完成", color: "bg-green-100 text-green-800", icon: CheckSquare },
-  [TodoStatus.DELAYED]: { label: "已延期", color: "bg-yellow-100 text-yellow-800", icon: Pause },
-  [TodoStatus.CANCELLED]: { label: "已取消", color: "bg-red-100 text-red-800", icon: AlertCircle },
+  [TodoStatus.TODO]: { label: "待办", color: "bg-gray-100 text-gray-700", icon: Square },
+  [TodoStatus.IN_PROGRESS]: { label: "进行中", color: "bg-gray-200 text-gray-800", icon: Clock },
+  [TodoStatus.COMPLETED]: { label: "已完成", color: "bg-gray-700 text-white", icon: CheckSquare },
+  [TodoStatus.DELAYED]: { label: "已延期", color: "bg-gray-400 text-white", icon: Pause },
+  [TodoStatus.CANCELLED]: { label: "已取消", color: "bg-gray-300 text-gray-800", icon: AlertCircle },
   [TodoStatus.DELETED]: { label: "已删除", color: "bg-gray-100 text-gray-500", icon: AlertCircle },
-  [TodoStatus.ARCHIVED]: { label: "已归档", color: "bg-purple-100 text-purple-800", icon: CheckSquare },
+  [TodoStatus.ARCHIVED]: { label: "已归档", color: "bg-gray-600 text-white", icon: CheckSquare },
 };
 
 // 优先级配置
 const priorityConfig: Record<number, { label: string; color: string }> = {
-  1: { label: "低", color: "bg-green-100 text-green-800" },
-  2: { label: "中低", color: "bg-blue-100 text-blue-800" },
-  3: { label: "中", color: "bg-yellow-100 text-yellow-800" },
-  4: { label: "高", color: "bg-orange-100 text-orange-800" },
-  5: { label: "紧急", color: "bg-red-100 text-red-800" },
+  1: { label: "低", color: "bg-gray-100 text-gray-700" },
+  2: { label: "中低", color: "bg-gray-200 text-gray-800" },
+  3: { label: "中", color: "bg-gray-300 text-gray-800" },
+  4: { label: "高", color: "bg-gray-500 text-white" },
+  5: { label: "紧急", color: "bg-gray-800 text-white" },
 };
 
 // 获取状态颜色
@@ -308,24 +308,24 @@ const DailyTodoModule = ({
       {/* 内容区域 */}
       <div className="space-y-6">
         {/* 今日待办 - 包含逾期和今日任务 */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 bg-gray-600 rounded-full"></div>
-              <h3 className="text-sm font-medium text-gray-700">今日待办</h3>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-gray-800 rounded-full"></div>
+              <h3 className="text-sm font-semibold text-gray-800">今日待办</h3>
             </div>
-            <span className="text-sm text-gray-700 font-medium">{overdueTodos.length + todayTodos.length}项</span>
+            <span className="text-sm text-gray-700 font-medium bg-gray-200 px-3 py-1 rounded-full">{overdueTodos.length + todayTodos.length}项</span>
           </div>
 
           {overdueTodos.length > 0 || todayTodos.length > 0 ? (
-            <div className="divide-y divide-gray-100 p-1">
+            <div className="divide-y divide-gray-100">
               {/* 逾期任务 */}
               {overdueTodos.length > 0 && (
-                <div className="py-2 px-3 bg-gray-50">
-                  <div className="flex items-center justify-between mb-1">
+                <div className="py-3 px-5 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-1 h-4 bg-gray-400 rounded-full"></div>
-                      <h4 className="text-xs font-medium text-gray-500">逾期任务 ({overdueTodos.length})</h4>
+                      <div className="w-1 h-4 bg-gray-600 rounded-full"></div>
+                      <h4 className="text-xs font-medium text-gray-700">逾期任务 ({overdueTodos.length})</h4>
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -345,10 +345,10 @@ const DailyTodoModule = ({
 
               {/* 今日任务 */}
               {todayTodos.length > 0 && (
-                <div className="py-2 px-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-1 h-4 bg-gray-300 rounded-full"></div>
-                    <h4 className="text-xs font-medium text-gray-500">今日截止 ({todayTodos.length})</h4>
+                <div className="py-3 px-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1 h-4 bg-gray-500 rounded-full"></div>
+                    <h4 className="text-xs font-medium text-gray-700">今日截止 ({todayTodos.length})</h4>
                   </div>
                   <div className="space-y-1">
                     {todayTodos.map(todo => (
@@ -366,7 +366,8 @@ const DailyTodoModule = ({
               )}
             </div>
           ) : (
-            <div className="text-center py-6 text-gray-400">
+              <div className="text-center py-8 text-gray-400">
+                <CheckSquare size={24} className="mx-auto mb-2 text-gray-300" />
               <div className="text-sm">今日无待办任务</div>
             </div>
           )}
@@ -374,31 +375,31 @@ const DailyTodoModule = ({
 
         {/* 逾期项目分类 */}
         {overdueTodos.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-5 bg-gray-700 rounded-full"></div>
-                <h3 className="text-sm font-medium text-gray-700">逾期项目分类</h3>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-gray-100 to-gray-200 border-b border-gray-300">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-6 bg-gray-700 rounded-full"></div>
+                <h3 className="text-sm font-semibold text-gray-800">逾期项目分类</h3>
               </div>
-              <span className="text-sm text-gray-700 font-medium">{overdueProjectGroups.length}项</span>
+              <span className="text-sm text-gray-700 font-medium bg-gray-300 px-3 py-1 rounded-full">{overdueProjectGroups.length}项</span>
             </div>
 
             <div className="divide-y divide-gray-100">
               {overdueProjectGroups.map((group, index) => (
-                <div key={group.project?._id || 'no-project'} className="py-3 px-4">
-                  <div className="flex items-center justify-between mb-2">
+                <div key={group.project?._id || 'no-project'} className="py-4 px-5">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       {group.project ? (
-                        <span className="text-sm font-medium text-gray-700">{group.project.title}</span>
+                        <span className="text-sm font-medium text-gray-800">{group.project.title}</span>
                       ) : (
-                        <span className="text-sm font-medium text-gray-500">未分类任务</span>
+                          <span className="text-sm font-medium text-gray-600">未分类任务</span>
                       )}
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
+                      <span className="text-xs bg-gray-100 px-2.5 py-1 rounded-full text-gray-600 font-medium">
                         {group.todos.length}项
                       </span>
                     </div>
                   </div>
-                  <div className="space-y-1 pl-2">
+                  <div className="space-y-1 pl-3">
                     {group.todos.map(todo => (
                       <DailyTodoItem
                         key={todo._id}
@@ -418,15 +419,15 @@ const DailyTodoModule = ({
 
         {/* 即将到期 */}
         {upcomingTodos.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-5 bg-gray-300 rounded-full"></div>
-                <h3 className="text-sm font-medium text-gray-700">即将到期</h3>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-6 bg-gray-600 rounded-full"></div>
+                <h3 className="text-sm font-semibold text-gray-800">即将到期</h3>
               </div>
-              <span className="text-sm text-gray-700 font-medium">{upcomingTodos.length}项</span>
+              <span className="text-sm text-gray-700 font-medium bg-gray-200 px-3 py-1 rounded-full">{upcomingTodos.length}项</span>
             </div>
-            <div className="divide-y divide-gray-100 p-1">
+            <div className="divide-y divide-gray-100">
               {upcomingTodos.map(todo => (
                 <DailyTodoItem
                   key={todo._id}
@@ -508,29 +509,29 @@ const TodoItem = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg border ${isOverdue ? 'border-gray-300' : 'border-gray-200'} p-4 hover:shadow-sm transition-shadow`}>
+    <div className={`bg-white rounded-xl border ${isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'} p-5 hover:shadow-lg hover:shadow-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm`}>
       <div className="space-y-3">
         {/* 标题和状态 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <button
               onClick={handleStatusToggle}
-              className="p-1 hover:bg-gray-50 rounded"
+              className="p-1 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              <StatusIcon size={18} className={todo.status === TodoStatus.COMPLETED ? 'text-gray-600' : 'text-gray-400'} />
+              <StatusIcon size={18} className={todo.status === TodoStatus.COMPLETED ? 'text-green-600' : 'text-gray-400'} />
             </button>
-            <h3 className={`font-medium ${todo.status === TodoStatus.COMPLETED ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+            <h3 className={`font-medium ${todo.status === TodoStatus.COMPLETED ? 'line-through text-gray-400' : 'text-gray-800'}`}>
               {todo.title}
             </h3>
           </div>
-          <span className={`px-2 py-1 rounded-md text-xs font-medium ${getStatusTagStyle(todo.status)}`}>
+          <span className={`px-3 py-1.5 rounded-lg text-xs font-medium ${getStatusTagStyle(todo.status)}`}>
             {statusConfig[todo.status].label}
           </span>
         </div>
 
         {/* 描述 */}
         {todo.description && (
-          <p className="text-sm text-gray-500 ml-7">{todo.description}</p>
+          <p className="text-sm text-gray-600 ml-7 leading-relaxed">{todo.description}</p>
         )}
 
         {/* 底部信息 */}
@@ -538,24 +539,24 @@ const TodoItem = ({
           <div className="flex items-center gap-2">
             {/* 优先级 */}
             {todo.priority && (
-              <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                优先级 {todo.priority}
+              <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${priorityConfig[todo.priority].color}`}>
+                P{todo.priority} · {priorityConfig[todo.priority].label}
               </span>
             )}
 
             {/* 截止日期 */}
             {todo.dueDate && (
-              <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-gray-700' : 'text-gray-500'}`}>
-                <Calendar size={14} />
+              <div className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg ${isOverdue ? 'bg-gray-400 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                <Calendar size={12} />
                 {formatDate(todo.dueDate)}
               </div>
             )}
 
             {/* 子任务数量 */}
             {todo.subTasks && todo.subTasks.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <User size={14} />
-                {todo.subTasks.length}
+              <div className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-gray-200 text-gray-700">
+                <User size={12} />
+                {todo.subTasks.length} 子任务
               </div>
             )}
           </div>
@@ -567,6 +568,7 @@ const TodoItem = ({
               size="small"
               onClick={() => onStatusChange(todo._id!, TodoStatus.IN_PROGRESS)}
               disabled={todo.status === TodoStatus.IN_PROGRESS}
+              className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
             >
               开始
             </Button>
@@ -574,6 +576,7 @@ const TodoItem = ({
               type="text"
               size="small"
               onClick={() => onEdit(todo)}
+              className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
             >
               编辑
             </Button>
@@ -581,7 +584,7 @@ const TodoItem = ({
               type="text"
               size="small"
               onClick={() => onDelete(todo._id!)}
-              danger
+              className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
             >
               删除
             </Button>
@@ -621,48 +624,48 @@ const TimelineTaskItem = ({
   return (
     <div className="flex group">
       {/* 左侧时间线 */}
-      <div className="flex flex-col items-center mr-4">
-        <div className="w-3 h-3 rounded-full bg-gray-300 mb-1"></div>
+      <div className="flex flex-col items-center mr-6">
+        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-gray-500 to-gray-700 shadow-sm mb-1 border-2 border-white"></div>
         <div className="w-0.5 bg-gray-200 flex-1"></div>
       </div>
 
       {/* 任务内容 */}
-      <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 mb-4 hover:shadow-sm transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+      <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 mb-4 hover:shadow-lg hover:shadow-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={handleToggleComplete}
-              className="p-1 rounded-full hover:bg-gray-50"
+              className="p-1 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {todo.status === TodoStatus.COMPLETED ? (
-                <CheckSquare size={16} className="text-gray-600" />
+                <CheckSquare size={16} className="text-green-600" />
               ) : (
                 <Square size={16} className="text-gray-300" />
               )}
             </button>
-            <h4 className={`text-sm font-medium ${todo.status === TodoStatus.COMPLETED ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+            <h4 className={`text-sm font-medium ${todo.status === TodoStatus.COMPLETED ? 'line-through text-gray-400' : 'text-gray-800'}`}>
               {todo.title}
             </h4>
           </div>
           <div className="flex items-center gap-2">
             {todo.priority && todo.priority >= 4 && (
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-xs font-medium text-gray-700">
+              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-xs font-semibold ${priorityConfig[todo.priority].color}`}>
                 P{todo.priority}
               </span>
             )}
             <button
               onClick={() => onEdit(todo)}
-              className="p-1 rounded-full hover:bg-gray-50 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 opacity-0 group-hover:opacity-100 transition-all duration-200"
             >
               <Edit size={14} />
             </button>
           </div>
         </div>
         {todo.description && (
-          <p className="text-xs text-gray-500 ml-7 mb-2">{todo.description}</p>
+          <p className="text-xs text-gray-600 ml-8 mb-3 leading-relaxed">{todo.description}</p>
         )}
-        <div className="flex items-center justify-between">
-          <span className={`text-xs px-2 py-0.5 rounded-md ${getStatusTagStyle(todo.status)}`}>
+        <div className="flex items-center justify-between ml-8">
+          <span className={`text-xs px-2.5 py-1 rounded-lg font-medium ${getStatusTagStyle(todo.status)}`}>
             {statusConfig[todo.status].label}
           </span>
         </div>
@@ -1006,51 +1009,68 @@ export default function TodosPage() {
         </div>
 
         {/* 分类列表 - 美化版 */}
-        <div className="py-4">
-          <h3 className="px-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">视图</h3>
-          <div
-            className={`px-4 py-2.5 flex items-center gap-3 cursor-pointer mb-1 rounded-r-lg transition-colors ${activeTab === 'daily'
-              ? 'bg-gray-100 text-gray-800 border-l-2 border-gray-500'
-              : 'hover:bg-gray-50 border-l-2 border-transparent'
-              }`}
-            onClick={() => setActiveTab('daily')}
-          >
-            <div className={`p-1.5 rounded-md ${activeTab === 'daily' ? 'bg-gray-200' : 'bg-transparent'}`}>
-              <Sun size={16} className={activeTab === 'daily' ? 'text-gray-700' : 'text-gray-500'} />
+        <div className="py-4 px-3">
+          <h3 className="px-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">视图</h3>
+          <div className="space-y-2">
+            <div
+              className={`group relative flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-all duration-200 ${activeTab === 'daily'
+                ? 'bg-white shadow-md border border-gray-300 text-gray-800'
+                : 'hover:bg-gray-50 text-gray-600 hover:text-gray-800'
+                }`}
+              onClick={() => setActiveTab('daily')}
+            >
+              <div className={`relative p-2 rounded-lg transition-all duration-200 ${activeTab === 'daily'
+                ? 'bg-gray-800 shadow-sm'
+                : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                <Sun size={16} className={activeTab === 'daily' ? 'text-white' : 'text-gray-600'} />
+              </div>
+              <span className="text-sm font-medium">今日待办</span>
+              {activeTab === 'daily' && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gray-800 rounded-r"></div>
+              )}
             </div>
-            <span className="text-sm font-medium">今日待办</span>
-          </div>
 
-          <div
-            className={`px-4 py-2.5 flex items-center gap-3 cursor-pointer mb-1 rounded-r-lg transition-colors ${activeTab === 'all'
-              ? 'bg-gray-100 text-gray-800 border-l-2 border-gray-500'
-              : 'hover:bg-gray-50 border-l-2 border-transparent'
-              }`}
-            onClick={() => setActiveTab('all')}
-          >
-            <div className={`p-1.5 rounded-md ${activeTab === 'all' ? 'bg-gray-200' : 'bg-transparent'}`}>
-              <List size={16} className={activeTab === 'all' ? 'text-gray-700' : 'text-gray-500'} />
+            <div
+              className={`group relative flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-all duration-200 ${activeTab === 'all'
+                ? 'bg-white shadow-md border border-gray-300 text-gray-800'
+                : 'hover:bg-gray-50 text-gray-600 hover:text-gray-800'
+                }`}
+              onClick={() => setActiveTab('all')}
+            >
+              <div className={`relative p-2 rounded-lg transition-all duration-200 ${activeTab === 'all'
+                ? 'bg-gray-700 shadow-sm'
+                : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                <List size={16} className={activeTab === 'all' ? 'text-white' : 'text-gray-600'} />
+              </div>
+              <span className="text-sm font-medium">全部任务</span>
+              {activeTab === 'all' && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gray-700 rounded-r"></div>
+              )}
             </div>
-            <span className="text-sm font-medium">全部任务</span>
-          </div>
 
-          <div
-            className={`px-4 py-2.5 flex items-center gap-3 cursor-pointer mb-1 rounded-r-lg transition-colors ${activeTab === 'timeline'
-              ? 'bg-gray-100 text-gray-800 border-l-2 border-gray-500'
-              : 'hover:bg-gray-50 border-l-2 border-transparent'
-              }`}
-            onClick={() => {
-              setActiveTab('timeline');
-              // 切换到时间线视图时，重新获取数据
-              if (activeTab !== 'timeline') {
-                fetchTodos();
-              }
-            }}
-          >
-            <div className={`p-1.5 rounded-md ${activeTab === 'timeline' ? 'bg-gray-200' : 'bg-transparent'}`}>
-              <BarChart size={16} className={activeTab === 'timeline' ? 'text-gray-700' : 'text-gray-500'} />
+            <div
+              className={`group relative flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-all duration-200 ${activeTab === 'timeline'
+                ? 'bg-white shadow-md border border-gray-300 text-gray-800'
+                : 'hover:bg-gray-50 text-gray-600 hover:text-gray-800'
+                }`}
+              onClick={() => {
+                setActiveTab('timeline');
+                // 切换到时间线视图时，重新获取数据
+                if (activeTab !== 'timeline') {
+                  fetchTodos();
+                }
+              }}
+            >
+              <div className={`relative p-2 rounded-lg transition-all duration-200 ${activeTab === 'timeline'
+                ? 'bg-gray-600 shadow-sm'
+                : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                <BarChart size={16} className={activeTab === 'timeline' ? 'text-white' : 'text-gray-600'} />
+              </div>
+              <span className="text-sm font-medium">时间线</span>
+              {activeTab === 'timeline' && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gray-600 rounded-r"></div>
+              )}
             </div>
-            <span className="text-sm font-medium">时间线</span>
           </div>
         </div>
 
@@ -1124,19 +1144,22 @@ export default function TodosPage() {
           {activeTab === 'all' && (
             <div className="space-y-4">
               {/* 筛选器 */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Filter size={16} className="text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">筛选：</span>
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <Filter size={16} className="text-gray-600" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-800">筛选条件</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                  <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <Select
                       value={selectedProject}
                       onChange={setSelectedProject}
                       style={{ width: 200 }}
                       placeholder="选择项目"
+                      className="rounded-lg"
                     >
                       <Select.Option value="all">所有项目</Select.Option>
                       {availableProjects.map(project => (
@@ -1151,6 +1174,7 @@ export default function TodosPage() {
                       onChange={setSelectedStatus}
                       style={{ width: 200 }}
                       placeholder="选择状态"
+                      className="rounded-lg"
                     >
                       <Select.Option value="all">所有状态</Select.Option>
                       {Object.entries(statusConfig).map(([status, config]) => (
@@ -1278,10 +1302,20 @@ export default function TodosPage() {
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                  <CheckSquare size={40} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">暂无待办事项</h3>
-                  <p className="text-gray-500">创建您的第一个任务开始管理工作吧！</p>
+                    <div className="text-center py-16 bg-white rounded-xl border border-gray-200 shadow-sm">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckSquare size={32} className="text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">暂无待办事项</h3>
+                      <p className="text-gray-500 mb-6">创建您的第一个任务开始管理工作吧！</p>
+                      <Button
+                        type="primary"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        icon={<Plus size={16} />}
+                        className="bg-gray-800 hover:bg-gray-900 border-gray-800 hover:border-gray-900"
+                      >
+                        创建任务
+                      </Button>
                 </div>
               )}
             </div>
@@ -1291,19 +1325,22 @@ export default function TodosPage() {
           {activeTab === 'timeline' && (
             <div className="space-y-6">
               {/* 筛选器 */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Filter size={16} className="text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">筛选：</span>
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <Filter size={16} className="text-gray-600" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-800">筛选条件</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                  <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <Select
                       value={selectedProject}
                       onChange={setSelectedProject}
                       style={{ width: 200 }}
                       placeholder="选择项目"
+                      className="rounded-lg"
                     >
                       <Select.Option value="all">所有项目</Select.Option>
                       {availableProjects.map(project => (
@@ -1318,6 +1355,7 @@ export default function TodosPage() {
                       onChange={setSelectedStatus}
                       style={{ width: 200 }}
                       placeholder="选择状态"
+                      className="rounded-lg"
                     >
                       <Select.Option value="all">所有状态</Select.Option>
                       {Object.entries(statusConfig).map(([status, config]) => (
@@ -1398,11 +1436,21 @@ export default function TodosPage() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                  <Calendar size={40} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">暂无待办事项</h3>
-                  <p className="text-gray-500">创建您的第一个任务开始管理工作吧！</p>
+                ) : (
+                    <div className="text-center py-16 bg-white rounded-xl border border-gray-200 shadow-sm">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckSquare size={32} className="text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">暂无待办事项</h3>
+                      <p className="text-gray-500 mb-6">创建您的第一个任务开始管理工作吧！</p>
+                      <Button
+                        type="primary"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        icon={<Plus size={16} />}
+                        className="bg-gray-800 hover:bg-gray-900 border-gray-800 hover:border-gray-900"
+                      >
+                        创建任务
+                      </Button>
                 </div>
               )}
             </div>

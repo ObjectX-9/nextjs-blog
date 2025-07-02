@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button as UIButton } from "@/components/ui/button";
-import { Select, Tag, message, Modal, Form, Input, DatePicker, Button } from "antd";
+import { Select, Tag, message, Modal, Form, Input, DatePicker, Button, Dropdown } from "antd";
 import dayjs from 'dayjs';
 
 import {
@@ -41,27 +41,27 @@ import { articlesService } from "../business/articles";
 
 // 状态配置
 const statusConfig = {
-  [ProjectRequirementsStatus.TODO]: { label: "待办", color: "bg-gray-100 text-gray-800", icon: Square },
-  [ProjectRequirementsStatus.IN_PROGRESS]: { label: "进行中", color: "bg-blue-100 text-blue-800", icon: Clock },
-  [ProjectRequirementsStatus.COMPLETED]: { label: "已完成", color: "bg-green-100 text-green-800", icon: Target },
-  [ProjectRequirementsStatus.DELAYED]: { label: "已延期", color: "bg-yellow-100 text-yellow-800", icon: Pause },
-  [ProjectRequirementsStatus.CANCELLED]: { label: "已取消", color: "bg-red-100 text-red-800", icon: AlertCircle },
+  [ProjectRequirementsStatus.TODO]: { label: "待办", color: "bg-gray-100 text-gray-700", icon: Square },
+  [ProjectRequirementsStatus.IN_PROGRESS]: { label: "进行中", color: "bg-gray-200 text-gray-800", icon: Clock },
+  [ProjectRequirementsStatus.COMPLETED]: { label: "已完成", color: "bg-gray-800 text-white", icon: Target },
+  [ProjectRequirementsStatus.DELAYED]: { label: "已延期", color: "bg-gray-300 text-gray-900", icon: Pause },
+  [ProjectRequirementsStatus.CANCELLED]: { label: "已取消", color: "bg-gray-400 text-white", icon: AlertCircle },
   [ProjectRequirementsStatus.DELETED]: { label: "已删除", color: "bg-gray-100 text-gray-500", icon: AlertCircle },
-  [ProjectRequirementsStatus.ARCHIVED]: { label: "已归档", color: "bg-purple-100 text-purple-800", icon: Target },
+  [ProjectRequirementsStatus.ARCHIVED]: { label: "已归档", color: "bg-gray-600 text-white", icon: Target },
 };
 
 // 类型配置
 const typeConfig = {
-  [ProjectRequirementsType.work]: { label: "工作", color: "bg-blue-100 text-blue-800", icon: Briefcase },
-  [ProjectRequirementsType.personal]: { label: "个人", color: "bg-green-100 text-green-800", icon: User },
+  [ProjectRequirementsType.work]: { label: "工作", color: "bg-gray-200 text-gray-800", icon: Briefcase },
+  [ProjectRequirementsType.personal]: { label: "个人", color: "bg-gray-300 text-gray-900", icon: User },
 };
 
 // 难度级别配置
 const difficultyConfig: Record<number, { label: string; color: string }> = {
-  1: { label: "简单", color: "bg-green-100 text-green-800" },
-  2: { label: "中等", color: "bg-yellow-100 text-yellow-800" },
-  3: { label: "困难", color: "bg-orange-100 text-orange-800" },
-  4: { label: "极难", color: "bg-red-100 text-red-800" },
+  1: { label: "简单", color: "bg-gray-100 text-gray-700" },
+  2: { label: "中等", color: "bg-gray-200 text-gray-800" },
+  3: { label: "困难", color: "bg-gray-400 text-white" },
+  4: { label: "极难", color: "bg-gray-700 text-white" },
 };
 
 // 获取状态颜色
@@ -235,13 +235,13 @@ const TimelineRequirementItem = ({
   return (
     <div className="flex group">
       {/* 左侧时间线 */}
-      <div className="flex flex-col items-center mr-4">
-        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 shadow-sm mb-1"></div>
-        <div className="w-0.5 bg-gradient-to-b from-blue-200 to-gray-200 flex-1"></div>
+      <div className="flex flex-col items-center mr-6">
+        <div className="w-3 h-3 rounded-full bg-gray-400 shadow-md mb-1 border-2 border-white"></div>
+        <div className="w-0.5 bg-gray-300 flex-1"></div>
       </div>
 
       {/* 需求内容 */}
-      <div className="flex-1 bg-white border-0 shadow-sm rounded-xl p-5 mb-4 hover:shadow-lg hover:shadow-gray-100 transition-all duration-200">
+      <div className="flex-1 bg-white border border-gray-200 shadow-sm rounded-xl p-5 mb-6 hover:shadow-lg hover:shadow-gray-200 hover:border-gray-300 transition-all duration-200">
         <div className="space-y-3">
           {/* 标题和状态 */}
           <div className="flex items-center justify-between">
@@ -257,9 +257,11 @@ const TimelineRequirementItem = ({
               </h3>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig[requirement.status].color}`}>
-                {statusConfig[requirement.status].label}
-              </span>
+              <StatusSelector
+                status={requirement.status}
+                onChange={(newStatus) => onStatusChange(requirement._id!, newStatus)}
+                size="small"
+              />
               <button
                 onClick={() => onEdit(requirement)}
                 className="p-1 rounded-full hover:bg-gray-50 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -290,7 +292,7 @@ const TimelineRequirementItem = ({
 
               {/* 技术栈信息 */}
               {getProjectStacks().length > 0 && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-800">
                   <Code size={12} className="mr-1" />
                   {getProjectStacks().length} 技术栈
                 </span>
@@ -298,7 +300,7 @@ const TimelineRequirementItem = ({
 
               {/* 技术难点 */}
               {requirement.difficulty && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-700">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-300 text-gray-900">
                   <AlertCircle size={12} className="mr-1" />
                   有难点
                 </span>
@@ -322,7 +324,7 @@ const TimelineRequirementItem = ({
                     <h5 className="text-xs font-medium text-gray-600 mb-2">相关技术栈</h5>
                     <div className="flex flex-wrap gap-2">
                       {getProjectStacks().map(stack => (
-                        <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-blue-50 rounded-lg text-sm">
+                        <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-gray-100 rounded-lg text-sm">
                           {stack.iconSrc && (
                             <img
                               src={stack.iconSrc}
@@ -333,7 +335,7 @@ const TimelineRequirementItem = ({
                               }}
                             />
                           )}
-                          <span className="text-blue-800 font-medium">{stack.title}</span>
+                          <span className="text-gray-800 font-medium">{stack.title}</span>
                         </div>
                       ))}
                     </div>
@@ -344,7 +346,7 @@ const TimelineRequirementItem = ({
                 {requirement.difficulty && (
                   <div>
                     <h5 className="text-xs font-medium text-gray-600 mb-2">技术难点</h5>
-                    <div className="p-2 bg-orange-50 rounded text-xs text-orange-800 border-l-2 border-orange-200">
+                    <div className="p-2 bg-gray-100 rounded text-xs text-gray-800 border-l-2 border-gray-300">
                       {requirement.difficulty}
                     </div>
                   </div>
@@ -358,16 +360,16 @@ const TimelineRequirementItem = ({
                       {requirement.relatedDocs.map((doc, index) => (
                         <div key={index} className="flex items-center gap-2 text-xs">
                           {doc.type === 'article' ? (
-                            <BookOpen size={12} className="text-blue-600 flex-shrink-0" />
+                            <BookOpen size={12} className="text-gray-600 flex-shrink-0" />
                           ) : (
-                            <ExternalLink size={12} className="text-blue-600 flex-shrink-0" />
+                              <ExternalLink size={12} className="text-gray-600 flex-shrink-0" />
                           )}
                           {doc.type === 'article' ? (
                             <a
                               href={`/articles/${doc.value}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline truncate"
+                              className="text-gray-700 hover:text-gray-900 underline truncate"
                             >
                               {getArticleTitle(doc.value)}
                             </a>
@@ -376,7 +378,7 @@ const TimelineRequirementItem = ({
                               href={doc.value}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline truncate"
+                                className="text-gray-700 hover:text-gray-900 underline truncate"
                             >
                               {doc.title}
                             </a>
@@ -490,7 +492,7 @@ const ProjectRequirementItem = ({
   };
 
   return (
-    <Card className={`p-5 transition-all hover:shadow-lg hover:shadow-gray-100 border-0 bg-white rounded-xl ${isOverdue ? 'ring-2 ring-red-200 bg-red-50' : 'shadow-sm'}`}>
+    <Card className={`p-5 transition-all hover:shadow-lg hover:shadow-gray-200 border border-gray-200 bg-white rounded-xl ${isOverdue ? 'ring-2 ring-red-200 bg-red-50 border-red-200' : 'shadow-sm hover:border-gray-300'}`}>
       <div className="space-y-3">
         {/* 标题和状态 */}
         <div className="flex items-center justify-between">
@@ -505,9 +507,11 @@ const ProjectRequirementItem = ({
               {requirement.title}
             </h3>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig[requirement.status].color}`}>
-            {statusConfig[requirement.status].label}
-          </span>
+          <StatusSelector
+            status={requirement.status}
+            onChange={(newStatus) => onStatusChange(requirement._id!, newStatus)}
+            size="default"
+          />
         </div>
 
         {/* 描述 */}
@@ -539,7 +543,7 @@ const ProjectRequirementItem = ({
 
             {/* 技术栈信息 */}
             {getProjectStacks().length > 0 && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-800">
                 <Code size={12} className="mr-1" />
                 {getProjectStacks().length} 技术栈
               </span>
@@ -547,7 +551,7 @@ const ProjectRequirementItem = ({
 
             {/* 技术难点 */}
             {requirement.difficulty && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-700">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-300 text-gray-900">
                 <AlertCircle size={12} className="mr-1" />
                 有难点
               </span>
@@ -555,19 +559,19 @@ const ProjectRequirementItem = ({
 
             {/* 关联文档 */}
             {requirement.relatedDocs && requirement.relatedDocs.length > 0 && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-800">
                 <BookOpen size={12} className="mr-1" />
                 {requirement.relatedDocs.length} 文档
               </span>
             )}
 
             {/* 关联 Todo 数量 */}
-            <div className="flex items-center gap-1 text-xs text-blue-600 cursor-pointer" onClick={toggleShowTodos}>
+            <div className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer" onClick={toggleShowTodos}>
               <Target size={14} />
               <span>
                 {showTodos ? todos.length : (todoStat?.total || 0)} 任务
                 {todoStat && todoStat.total > 0 && (
-                  <span className="text-green-600 ml-1">
+                  <span className="text-gray-800 ml-1">
                     ({todoStat.completed}/{todoStat.total})
                   </span>
                 )}
@@ -577,7 +581,7 @@ const ProjectRequirementItem = ({
 
             {/* 技术方案状态 */}
             {requirement.techSolutionOssPath && (
-              <div className="flex items-center gap-1 text-xs text-blue-600">
+              <div className="flex items-center gap-1 text-xs text-gray-600">
                 <Edit size={14} />
                 有方案
               </div>
@@ -585,7 +589,7 @@ const ProjectRequirementItem = ({
 
             {/* 反思笔记状态 */}
             {requirement.reflectionOssPath && (
-              <div className="flex items-center gap-1 text-xs text-purple-600">
+              <div className="flex items-center gap-1 text-xs text-gray-600">
                 <FileText size={14} />
                 有反思
               </div>
@@ -681,7 +685,7 @@ const ProjectRequirementItem = ({
                   <h4 className="text-sm font-medium text-gray-700 mb-2">相关技术栈</h4>
                   <div className="flex flex-wrap gap-2">
                     {getProjectStacks().map(stack => (
-                      <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-blue-50 rounded-lg text-sm">
+                      <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-gray-100 rounded-lg text-sm">
                         {stack.iconSrc && (
                           <img
                             src={stack.iconSrc}
@@ -693,7 +697,7 @@ const ProjectRequirementItem = ({
                             }}
                           />
                         )}
-                        <span className="text-blue-800 font-medium">{stack.title}</span>
+                        <span className="text-gray-800 font-medium">{stack.title}</span>
                       </div>
                     ))}
                   </div>
@@ -704,8 +708,8 @@ const ProjectRequirementItem = ({
               {requirement.difficulty && (
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">技术难点</h4>
-                  <div className="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-200">
-                    <p className="text-sm text-orange-800">{requirement.difficulty}</p>
+                  <div className="p-3 bg-gray-100 rounded-lg border-l-4 border-gray-300">
+                    <p className="text-sm text-gray-800">{requirement.difficulty}</p>
                   </div>
                 </div>
               )}
@@ -718,16 +722,16 @@ const ProjectRequirementItem = ({
                     {requirement.relatedDocs.map((doc, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
                         {doc.type === 'article' ? (
-                          <BookOpen size={14} className="text-blue-600 flex-shrink-0" />
+                          <BookOpen size={14} className="text-gray-600 flex-shrink-0" />
                         ) : (
-                            <ExternalLink size={14} className="text-blue-600 flex-shrink-0" />
+                            <ExternalLink size={14} className="text-gray-600 flex-shrink-0" />
                         )}
                         {doc.type === 'article' ? (
                           <a
                             href={`/articles/${doc.value}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline truncate"
+                            className="text-gray-700 hover:text-gray-900 underline truncate"
                           >
                             {getArticleTitle(doc.value)}
                           </a>
@@ -736,7 +740,7 @@ const ProjectRequirementItem = ({
                             href={doc.value}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline truncate"
+                              className="text-gray-700 hover:text-gray-900 underline truncate"
                           >
                             {doc.title}
                           </a>
@@ -751,6 +755,56 @@ const ProjectRequirementItem = ({
         )}
       </div>
     </Card>
+  );
+};
+
+// 自定义状态选择器组件
+const StatusSelector = ({
+  status,
+  onChange,
+  size = 'default'
+}: {
+  status: ProjectRequirementsStatus;
+  onChange: (status: ProjectRequirementsStatus) => void;
+  size?: 'small' | 'default';
+}) => {
+  const currentConfig = statusConfig[status];
+  const StatusIcon = currentConfig.icon;
+
+  const menuItems = Object.entries(statusConfig).map(([statusKey, config]) => {
+    const Icon = config.icon;
+    return {
+      key: statusKey,
+      label: (
+        <div className="flex items-center gap-2 py-1">
+          <div className={`p-1 rounded ${config.color}`}>
+            <Icon size={12} />
+          </div>
+          <span className="text-sm font-medium">{config.label}</span>
+        </div>
+      ),
+      onClick: () => onChange(statusKey as ProjectRequirementsStatus),
+    };
+  });
+
+  const sizeClasses = size === 'small'
+    ? 'px-2 py-1 text-xs'
+    : 'px-3 py-1.5 text-sm';
+
+  return (
+    <Dropdown
+      menu={{ items: menuItems }}
+      trigger={['click']}
+      placement="bottomRight"
+    >
+      <div className={`inline-flex items-center gap-2 ${sizeClasses} rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md`}>
+        <div className={`p-1 rounded ${currentConfig.color}`}>
+          <StatusIcon size={size === 'small' ? 10 : 12} />
+        </div>
+        <span className="font-medium">{currentConfig.label}</span>
+        <ChevronDown size={size === 'small' ? 12 : 14} className="text-gray-400" />
+      </div>
+    </Dropdown>
   );
 };
 
@@ -1027,37 +1081,49 @@ export default function ProjectRequirementsPage() {
         </div>
 
         {/* 分类列表 */}
-        <div className="py-4">
-          <h3 className="px-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">视图</h3>
-          <div
-            className={`px-4 py-2.5 flex items-center gap-3 cursor-pointer mb-1 rounded-r-lg transition-colors ${activeTab === 'all'
-              ? 'bg-gray-100 text-gray-800 border-l-2 border-gray-500'
-              : 'hover:bg-gray-50 border-l-2 border-transparent'
-              }`}
-            onClick={() => setActiveTab('all')}
-          >
-            <div className={`p-1.5 rounded-md ${activeTab === 'all' ? 'bg-gray-200' : 'bg-transparent'}`}>
-              <Target size={16} className={activeTab === 'all' ? 'text-gray-700' : 'text-gray-500'} />
+        <div className="py-4 px-3">
+          <h3 className="px-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">视图</h3>
+          <div className="space-y-2">
+            <div
+              className={`group relative flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-all duration-200 ${activeTab === 'all'
+                ? 'bg-white shadow-md border border-gray-200 text-gray-800'
+                : 'hover:bg-gray-50 text-gray-600 hover:text-gray-800'
+                }`}
+              onClick={() => setActiveTab('all')}
+            >
+              <div className={`relative p-2 rounded-lg transition-all duration-200 ${activeTab === 'all'
+                ? 'bg-gray-800 shadow-sm'
+                : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                <Target size={16} className={activeTab === 'all' ? 'text-white' : 'text-gray-600'} />
+              </div>
+              <span className="text-sm font-medium">全部需求</span>
+              {activeTab === 'all' && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gray-800 rounded-r"></div>
+              )}
             </div>
-            <span className="text-sm font-medium">全部需求</span>
-          </div>
 
-          <div
-            className={`px-4 py-2.5 flex items-center gap-3 cursor-pointer mb-1 rounded-r-lg transition-colors ${activeTab === 'timeline'
-              ? 'bg-gray-100 text-gray-800 border-l-2 border-gray-500'
-              : 'hover:bg-gray-50 border-l-2 border-transparent'
-              }`}
-            onClick={() => {
-              setActiveTab('timeline');
-              if (activeTab !== 'timeline') {
-                groupRequirementsByTimeline(projectRequirements);
-              }
-            }}
-          >
-            <div className={`p-1.5 rounded-md ${activeTab === 'timeline' ? 'bg-gray-200' : 'bg-transparent'}`}>
-              <Calendar size={16} className={activeTab === 'timeline' ? 'text-gray-700' : 'text-gray-500'} />
+            <div
+              className={`group relative flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-all duration-200 ${activeTab === 'timeline'
+                ? 'bg-white shadow-md border border-gray-200 text-gray-800'
+                : 'hover:bg-gray-50 text-gray-600 hover:text-gray-800'
+                }`}
+              onClick={() => {
+                setActiveTab('timeline');
+                if (activeTab !== 'timeline') {
+                  groupRequirementsByTimeline(projectRequirements);
+                }
+              }}
+            >
+              <div className={`relative p-2 rounded-lg transition-all duration-200 ${activeTab === 'timeline'
+                ? 'bg-gray-800 shadow-sm'
+                : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                <Calendar size={16} className={activeTab === 'timeline' ? 'text-white' : 'text-gray-600'} />
+              </div>
+              <span className="text-sm font-medium">时间线</span>
+              {activeTab === 'timeline' && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gray-800 rounded-r"></div>
+              )}
             </div>
-            <span className="text-sm font-medium">时间线</span>
           </div>
         </div>
 
@@ -1121,7 +1187,7 @@ export default function ProjectRequirementsPage() {
           {activeTab === 'all' && (
             <div className="space-y-4">
               {/* 筛选器 */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Filter size={16} className="text-gray-500" />
@@ -1176,13 +1242,13 @@ export default function ProjectRequirementsPage() {
 
               {/* 项目需求列表 */}
               {loading ? (
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   {Array(6).fill(0).map((_, index) => (
                     <ProjectRequirementSkeleton key={`skeleton-${index}`} />
                   ))}
                 </div>
               ) : projectRequirements.length > 0 ? (
-                <div className="grid gap-4">
+                  <div className="grid gap-6">
                   {projectRequirements.map((requirement) => (
                     <ProjectRequirementItem
                       key={requirement._id}
@@ -1198,7 +1264,7 @@ export default function ProjectRequirementsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                    <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
                   <Target size={40} className="mx-auto text-gray-300 mb-4" />
                   <h3 className="text-lg font-medium text-gray-700 mb-2">暂无项目需求</h3>
                   <p className="text-gray-500">创建您的第一个项目需求开始规划吧！</p>
@@ -1211,7 +1277,7 @@ export default function ProjectRequirementsPage() {
           {activeTab === 'timeline' && (
             <div className="space-y-6">
               {/* 筛选器 */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Filter size={16} className="text-gray-500" />
@@ -1266,13 +1332,13 @@ export default function ProjectRequirementsPage() {
 
               {/* 时间线内容 */}
               {loading ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {Array(4).fill(0).map((_, index) => (
                     <div key={`skeleton-${index}`} className="animate-pulse">
                       <div className="h-6 w-32 bg-gray-100 rounded mb-3"></div>
                       <div className="flex">
-                        <div className="w-3 h-3 rounded-full bg-gray-100 mr-4"></div>
-                        <div className="flex-1 h-20 bg-gray-100 rounded"></div>
+                        <div className="w-3 h-3 rounded-full bg-gray-100 mr-6"></div>
+                        <div className="flex-1 h-20 bg-gray-100 rounded border border-gray-200"></div>
                       </div>
                     </div>
                   ))}
@@ -1291,7 +1357,7 @@ export default function ProjectRequirementsPage() {
                             {month}月 ({timelineGrouped[year][month].length}项)
                           </h4>
 
-                          <div className="space-y-0">
+                          <div className="space-y-4">
                             {timelineGrouped[year][month].map(requirement => (
                               <TimelineRequirementItem
                                 key={requirement._id}
@@ -1309,7 +1375,7 @@ export default function ProjectRequirementsPage() {
                   ))}
                   </div>
                 ) : (
-                <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                    <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
                   <Calendar size={40} className="mx-auto text-gray-300 mb-4" />
                   <h3 className="text-lg font-medium text-gray-700 mb-2">暂无项目需求</h3>
                   <p className="text-gray-500">创建您的第一个项目需求开始规划吧！</p>
