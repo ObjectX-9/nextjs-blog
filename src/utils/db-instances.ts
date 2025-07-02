@@ -11,7 +11,7 @@ import { IWorkspaceItem } from "@/app/model/workspace-item";
 import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
 import { ITimelineEvent } from "@/app/model/timeline";
 import { ITodo } from "@/app/model/todo";
-import { IProjectRequirements } from "@/app/model/project-requirements";
+import { IProjectRequirements } from "@/app/model/types/project-requirements";
 
 // 文章分类接口
 export interface IArticleCategory {

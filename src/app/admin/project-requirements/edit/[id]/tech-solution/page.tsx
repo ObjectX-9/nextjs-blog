@@ -15,7 +15,7 @@ import {
 import { MarkdownEditor } from "@/components/customMdRender/components/MarkdownEditor";
 import "@/styles/markdown.css";
 import { projectRequirementsBusiness } from "@/app/business/project-requirements";
-import { IProjectRequirements } from "@/app/model/project-requirements";
+import { IProjectRequirements } from "@/app/model/types/project-requirements";
 
 const { Header, Content } = Layout;
 

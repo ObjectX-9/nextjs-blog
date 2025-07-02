@@ -1,5 +1,5 @@
 import { request } from "@/utils/request";
-import { IProjectRequirements, ProjectRequirementsStatus, ProjectRequirementsType, ProjectRequirementsDifficultyLevel } from "../model/project-requirements";
+import { IProjectRequirements, ProjectRequirementsStatus, ProjectRequirementsType, ProjectRequirementsDifficultyLevel } from "../model/types/project-requirements";
 
 interface GetProjectRequirementsParams {
   type?: ProjectRequirementsType;

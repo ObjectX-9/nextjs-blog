@@ -1,5 +1,5 @@
 import { request } from "@/utils/request";
-import { ITodo, TodoStatus } from "../model/todo";
+import { ITodo, TodoStatus } from "../model/types/todo";
 
 interface GetTodosParams {
   projectId?: string;
