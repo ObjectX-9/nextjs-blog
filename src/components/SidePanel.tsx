@@ -33,7 +33,7 @@ import { useSiteStore } from "@/store/site";
 import { socialLinkBusiness } from "@/app/business/social-link";
 import { message } from "antd";
 
-const navList = [
+const baseNavList = [
   {
     title: "首页&简介",
     href: "/",
@@ -51,10 +51,14 @@ const navList = [
   { title: "导航站", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
   { title: "时间笔记", href: "/timeline", prefix: <History size={16} /> },
   { title: "项目", href: "/projects", prefix: <Folder size={16} /> },
-  { title: "待办事项", href: "/todos", prefix: <CheckSquare size={16} /> },
-  { title: "项目需求", href: "/project-requirements", prefix: <Target size={16} /> },
   { title: "demo", href: "/demos", prefix: <Blocks size={16} /> },
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
+];
+
+// 管理员专属导航项
+const adminNavList = [
+  { title: "待办事项", href: "/todos", prefix: <CheckSquare size={16} /> },
+  { title: "项目需求", href: "/project-requirements", prefix: <Target size={16} /> },
 ];
 
 const iconMap = {
@@ -71,7 +75,26 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
   const [socialLinks, setSocialLinks] = useState<ISocialLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const { site } = useSiteStore();
+
+  // 检查管理员权限
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth");
+        const data = await response.json();
+        setIsAdmin(data.isAuthenticated || false);
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setIsAdmin(false);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     const fetchSocialLinks = async () => {
@@ -92,6 +115,14 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
 
     fetchSocialLinks();
   }, []);
+
+  // 根据管理员权限组合导航列表
+  const navList = [...baseNavList];
+  if (isAdmin) {
+    // 在"项目"后面插入管理员专属导航项
+    const projectIndex = baseNavList.findIndex(item => item.href === "/projects");
+    navList.splice(projectIndex + 1, 0, ...adminNavList);
+  }
 
   const socialList = socialLinks.map((link) => ({
     title: link.name,
@@ -143,36 +174,46 @@ const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => {
         </div>
       </div>
       <nav className="flex flex-col gap-1">
-        {navList.map((navItem, index) => {
-          const isSelected =
-            currentPathname.split("/")[1] === navItem.href.replace("/", "");
-          const commonClasses =
-            "group flex items-center justify-between rounded-lg p-2";
-          const selectedClasses = isSelected
-            ? "bg-black text-white"
-            : "hover:bg-gray-200";
-          const borderClasses = isSelected
-            ? "border-gray-600 bg-gray-700 text-gray-200 group-hover:border-gray-600"
-            : "border-gray-200 bg-gray-100 text-gray-500 group-hover:border-gray-300";
-          return (
-            <Link
-              key={`nav-${navItem.href}`}
-              href={navItem.href}
-              onClick={onNavClick}
-              className={`${commonClasses} ${selectedClasses}`}
-            >
-              <span className="flex items-center">
-                {navItem.prefix}
-                <span className="ml-2 font-medium">{navItem.title}</span>
-              </span>
-              <span
-                className={`hidden h-5 w-5 place-content-center rounded border text-xs font-medium transition-colors duration-200 lg:grid ${borderClasses}`}
+        {navList
+          .filter((navItem) => {
+            // 如果权限检查未完成，显示基础导航项
+            if (authLoading) {
+              return baseNavList.includes(navItem);
+            }
+            // 权限检查完成后，根据管理员状态过滤
+            const isAdminItem = adminNavList.some(adminItem => adminItem.href === navItem.href);
+            return !isAdminItem || isAdmin;
+          })
+          .map((navItem, index) => {
+            const isSelected =
+              currentPathname.split("/")[1] === navItem.href.replace("/", "");
+            const commonClasses =
+              "group flex items-center justify-between rounded-lg p-2";
+            const selectedClasses = isSelected
+              ? "bg-black text-white"
+              : "hover:bg-gray-200";
+            const borderClasses = isSelected
+              ? "border-gray-600 bg-gray-700 text-gray-200 group-hover:border-gray-600"
+              : "border-gray-200 bg-gray-100 text-gray-500 group-hover:border-gray-300";
+            return (
+              <Link
+                key={`nav-${navItem.href}`}
+                href={navItem.href}
+                onClick={onNavClick}
+                className={`${commonClasses} ${selectedClasses}`}
               >
-                {index + 1}
-              </span>
-            </Link>
-          );
-        })}
+                <span className="flex items-center">
+                  {navItem.prefix}
+                  <span className="ml-2 font-medium">{navItem.title}</span>
+                </span>
+                <span
+                  className={`hidden h-5 w-5 place-content-center rounded border text-xs font-medium transition-colors duration-200 lg:grid ${borderClasses}`}
+                >
+                  {index + 1}
+                </span>
+              </Link>
+            );
+          })}
       </nav>
       <Separator className="my-5" />
       <span className="px-2 text-xs mb-2 font-medium leading-relaxed text-gray-600">

@@ -673,12 +673,12 @@ const ProjectRequirementItem = ({
 
         {/* 技术栈详情和技术难点 */}
         {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0)) && (
-          <div className="ml-10 mt-3 pt-3 border-t border-gray-100">
-            <div className="space-y-3">
+          <div className="mt-4 pt-4 border-t border-gray-200 ml-10">
+            <div className="space-y-4">
               {/* 技术栈 */}
               {getProjectStacks().length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-gray-600 mb-2">相关技术栈</h5>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">相关技术栈</h4>
                   <div className="flex flex-wrap gap-2">
                     {getProjectStacks().map(stack => (
                       <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-blue-50 rounded-lg text-sm">
@@ -688,6 +688,7 @@ const ProjectRequirementItem = ({
                             alt={stack.title}
                             className="w-4 h-4 object-contain"
                             onError={(e) => {
+                              // 如果图片加载失败，隐藏图片
                               e.currentTarget.style.display = 'none';
                             }}
                           />
@@ -702,9 +703,9 @@ const ProjectRequirementItem = ({
               {/* 技术难点 */}
               {requirement.difficulty && (
                 <div>
-                  <h5 className="text-xs font-medium text-gray-600 mb-2">技术难点</h5>
-                  <div className="p-2 bg-orange-50 rounded text-xs text-orange-800 border-l-2 border-orange-200">
-                    {requirement.difficulty}
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">技术难点</h4>
+                  <div className="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-200">
+                    <p className="text-sm text-orange-800">{requirement.difficulty}</p>
                   </div>
                 </div>
               )}
@@ -712,14 +713,14 @@ const ProjectRequirementItem = ({
               {/* 关联文档 */}
               {requirement.relatedDocs && requirement.relatedDocs.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-gray-600 mb-2">关联文档</h5>
-                  <div className="space-y-1">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">关联文档</h4>
+                  <div className="space-y-2">
                     {requirement.relatedDocs.map((doc, index) => (
-                      <div key={index} className="flex items-center gap-2 text-xs">
+                      <div key={index} className="flex items-center gap-2 text-sm">
                         {doc.type === 'article' ? (
-                          <BookOpen size={12} className="text-blue-600 flex-shrink-0" />
+                          <BookOpen size={14} className="text-blue-600 flex-shrink-0" />
                         ) : (
-                          <ExternalLink size={12} className="text-blue-600 flex-shrink-0" />
+                            <ExternalLink size={14} className="text-blue-600 flex-shrink-0" />
                         )}
                         {doc.type === 'article' ? (
                           <a
