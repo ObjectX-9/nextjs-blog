@@ -24,7 +24,11 @@ import {
   CheckCircle,
   Circle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  BookOpen,
+  ExternalLink,
+  Link,
+  Trash2
 } from "lucide-react";
 import { IProjectRequirements, ProjectRequirementsStatus, ProjectRequirementsType } from "@/app/model/project-requirements";
 import { projectRequirementsBusiness } from "../business/project-requirements";
@@ -32,6 +36,8 @@ import { ITodo, TodoStatus } from "@/app/model/todo";
 import { todosBusiness } from "../business/todos";
 import { IStack } from "@/app/model/stack";
 import { stacksBusiness } from "../business/stacks";
+import { Article } from "@/app/model/article";
+import { articlesService } from "../business/articles";
 
 // 状态配置
 const statusConfig = {
@@ -184,12 +190,14 @@ const TimelineRequirementItem = ({
   requirement,
   onStatusChange,
   onEdit,
-  stacks
+  stacks,
+  articles
 }: {
   requirement: IProjectRequirements;
   onStatusChange: (id: string, status: ProjectRequirementsStatus) => void;
   onEdit: (requirement: IProjectRequirements) => void;
   stacks: IStack[];
+    articles: Article[];
 }) => {
   const StatusIcon = statusConfig[requirement.status].icon;
   const TypeIcon = typeConfig[requirement.type].icon;
@@ -206,6 +214,12 @@ const TimelineRequirementItem = ({
     return requirement.techStack
       .map(stackId => stacks.find(stack => stack._id === stackId))
       .filter((stack): stack is IStack => !!stack);
+  };
+
+  // 获取内部文章的真实标题
+  const getArticleTitle = (articleId: string) => {
+    const article = articles.find(a => a._id === articleId);
+    return article ? article.title : '文章不存在';
   };
 
   const formatDate = (date?: Date) => {
@@ -261,7 +275,7 @@ const TimelineRequirementItem = ({
           </div>
 
           {/* 底部信息 */}
-          <div className="flex items-center justify-between ml-10">
+          <div className="flex flex-col gap-2 ml-10">
             <div className="flex items-center gap-2">
               {/* 类型 */}
               <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${typeConfig[requirement.type].color}`}>
@@ -299,7 +313,7 @@ const TimelineRequirementItem = ({
           </div>
 
           {/* 技术栈详情和技术难点 */}
-          {(getProjectStacks().length > 0 || requirement.difficulty) && (
+          {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0)) && (
             <div className="ml-10 mt-3 pt-3 border-t border-gray-100">
               <div className="space-y-3">
                 {/* 技术栈 */}
@@ -335,6 +349,43 @@ const TimelineRequirementItem = ({
                     </div>
                   </div>
                 )}
+
+                {/* 关联文档 */}
+                {requirement.relatedDocs && requirement.relatedDocs.length > 0 && (
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-600 mb-2">关联文档</h5>
+                    <div className="space-y-1">
+                      {requirement.relatedDocs.map((doc, index) => (
+                        <div key={index} className="flex items-center gap-2 text-xs">
+                          {doc.type === 'article' ? (
+                            <BookOpen size={12} className="text-blue-600 flex-shrink-0" />
+                          ) : (
+                            <ExternalLink size={12} className="text-blue-600 flex-shrink-0" />
+                          )}
+                          {doc.type === 'article' ? (
+                            <a
+                              href={`/articles/${doc.value}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline truncate"
+                            >
+                              {getArticleTitle(doc.value)}
+                            </a>
+                          ) : (
+                            <a
+                              href={doc.value}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline truncate"
+                            >
+                              {doc.title}
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -352,7 +403,8 @@ const ProjectRequirementItem = ({
   onEdit,
   todoStat,
   onTodoUpdated,
-  stacks
+  stacks,
+  articles
 }: {
   requirement: IProjectRequirements;
   onStatusChange: (id: string, status: ProjectRequirementsStatus) => void;
@@ -361,6 +413,7 @@ const ProjectRequirementItem = ({
   todoStat?: { total: number; completed: number };
   onTodoUpdated?: () => void;
     stacks: IStack[];
+    articles: Article[];
 }) => {
   const [todos, setTodos] = useState<ITodo[]>([]);
   const [loadingTodos, setLoadingTodos] = useState(false);
@@ -392,6 +445,12 @@ const ProjectRequirementItem = ({
     return requirement.techStack
       .map(stackId => stacks.find(stack => stack._id === stackId))
       .filter((stack): stack is IStack => !!stack);
+  };
+
+  // 获取内部文章的真实标题
+  const getArticleTitle = (articleId: string) => {
+    const article = articles.find(a => a._id === articleId);
+    return article ? article.title : '文章不存在';
   };
 
   // 获取项目相关的todo任务
@@ -457,7 +516,7 @@ const ProjectRequirementItem = ({
         </div>
 
         {/* 底部信息 */}
-        <div className="flex items-center justify-between ml-10">
+        <div className="flex gap-2 flex-col  ml-10">
           <div className="flex items-center gap-2">
             {/* 类型 */}
             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${typeConfig[requirement.type].color}`}>
@@ -491,6 +550,14 @@ const ProjectRequirementItem = ({
               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-700">
                 <AlertCircle size={12} className="mr-1" />
                 有难点
+              </span>
+            )}
+
+            {/* 关联文档 */}
+            {requirement.relatedDocs && requirement.relatedDocs.length > 0 && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+                <BookOpen size={12} className="mr-1" />
+                {requirement.relatedDocs.length} 文档
               </span>
             )}
 
@@ -605,13 +672,13 @@ const ProjectRequirementItem = ({
         )}
 
         {/* 技术栈详情和技术难点 */}
-        {(getProjectStacks().length > 0 || requirement.difficulty) && (
-          <div className="mt-4 pt-4 border-t border-gray-200 ml-10">
-            <div className="space-y-4">
+        {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0)) && (
+          <div className="ml-10 mt-3 pt-3 border-t border-gray-100">
+            <div className="space-y-3">
               {/* 技术栈 */}
               {getProjectStacks().length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">相关技术栈</h4>
+                  <h5 className="text-xs font-medium text-gray-600 mb-2">相关技术栈</h5>
                   <div className="flex flex-wrap gap-2">
                     {getProjectStacks().map(stack => (
                       <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-blue-50 rounded-lg text-sm">
@@ -621,7 +688,6 @@ const ProjectRequirementItem = ({
                             alt={stack.title}
                             className="w-4 h-4 object-contain"
                             onError={(e) => {
-                              // 如果图片加载失败，隐藏图片
                               e.currentTarget.style.display = 'none';
                             }}
                           />
@@ -636,9 +702,46 @@ const ProjectRequirementItem = ({
               {/* 技术难点 */}
               {requirement.difficulty && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">技术难点</h4>
-                  <div className="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-200">
-                    <p className="text-sm text-orange-800">{requirement.difficulty}</p>
+                  <h5 className="text-xs font-medium text-gray-600 mb-2">技术难点</h5>
+                  <div className="p-2 bg-orange-50 rounded text-xs text-orange-800 border-l-2 border-orange-200">
+                    {requirement.difficulty}
+                  </div>
+                </div>
+              )}
+
+              {/* 关联文档 */}
+              {requirement.relatedDocs && requirement.relatedDocs.length > 0 && (
+                <div>
+                  <h5 className="text-xs font-medium text-gray-600 mb-2">关联文档</h5>
+                  <div className="space-y-1">
+                    {requirement.relatedDocs.map((doc, index) => (
+                      <div key={index} className="flex items-center gap-2 text-xs">
+                        {doc.type === 'article' ? (
+                          <BookOpen size={12} className="text-blue-600 flex-shrink-0" />
+                        ) : (
+                          <ExternalLink size={12} className="text-blue-600 flex-shrink-0" />
+                        )}
+                        {doc.type === 'article' ? (
+                          <a
+                            href={`/articles/${doc.value}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline truncate"
+                          >
+                            {getArticleTitle(doc.value)}
+                          </a>
+                        ) : (
+                          <a
+                            href={doc.value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline truncate"
+                          >
+                            {doc.title}
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -670,6 +773,7 @@ export default function ProjectRequirementsPage() {
       [month: string]: IProjectRequirements[]
     }
   }>({});
+  const [articles, setArticles] = useState<Article[]>([]);
 
   // 获取项目需求列表
   const fetchProjectRequirements = useCallback(async () => {
@@ -779,6 +883,16 @@ export default function ProjectRequirementsPage() {
     }
   }, []);
 
+  // 获取文章列表
+  const fetchArticles = useCallback(async () => {
+    try {
+      const articlesList = await articlesService.getArticles({ limit: 1000 });
+      setArticles(articlesList.items || []);
+    } catch (error) {
+      console.error("获取文章失败:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProjectRequirements();
   }, [fetchProjectRequirements]);
@@ -794,6 +908,10 @@ export default function ProjectRequirementsPage() {
   useEffect(() => {
     fetchStacks();
   }, [fetchStacks]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
 
   // 处理状态变更
   const handleStatusChange = async (id: string, status: ProjectRequirementsStatus) => {
@@ -832,6 +950,7 @@ export default function ProjectRequirementsPage() {
       startDate: requirement.startDate ? dayjs(requirement.startDate) : null,
       endDate: requirement.endDate ? dayjs(requirement.endDate) : null,
       techStack: requirement.techStack || [],
+      relatedDocs: requirement.relatedDocs || [],
     });
   };
 
@@ -849,6 +968,7 @@ export default function ProjectRequirementsPage() {
         ...(values.endDate && { endDate: values.endDate.toDate() }),
         ...(values.difficulty && { difficulty: values.difficulty }),
         ...(values.techStack && { techStack: values.techStack }),
+        relatedDocs: values.relatedDocs || [],
       };
 
       await projectRequirementsBusiness.updateProjectRequirement(editingRequirement._id, requirementData);
@@ -882,6 +1002,7 @@ export default function ProjectRequirementsPage() {
         ...(values.endDate && { endDate: values.endDate.toDate() }),
         ...(values.difficulty && { difficulty: values.difficulty }),
         ...(values.techStack && { techStack: values.techStack }),
+        relatedDocs: values.relatedDocs || [],
       };
 
       await projectRequirementsBusiness.createProjectRequirement(requirementData);
@@ -1071,6 +1192,7 @@ export default function ProjectRequirementsPage() {
                       todoStat={todoStats[requirement._id!]}
                       onTodoUpdated={handleTodoUpdated}
                       stacks={stacks}
+                      articles={articles}
                     />
                   ))}
                 </div>
@@ -1176,6 +1298,7 @@ export default function ProjectRequirementsPage() {
                                 onStatusChange={handleStatusChange}
                                 onEdit={handleEdit}
                                 stacks={stacks}
+                                articles={articles}
                               />
                             ))}
                           </div>
@@ -1280,6 +1403,139 @@ export default function ProjectRequirementsPage() {
                 </Select.Option>
               ))}
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="relatedDocs"
+            label="关联文档"
+          >
+            <Form.List name="relatedDocs">
+              {(fields, { add, remove }) => (
+                <div className="space-y-3">
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} className="flex gap-2 items-end">
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'type']}
+                        label={key === 0 ? "类型" : ""}
+                        style={{ flex: '0 0 100px' }}
+                        rules={[{ required: true, message: '请选择类型' }]}
+                      >
+                        <Select placeholder="类型">
+                          <Select.Option value="article">内部文章</Select.Option>
+                          <Select.Option value="url">外部链接</Select.Option>
+                        </Select>
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) =>
+                          prevValues.relatedDocs?.[name]?.type !== currentValues.relatedDocs?.[name]?.type
+                        }
+                      >
+                        {({ getFieldValue, setFieldValue }) => {
+                          const docType = getFieldValue(['relatedDocs', name, 'type']);
+                          if (docType === 'article') {
+                            return (
+                              <Form.Item
+                                {...restField}
+                                name={[name, 'value']}
+                                label={key === 0 ? "选择/输入" : ""}
+                                style={{ flex: 1 }}
+                                rules={[{ required: true, message: '请选择文章' }]}
+                              >
+                                <Select
+                                  placeholder="选择技术文章"
+                                  showSearch
+                                  filterOption={(input, option) =>
+                                    (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                                  }
+                                  onChange={(value) => {
+                                    // 自动填充文章标题
+                                    const selectedArticle = articles.find(article => article._id === value);
+                                    if (selectedArticle) {
+                                      setFieldValue(['relatedDocs', name, 'title'], selectedArticle.title);
+                                    }
+                                  }}
+                                >
+                                  {articles.map(article => (
+                                    <Select.Option key={article._id} value={article._id}>
+                                      {article.title}
+                                    </Select.Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+                            );
+                          }
+                          return (
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'value']}
+                              label={key === 0 ? "选择/输入" : ""}
+                              style={{ flex: 1 }}
+                              rules={[{ required: true, message: '请输入链接URL' }]}
+                            >
+                              <Input placeholder="输入外部链接URL" />
+                            </Form.Item>
+                          );
+                        }}
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) =>
+                          prevValues.relatedDocs?.[name]?.type !== currentValues.relatedDocs?.[name]?.type
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const docType = getFieldValue(['relatedDocs', name, 'type']);
+                          if (docType === 'url') {
+                            return (
+                              <Form.Item
+                                {...restField}
+                                name={[name, 'title']}
+                                label={key === 0 ? "显示标题" : ""}
+                                style={{ flex: 1 }}
+                                rules={[{ required: true, message: '请输入显示标题' }]}
+                              >
+                                <Input placeholder="显示标题" />
+                              </Form.Item>
+                            );
+                          }
+                          // 内部文章需要隐藏的title字段来收集数据
+                          return (
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'title']}
+                              style={{ display: 'none' }}
+                            >
+                              <Input />
+                            </Form.Item>
+                          );
+                        }}
+                      </Form.Item>
+
+                      <Form.Item label={key === 0 ? " " : ""}>
+                        <Button
+                          type="text"
+                          danger
+                          icon={<Trash2 size={14} />}
+                          onClick={() => remove(name)}
+                        />
+                      </Form.Item>
+                    </div>
+                  ))}
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    icon={<Plus size={14} />}
+                    className="w-full"
+                  >
+                    添加文档
+                  </Button>
+                </div>
+              )}
+            </Form.List>
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '16px' }}>
@@ -1407,6 +1663,139 @@ export default function ProjectRequirementsPage() {
                 </Select.Option>
               ))}
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="relatedDocs"
+            label="关联文档"
+          >
+            <Form.List name="relatedDocs">
+              {(fields, { add, remove }) => (
+                <div className="space-y-3">
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} className="flex gap-2 items-end">
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'type']}
+                        label={key === 0 ? "类型" : ""}
+                        style={{ flex: '0 0 100px' }}
+                        rules={[{ required: true, message: '请选择类型' }]}
+                      >
+                        <Select placeholder="类型">
+                          <Select.Option value="article">内部文章</Select.Option>
+                          <Select.Option value="url">外部链接</Select.Option>
+                        </Select>
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) =>
+                          prevValues.relatedDocs?.[name]?.type !== currentValues.relatedDocs?.[name]?.type
+                        }
+                      >
+                        {({ getFieldValue, setFieldValue }) => {
+                          const docType = getFieldValue(['relatedDocs', name, 'type']);
+                          if (docType === 'article') {
+                            return (
+                              <Form.Item
+                                {...restField}
+                                name={[name, 'value']}
+                                label={key === 0 ? "选择/输入" : ""}
+                                style={{ flex: 1 }}
+                                rules={[{ required: true, message: '请选择文章' }]}
+                              >
+                                <Select
+                                  placeholder="选择技术文章"
+                                  showSearch
+                                  filterOption={(input, option) =>
+                                    (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                                  }
+                                  onChange={(value) => {
+                                    // 自动填充文章标题
+                                    const selectedArticle = articles.find(article => article._id === value);
+                                    if (selectedArticle) {
+                                      setFieldValue(['relatedDocs', name, 'title'], selectedArticle.title);
+                                    }
+                                  }}
+                                >
+                                  {articles.map(article => (
+                                    <Select.Option key={article._id} value={article._id}>
+                                      {article.title}
+                                    </Select.Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+                            );
+                          }
+                          return (
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'value']}
+                              label={key === 0 ? "选择/输入" : ""}
+                              style={{ flex: 1 }}
+                              rules={[{ required: true, message: '请输入链接URL' }]}
+                            >
+                              <Input placeholder="输入外部链接URL" />
+                            </Form.Item>
+                          );
+                        }}
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) =>
+                          prevValues.relatedDocs?.[name]?.type !== currentValues.relatedDocs?.[name]?.type
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const docType = getFieldValue(['relatedDocs', name, 'type']);
+                          if (docType === 'url') {
+                            return (
+                              <Form.Item
+                                {...restField}
+                                name={[name, 'title']}
+                                label={key === 0 ? "显示标题" : ""}
+                                style={{ flex: 1 }}
+                                rules={[{ required: true, message: '请输入显示标题' }]}
+                              >
+                                <Input placeholder="显示标题" />
+                              </Form.Item>
+                            );
+                          }
+                          // 内部文章需要隐藏的title字段来收集数据
+                          return (
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'title']}
+                              style={{ display: 'none' }}
+                            >
+                              <Input />
+                            </Form.Item>
+                          );
+                        }}
+                      </Form.Item>
+
+                      <Form.Item label={key === 0 ? " " : ""}>
+                        <Button
+                          type="text"
+                          danger
+                          icon={<Trash2 size={14} />}
+                          onClick={() => remove(name)}
+                        />
+                      </Form.Item>
+                    </div>
+                  ))}
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    icon={<Plus size={14} />}
+                    className="w-full"
+                  >
+                    添加文档
+                  </Button>
+                </div>
+              )}
+            </Form.List>
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '16px' }}>

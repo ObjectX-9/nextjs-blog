@@ -2,8 +2,7 @@ import { FrontendDocument } from "@/utils/db-helpers";
 import { ObjectId } from "mongoose";
 
 export interface Article {
-  // MongoDB ID
-  _id?: string | ObjectId;
+  _id?: string;
 
   // 文章标题
   title: string;

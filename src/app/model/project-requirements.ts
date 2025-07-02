@@ -116,6 +116,15 @@ export interface IProjectRequirements {
    * 难度级别
    */
   difficultyLevel?: number;
+
+  /**
+   * 关联技术文档
+   */
+  relatedDocs?: {
+    type: 'article' | 'url';
+    value: string; // 文章ID或URL
+    title: string; // 显示标题
+  }[];
 }
 
 const projectRequirementsSchema = new Schema<IProjectRequirements>(
@@ -133,6 +142,11 @@ const projectRequirementsSchema = new Schema<IProjectRequirements>(
     techSolutionOssPath: { type: String, trim: true },
     reflectionOssPath: { type: String, trim: true },
     difficultyLevel: { type: Number, min: 1, max: 4, default: 2 },
+    relatedDocs: [{
+      type: { type: String, enum: ['article', 'url'], required: true },
+      value: { type: String, required: true, trim: true },
+      title: { type: String, required: true, trim: true }
+    }],
   },
   { timestamps: true }  // 自动添加 createdAt 和 updatedAt 字段
 );

@@ -49,6 +49,7 @@ export const POST = withErrorHandler<[Request], { projectRequirement: IProjectRe
     ...(data.difficulty && { difficulty: data.difficulty }),
     ...(data.techSolutionOssPath && { techSolutionOssPath: data.techSolutionOssPath }),
     ...(data.reflectionOssPath && { reflectionOssPath: data.reflectionOssPath }),
+    ...(data.relatedDocs && { relatedDocs: data.relatedDocs }),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -80,6 +81,7 @@ export const PUT = withErrorHandler<[Request], { projectRequirement: IProjectReq
   if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
   if (data.techSolutionOssPath !== undefined) updateData.techSolutionOssPath = data.techSolutionOssPath;
   if (data.reflectionOssPath !== undefined) updateData.reflectionOssPath = data.reflectionOssPath;
+  if (data.relatedDocs !== undefined) updateData.relatedDocs = data.relatedDocs;
 
   const result = await projectRequirementsDb.updateOne({ _id: data._id }, { $set: updateData });
 

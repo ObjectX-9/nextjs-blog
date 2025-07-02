@@ -42,6 +42,7 @@ export const PUT = withErrorHandler<[Request, { params: { id: string } }], { pro
     if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
     if (data.techSolutionOssPath !== undefined) updateData.techSolutionOssPath = data.techSolutionOssPath;
     if (data.reflectionOssPath !== undefined) updateData.reflectionOssPath = data.reflectionOssPath;
+    if (data.relatedDocs !== undefined) updateData.relatedDocs = data.relatedDocs;
 
     const result = await projectRequirementsDb.updateOne({ _id: id }, { $set: updateData });
 
