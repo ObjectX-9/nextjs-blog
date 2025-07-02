@@ -6,6 +6,7 @@ import {
     BookOpen,
     ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
 import { IProjectRequirements, ProjectRequirementsStatus } from "@/app/model/types/project-requirements";
 import { IStack } from "@/app/model/stack";
 import { Article } from "@/app/model/article";
@@ -156,10 +157,12 @@ export const TimelineRequirementItem = ({
                                             {getProjectStacks().map(stack => (
                                                 <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-gray-100 rounded-lg text-sm">
                                                     {stack.iconSrc && (
-                                                        <img
+                                                        <Image
                                                             src={stack.iconSrc}
                                                             alt={stack.title}
                                                             className="w-4 h-4 object-contain"
+                                                            width={16}
+                                                            height={16}
                                                             onError={(e) => {
                                                                 e.currentTarget.style.display = 'none';
                                                             }}

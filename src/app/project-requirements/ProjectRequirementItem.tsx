@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import {
     Target,
@@ -313,10 +314,12 @@ export const ProjectRequirementItem = ({
                                         {getProjectStacks().map(stack => (
                                             <div key={stack._id} className="flex items-center gap-2 py-1 px-3 bg-gray-100 rounded-lg text-sm">
                                                 {stack.iconSrc && (
-                                                    <img
+                                                    <Image
                                                         src={stack.iconSrc}
                                                         alt={stack.title}
                                                         className="w-4 h-4 object-contain"
+                                                        width={16}
+                                                        height={16}
                                                         onError={(e) => {
                                                             // 如果图片加载失败，隐藏图片
                                                             e.currentTarget.style.display = 'none';

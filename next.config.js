@@ -108,6 +108,17 @@ const nextConfig = {
       },
     ];
   },
+  webpack: (config, { isServer }) => {
+    // 忽略 exiftool-vendored 包的动态依赖警告
+    config.ignoreWarnings = [
+      {
+        module: /node_modules\/exiftool-vendored/,
+        message: /Critical dependency/,
+      },
+    ];
+
+    return config;
+  },
 };
 
 module.exports = nextConfig;

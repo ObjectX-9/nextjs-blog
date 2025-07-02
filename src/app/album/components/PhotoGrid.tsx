@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { IPhoto } from '@/app/model/photo';
 import MobilePhotoCard from './MobilePhotoCard';
 import Masonry from 'react-masonry-css';
@@ -28,17 +29,17 @@ const DesktopPhotoCard: React.FC<DesktopPhotoCardProps> = ({ photo, onClick }) =
         >
             {/* 图片容器 */}
             <div className="relative overflow-hidden rounded-xl">
-                <img
+                <Image
                     src={photo.src}
                     alt={photo.title || '照片'}
                     className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-105"
-                    loading="lazy"
                     width={photo.width}
                     height={photo.height}
                     style={{
                         aspectRatio: `${photo.width} / ${photo.height}`,
                         display: 'block'
                     }}
+                    priority={false}
                 />
 
                 {/* 渐变遮罩 */}

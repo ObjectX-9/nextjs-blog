@@ -166,7 +166,7 @@ export function TimelineEvent({ event }: { event: ITimelineEvent }) {
 
           {/* 图片容器 */}
           <div className="relative max-w-6xl max-h-[90vh] flex items-center justify-center">
-            <img
+            <Image
               src={event.imageUrl}
               alt={event.title}
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
@@ -175,6 +175,9 @@ export function TimelineEvent({ event }: { event: ITimelineEvent }) {
                 maxWidth: '90vw',
                 maxHeight: '90vh'
               }}
+              width={800}
+              height={600}
+              unoptimized
             />
           </div>
         </div>
