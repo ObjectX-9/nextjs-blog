@@ -67,11 +67,19 @@ export default function ProjectRequirementsPage() {
       }
 
       const requirementsList = await projectRequirementsBusiness.getProjectRequirements(params);
-      setProjectRequirements(requirementsList);
+
+      // 按起始时间排序，如果没有起始时间则使用创建时间
+      const sortedRequirements = requirementsList.sort((a, b) => {
+        const dateA = a.startDate ? new Date(a.startDate) : (a.createdAt ? new Date(a.createdAt) : new Date(0));
+        const dateB = b.startDate ? new Date(b.startDate) : (b.createdAt ? new Date(b.createdAt) : new Date(0));
+        return dateB.getTime() - dateA.getTime(); // 最新的在前
+      });
+
+      setProjectRequirements(sortedRequirements);
 
       // 如果是时间线视图，进行分组
       if (activeTab === 'timeline') {
-        groupRequirementsByTimeline(requirementsList);
+        groupRequirementsByTimeline(sortedRequirements);
       }
     } catch (error) {
       message.error("获取项目需求失败: " + error);
@@ -88,9 +96,10 @@ export default function ProjectRequirementsPage() {
       }
     } = {};
 
-    // 按创建时间分组
+    // 按起始时间分组，如果没有起始时间则使用创建时间
     requirements.forEach(requirement => {
-      const date = requirement.createdAt ? new Date(requirement.createdAt) : new Date();
+      const date = requirement.startDate ? new Date(requirement.startDate) :
+        (requirement.createdAt ? new Date(requirement.createdAt) : new Date());
       const year = date.getFullYear().toString();
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
 
@@ -105,12 +114,12 @@ export default function ProjectRequirementsPage() {
       grouped[year][month].push(requirement);
     });
 
-    // 对每个月内的需求按创建时间排序
+    // 对每个月内的需求按起始时间排序，如果没有起始时间则使用创建时间
     Object.keys(grouped).forEach(year => {
       Object.keys(grouped[year]).forEach(month => {
         grouped[year][month].sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0);
-          const dateB = new Date(b.createdAt || 0);
+          const dateA = a.startDate ? new Date(a.startDate) : (a.createdAt ? new Date(a.createdAt) : new Date(0));
+          const dateB = b.startDate ? new Date(b.startDate) : (b.createdAt ? new Date(b.createdAt) : new Date(0));
           return dateB.getTime() - dateA.getTime(); // 最新的在前
         });
       });
