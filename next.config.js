@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 添加环境变量配置，使构建时可用的变量在客户端也可用
+  // 注意：这些变量会在构建时被嵌入到客户端代码中，不应包含敏感信息
+  env: {
+    // 非敏感的公共环境变量可以在这里配置
+    // 敏感信息只应通过服务端使用
+  },
+
   images: {
     domains: [
       "images.unsplash.com",
