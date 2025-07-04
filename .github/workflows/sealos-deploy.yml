@@ -99,13 +99,13 @@ jobs:
             name: nextjs-blog
             namespace: ns-londsz4v
             labels:
-              sealos.io/managed-by: sealos
-              sealos.io/app-name: nextjs-blog
-              sealos.io/app-type: kubernetes
+              cloud.sealos.io/managed-by: sealos
+              cloud.sealos.io/app-name: nextjs-blog
+              cloud.sealos.io/app-type: kubernetes
               app: nextjs-blog
             annotations:
-              sealos.io/deploy-by: github-action
-              sealos.io/description: "Next.js Blog Application"
+              cloud.sealos.io/deploy-by: github-action
+              cloud.sealos.io/description: "Next.js Blog Application"
           spec:
             replicas: 1
             selector:
@@ -115,8 +115,8 @@ jobs:
               metadata:
                 labels:
                   app: nextjs-blog
-                  sealos.io/managed-by: sealos
-                  sealos.io/app-name: nextjs-blog
+                  cloud.sealos.io/managed-by: sealos
+                  cloud.sealos.io/app-name: nextjs-blog
               spec:
                 containers:
                 - name: nextjs-blog
@@ -168,8 +168,8 @@ jobs:
             name: nextjs-blog-service
             namespace: ns-londsz4v
             labels:
-              sealos.io/managed-by: sealos
-              sealos.io/app-name: nextjs-blog
+              cloud.sealos.io/managed-by: sealos
+              cloud.sealos.io/app-name: nextjs-blog
               app: nextjs-blog
           spec:
             selector:
@@ -186,15 +186,15 @@ jobs:
             name: nextjs-blog-ingress
             namespace: ns-londsz4v
             labels:
-              sealos.io/managed-by: sealos
-              sealos.io/app-name: nextjs-blog
+              cloud.sealos.io/managed-by: sealos
+              cloud.sealos.io/app-name: nextjs-blog
               app: nextjs-blog
             annotations:
               kubernetes.io/ingress.class: "nginx"
               nginx.ingress.kubernetes.io/ssl-redirect: "true"
               nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
               cert-manager.io/cluster-issuer: "letsencrypt-prod"
-              sealos.io/deploy-by: github-action
+              cloud.sealos.io/deploy-by: github-action
           spec:
             tls:
             - hosts:
