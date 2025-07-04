@@ -1,0 +1,136 @@
+name: Deploy to Sealos
+
+env:
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+  ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+  OSS_BUCKET: ${{ secrets.OSS_BUCKET }}
+  OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+  OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+  OSS_REGION: ${{ secrets.OSS_REGION }}
+  MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+on:
+  push:
+    branches:
+      - master  # 监听 master 分支的 push 事件
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛠️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔥 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 登录 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏗️ 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:latest
+            ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
+          build-args: |
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+            OSS_BUCKET=${{ secrets.OSS_BUCKET }}
+            OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }}
+            OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }}
+            OSS_REGION=${{ secrets.OSS_REGION }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+
+      - name: 🔧 设置 kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: 📋 配置 kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: 🚀 部署到 Sealos
+        run: |
+          # 应用 Kubernetes 配置
+          kubectl apply -f - <<EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: nextjs-blog
+            namespace: ns-londsz4v
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: nextjs-blog
+            template:
+              metadata:
+                labels:
+                  app: nextjs-blog
+              spec:
+                containers:
+                - name: nextjs-blog
+                  image: ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
+                  ports:
+                  - containerPort: 3000
+                  env:
+                  - name: JWT_SECRET
+                    value: "${{ secrets.JWT_SECRET }}"
+                  - name: ADMIN_PASSWORD
+                    value: "${{ secrets.ADMIN_PASSWORD }}"
+                  - name: ADMIN_USERNAME
+                    value: "${{ secrets.ADMIN_USERNAME }}"
+                  - name: OSS_BUCKET
+                    value: "${{ secrets.OSS_BUCKET }}"
+                  - name: OSS_ACCESS_KEY_SECRET
+                    value: "${{ secrets.OSS_ACCESS_KEY_SECRET }}"
+                  - name: OSS_ACCESS_KEY_ID
+                    value: "${{ secrets.OSS_ACCESS_KEY_ID }}"
+                  - name: OSS_REGION
+                    value: "${{ secrets.OSS_REGION }}"
+                  - name: MONGODB_URI
+                    value: "${{ secrets.MONGODB_URI }}"
+                  - name: NODE_ENV
+                    value: "production"
+                  - name: PORT
+                    value: "3000"
+                  - name: NEXT_TELEMETRY_DISABLED
+                    value: "1"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: nextjs-blog-service
+            namespace: ns-londsz4v
+          spec:
+            selector:
+              app: nextjs-blog
+            ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 3000
+            type: ClusterIP
+          EOF
+
+      - name: 🔄 重启部署以确保使用最新镜像
+        run: |
+          kubectl rollout restart deployment/nextjs-blog -n ns-londsz4v
+          kubectl rollout status deployment/nextjs-blog -n ns-londsz4v --timeout=300s
+
+      - name: ✅ 验证部署状态
+        run: |
+          kubectl get pods -l app=nextjs-blog -n ns-londsz4v
+          kubectl get services nextjs-blog-service -n ns-londsz4v 
