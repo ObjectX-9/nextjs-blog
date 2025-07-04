@@ -62,16 +62,32 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: 🔍 检查应用是否存在
-        id: check-app
+      - name: 🔍 检查应用和命名空间是否存在
+        id: check-resources
         run: |
+          # 检查命名空间是否存在
+          if kubectl get namespace ns-londsz4v &>/dev/null; then
+            echo "命名空间已存在"
+            echo "namespace_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "命名空间不存在，需要创建"
+            echo "namespace_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+          # 检查应用是否存在
           if kubectl get deployment nextjs-blog -n ns-londsz4v &>/dev/null; then
             echo "应用已存在，将进行更新"
-            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "app_exists=true" >> $GITHUB_OUTPUT
           else
             echo "应用不存在，将进行创建"
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "app_exists=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: 🌱 创建命名空间(如果不存在)
+        if: steps.check-resources.outputs.namespace_exists == 'false'
+        run: |
+          kubectl create namespace ns-londsz4v
+          echo "命名空间 ns-londsz4v 已创建"
 
       - name: 🚀 部署到 Sealos
         run: |
@@ -178,9 +194,9 @@ jobs:
                         number: 80
           EOF
 
-      - name: 🔄 重启或创建部署
+      - name: 🔄 重启或等待部署
         run: |
-          if [[ "${{ steps.check-app.outputs.exists }}" == "true" ]]; then
+          if [[ "${{ steps.check-resources.outputs.app_exists }}" == "true" ]]; then
             echo "重启现有部署..."
             kubectl rollout restart deployment/nextjs-blog -n ns-londsz4v
           else
