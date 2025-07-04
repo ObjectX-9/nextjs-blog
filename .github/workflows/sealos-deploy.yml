@@ -13,7 +13,7 @@ env:
 on:
   push:
     branches:
-      - master  # 监听 master 分支的 push 事件
+      - master # 监听 master 分支的 push 事件
 
 jobs:
   build-and-deploy:
@@ -32,6 +32,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: 📝 创建.env.production文件
+        run: |
+          cat << EOF > .env.production
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+          OSS_BUCKET=${{ secrets.OSS_BUCKET }}
+          OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }}
+          OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_REGION=${{ secrets.OSS_REGION }}
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          EOF
+
       - name: 🏗️ 构建并推送 Docker 镜像
         uses: docker/build-push-action@v5
         with:
@@ -41,20 +54,16 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:latest
             ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
-          build-args: |
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
-            OSS_BUCKET=${{ secrets.OSS_BUCKET }}
-            OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }}
-            OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }}
-            OSS_REGION=${{ secrets.OSS_REGION }}
-            MONGODB_URI=${{ secrets.MONGODB_URI }}
+          secrets: |
+            "env_file=.env.production"
+
+      - name: 🧹 清理敏感文件
+        run: rm -f .env.production
 
       - name: 🔧 设置 kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: 📋 配置 kubeconfig
         run: |
@@ -175,4 +184,4 @@ jobs:
       - name: ✅ 验证部署状态
         run: |
           kubectl get pods -l app=nextjs-blog -n ns-londsz4v
-          kubectl get services nextjs-blog-service -n ns-londsz4v 
+          kubectl get services nextjs-blog-service -n ns-londsz4v
