@@ -1,3 +1,6 @@
+# 使用BuildKit语法
+# syntax=docker/dockerfile:1.4
+
 # 1. 使用官方 Node.js 作为基础镜像
 FROM node:18-alpine AS builder
 
@@ -8,7 +11,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # 4. 安装 pnpm 并安装依赖（使用 pnpm）
-RUN corepack enable && pnpm install --force
+RUN corepack enable && pnpm install
 
 # 5. 复制所有文件（排除 .dockerignore 中指定的文件）
 COPY . .
@@ -17,33 +20,9 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# 6.1. 构建时的环境变量通过 --build-arg 传入
-# 这些变量只在构建阶段可用，不会保留到最终镜像中
-ARG JWT_SECRET
-ARG ADMIN_PASSWORD
-ARG ADMIN_USERNAME
-ARG OSS_BUCKET
-ARG OSS_ACCESS_KEY_SECRET
-ARG OSS_ACCESS_KEY_ID
-ARG OSS_REGION
-ARG MONGODB_URI
-
-# 6.2. 使用ARG构建时变量创建临时的.env.production文件
-# 这个文件会在构建后被删除，不会保留在最终镜像中
-RUN echo "JWT_SECRET=${JWT_SECRET}" > .env.production && \
-    echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> .env.production && \
-    echo "ADMIN_USERNAME=${ADMIN_USERNAME}" >> .env.production && \
-    echo "OSS_BUCKET=${OSS_BUCKET}" >> .env.production && \
-    echo "OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET}" >> .env.production && \
-    echo "OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID}" >> .env.production && \
-    echo "OSS_REGION=${OSS_REGION}" >> .env.production && \
-    echo "MONGODB_URI=${MONGODB_URI}" >> .env.production
-
-# 6.3. 使用环境文件构建
-RUN pnpm build
-
-# 6.4. 删除临时环境文件，确保不会包含在最终镜像中
-RUN rm -f .env.production
+# 使用挂载的secret进行构建，不写入镜像层
+RUN --mount=type=secret,id=env_file,target=/app/.env.production \
+    pnpm build
 
 # 7. 创建生产环境的镜像（不包含敏感环境变量）
 FROM node:18-alpine AS runner
@@ -69,6 +48,9 @@ USER nextjs
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# 暴露端口
+EXPOSE 3000
 
 # 13. 运行应用
 CMD ["node_modules/.bin/next", "start"]
