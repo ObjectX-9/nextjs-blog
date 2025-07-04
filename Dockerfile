@@ -30,12 +30,8 @@ ARG OSS_ACCESS_KEY_ID
 ARG OSS_REGION
 ARG MONGODB_URI
 
-# 使用挂载的secret构建
-RUN --mount=type=secret,id=env_file,target=/app/.env.production \
-    # 将挂载的环境文件加载到shell环境中
-    export $(cat /app/.env.production | xargs) && \
-    # 创建临时环境文件给Next.js使用
-    echo "MONGODB_URI=${MONGODB_URI}" > /app/.env.local && \
+# 创建临时环境文件并构建
+RUN echo "MONGODB_URI=${MONGODB_URI}" > /app/.env.local && \
     echo "JWT_SECRET=${JWT_SECRET}" >> /app/.env.local && \
     echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> /app/.env.local && \
     echo "ADMIN_USERNAME=${ADMIN_USERNAME}" >> /app/.env.local && \
@@ -43,12 +39,10 @@ RUN --mount=type=secret,id=env_file,target=/app/.env.production \
     echo "OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET}" >> /app/.env.local && \
     echo "OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID}" >> /app/.env.local && \
     echo "OSS_REGION=${OSS_REGION}" >> /app/.env.local && \
-    # 打印调试信息确认文件存在
-    cat /app/.env.local && \
     # 执行构建
     pnpm build && \
-    # 移除敏感信息
-    rm -f /app/.env.local /app/.env.production
+    # 删除临时环境文件
+    rm -f /app/.env.local
 
 # 7. 创建生产环境的镜像（不包含敏感环境变量）
 FROM node:18-alpine AS runner
