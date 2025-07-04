@@ -28,18 +28,22 @@ ARG OSS_ACCESS_KEY_ID
 ARG OSS_REGION
 ARG MONGODB_URI
 
-# 6.2. 将构建时环境变量传递给 Node.js 进程
-ENV JWT_SECRET=${JWT_SECRET}
-ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
-ENV ADMIN_USERNAME=${ADMIN_USERNAME}
-ENV OSS_BUCKET=${OSS_BUCKET}
-ENV OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET}
-ENV OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID}
-ENV OSS_REGION=${OSS_REGION}
-ENV MONGODB_URI=${MONGODB_URI}
+# 6.2. 使用ARG构建时变量创建临时的.env.production文件
+# 这个文件会在构建后被删除，不会保留在最终镜像中
+RUN echo "JWT_SECRET=${JWT_SECRET}" > .env.production && \
+    echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> .env.production && \
+    echo "ADMIN_USERNAME=${ADMIN_USERNAME}" >> .env.production && \
+    echo "OSS_BUCKET=${OSS_BUCKET}" >> .env.production && \
+    echo "OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET}" >> .env.production && \
+    echo "OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID}" >> .env.production && \
+    echo "OSS_REGION=${OSS_REGION}" >> .env.production && \
+    echo "MONGODB_URI=${MONGODB_URI}" >> .env.production
 
-# 6.3. 使用自定义脚本进行构建，该脚本会处理环境变量
-RUN chmod +x ./scripts/build-with-env.js && node ./scripts/build-with-env.js
+# 6.3. 使用环境文件构建
+RUN pnpm build
+
+# 6.4. 删除临时环境文件，确保不会包含在最终镜像中
+RUN rm -f .env.production
 
 # 7. 创建生产环境的镜像（不包含敏感环境变量）
 FROM node:18-alpine AS runner

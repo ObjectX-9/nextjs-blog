@@ -32,8 +32,11 @@ if (missingEnvVars.length > 0) {
 try {
   console.log('开始构建 Next.js 应用...');
 
-  // 执行 Next.js 构建
-  execSync('next build', { stdio: 'inherit' });
+  // 使用pnpm命令执行build，这样更可靠
+  execSync('pnpm build', {
+    stdio: 'inherit',
+    env: process.env // 确保传递所有环境变量
+  });
 
   console.log('构建完成!');
 } catch (error) {
