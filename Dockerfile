@@ -22,7 +22,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # 使用挂载的secret进行构建，不写入镜像层
 RUN --mount=type=secret,id=env_file,target=/app/.env.production \
-    pnpm build
+    cp /app/.env.production /app/.env.local && \
+    pnpm build && \
+    rm -f /app/.env.local
 
 # 7. 创建生产环境的镜像（不包含敏感环境变量）
 FROM node:18-alpine AS runner
