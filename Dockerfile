@@ -24,8 +24,8 @@ RUN pnpm build
 FROM node:18-alpine AS runner
 
 # 8. 创建非root用户
-RUN addgroup --system --gid 1000 nodejs \
-    && adduser --system --uid 1000 nextjs
+RUN addgroup --system nodejs \
+    && adduser --system --ingroup nodejs nextjs
 
 # 9. 设置工作目录
 WORKDIR /app
