@@ -132,7 +132,7 @@ jobs:
                       cpu: "500m"
                   securityContext:
                     allowPrivilegeEscalation: false
-                    runAsNonRoot: true
+                    # 移除 runAsNonRoot 设置，因为镜像使用非数字用户名 "nextjs"
                     capabilities:
                       drop:
                       - ALL
@@ -235,10 +235,13 @@ jobs:
           kubectl get pods -l app=nextjs-blog-v2 -n ns-londsz4v
           kubectl get services nextjs-blog-v2-service -n ns-londsz4v
 
-      - name: 🧹 清理旧资源
+      - name: 🧹 清理资源
         run: |
           echo "清理旧的资源..."
           kubectl delete deployment nextjs-blog -n ns-londsz4v --ignore-not-found=true
           kubectl delete service nextjs-blog-service -n ns-londsz4v --ignore-not-found=true
           kubectl delete ingress nextjs-blog-ingress -n ns-londsz4v --ignore-not-found=true
+
+          echo "强制删除错误状态的Pod..."
+          kubectl delete pod -l app=nextjs-blog-v2 -n ns-londsz4v --force --grace-period=0 --ignore-not-found=true
           echo "清理完成"
