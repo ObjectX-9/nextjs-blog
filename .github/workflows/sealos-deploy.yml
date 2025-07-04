@@ -41,15 +41,6 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:latest
             ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
-          build-args: |
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
-            OSS_BUCKET=${{ secrets.OSS_BUCKET }}
-            OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }}
-            OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }}
-            OSS_REGION=${{ secrets.OSS_REGION }}
-            MONGODB_URI=${{ secrets.MONGODB_URI }}
 
       - name: 🔧 设置 kubectl
         uses: azure/setup-kubectl@v3
@@ -86,6 +77,22 @@ jobs:
                   image: ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
                   ports:
                   - containerPort: 3000
+                  resources:
+                    requests:
+                      memory: "256Mi"
+                      cpu: "100m"
+                    limits:
+                      memory: "512Mi"
+                      cpu: "500m"
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    runAsNonRoot: true
+                    runAsUser: 1000
+                    capabilities:
+                      drop:
+                      - ALL
+                    seccompProfile:
+                      type: RuntimeDefault
                   env:
                   - name: JWT_SECRET
                     value: "${{ secrets.JWT_SECRET }}"
@@ -123,6 +130,33 @@ jobs:
               port: 80
               targetPort: 3000
             type: ClusterIP
+          ---
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: nextjs-blog-ingress
+            namespace: ns-londsz4v
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+          spec:
+            tls:
+            - hosts:
+              - hzh.sealos.run
+              secretName: nextjs-blog-tls
+            rules:
+            - host: hzh.sealos.run
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: nextjs-blog-service
+                      port:
+                        number: 80
           EOF
 
       - name: 🔄 重启部署以确保使用最新镜像
