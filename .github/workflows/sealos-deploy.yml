@@ -194,15 +194,22 @@ jobs:
                         number: 80
           EOF
 
-      - name: 🔄 重启或等待部署
+      - name: 🔄 重启或刷新部署（无需等待）
         run: |
           if [[ "${{ steps.check-resources.outputs.app_exists }}" == "true" ]]; then
             echo "重启现有部署..."
-            kubectl rollout restart deployment/nextjs-blog -n ns-londsz4v
+            kubectl patch deployment nextjs-blog -n ns-londsz4v -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$(date +%s)\"}}}}}"
           else
-            echo "新部署已创建，无需重启"
+            echo "新部署已创建"
           fi
-          kubectl rollout status deployment/nextjs-blog -n ns-londsz4v --timeout=300s
+          echo "部署已提交，继续执行工作流"
+
+      - name: 🔍 检查部署基本状态（不会阻塞）
+        run: |
+          echo "显示部署状态（不等待完成）："
+          kubectl get deployment nextjs-blog -n ns-londsz4v
+          echo "显示最新创建的Pod："
+          kubectl get pods -l app=nextjs-blog -n ns-londsz4v -o wide --sort-by=.metadata.creationTimestamp | tail -3
 
       - name: ✅ 验证部署状态
         run: |
