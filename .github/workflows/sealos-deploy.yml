@@ -56,6 +56,15 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
           secrets: |
             "env_file=.env.production"
+          build-args: |
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+            OSS_BUCKET=${{ secrets.OSS_BUCKET }}
+            OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }}
+            OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }}
+            OSS_REGION=${{ secrets.OSS_REGION }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
 
       - name: 🧹 清理敏感文件
         run: rm -f .env.production
