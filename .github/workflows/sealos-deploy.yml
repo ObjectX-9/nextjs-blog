@@ -62,6 +62,17 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
+      - name: 🔍 检查应用是否存在
+        id: check-app
+        run: |
+          if kubectl get deployment nextjs-blog -n ns-londsz4v &>/dev/null; then
+            echo "应用已存在，将进行更新"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "应用不存在，将进行创建"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 🚀 部署到 Sealos
         run: |
           # 应用 Kubernetes 配置
@@ -167,9 +178,14 @@ jobs:
                         number: 80
           EOF
 
-      - name: 🔄 重启部署以确保使用最新镜像
+      - name: 🔄 重启或创建部署
         run: |
-          kubectl rollout restart deployment/nextjs-blog -n ns-londsz4v
+          if [[ "${{ steps.check-app.outputs.exists }}" == "true" ]]; then
+            echo "重启现有部署..."
+            kubectl rollout restart deployment/nextjs-blog -n ns-londsz4v
+          else
+            echo "新部署已创建，无需重启"
+          fi
           kubectl rollout status deployment/nextjs-blog -n ns-londsz4v --timeout=300s
 
       - name: ✅ 验证部署状态
