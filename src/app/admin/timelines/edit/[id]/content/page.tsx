@@ -63,7 +63,7 @@ const EditTimelineContent = ({ params }: { params: { id: string } }) => {
                         const contentResponse = await fetch(`/api/proxy-content?url=${encodeURIComponent(response.ossPath)}`);
                         if (contentResponse.ok) {
                             const data = await contentResponse.json();
-                            eventContent = data.content;
+                            eventContent = data.data.content;
                         } else {
                             const errorData = await contentResponse.json();
                             console.error("获取文件内容失败:", errorData.error);

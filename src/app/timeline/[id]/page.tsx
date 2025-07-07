@@ -60,7 +60,7 @@ export default function TimelineDetailPage() {
                         if (contentResponse.ok) {
                             const data = await contentResponse.json();
                             // 将content作为临时属性添加到event对象中用于渲染
-                            (eventData as ITimelineEventWithContent).content = data.content;
+                            (eventData as ITimelineEventWithContent).content = data.data.content;
                         } else {
                             const errorData = await contentResponse.json();
                             console.error("获取文件内容失败:", errorData.error);
