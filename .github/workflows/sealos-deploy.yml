@@ -1,0 +1,54 @@
+name: Deploy to Sealos
+
+env:
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+  ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+  OSS_BUCKET: ${{ secrets.OSS_BUCKET }}
+  OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+  OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+  OSS_REGION: ${{ secrets.OSS_REGION }}
+  MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+on:
+  push:
+    branches:
+      - master # 监听 master 分支的 push 事件
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛠️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔥 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 登录 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏗️ 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:latest
+            ${{ secrets.DOCKER_USERNAME }}/nextjs-blog:${{ github.sha }}
+          build-args: |
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+            OSS_BUCKET=${{ secrets.OSS_BUCKET }}
+            OSS_ACCESS_KEY_SECRET=${{ secrets.OSS_ACCESS_KEY_SECRET }}
+            OSS_ACCESS_KEY_ID=${{ secrets.OSS_ACCESS_KEY_ID }}
+            OSS_REGION=${{ secrets.OSS_REGION }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+
+      
