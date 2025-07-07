@@ -51,23 +51,4 @@ jobs:
             OSS_REGION=${{ secrets.OSS_REGION }}
             MONGODB_URI=${{ secrets.MONGODB_URI }}
 
-      - name: 🔧 设置 kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: "latest"
-
-      - name: 📋 配置 kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: 🔄 重启或刷新部署（无需等待）
-        run: |
-          if [[ "${{ steps.check-resources.outputs.app_exists }}" == "true" ]]; then
-            echo "重启现有部署..."
-            kubectl patch deployment nextjs-blog-v3 -n ns-londsz4v -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$(date +%s)\"}}}}}"
-          else
-            echo "新部署已创建"
-          fi
-          echo "部署已提交，继续执行工作流"
+      
