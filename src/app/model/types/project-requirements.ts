@@ -123,4 +123,12 @@ export interface IProjectRequirements {
         value: string; // 文章ID或URL
         title: string; // 显示标题
     }[];
+
+    /**
+     * 关联github仓库
+     */
+    relatedGithubRepos?: {
+        repoName: string;
+        repoUrl: string;
+    }[];
 } 

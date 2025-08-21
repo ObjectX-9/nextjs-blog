@@ -237,6 +237,61 @@ export const EditRequirementModal = ({
                     </Form.List>
                 </Form.Item>
 
+                <Form.Item
+                    name="relatedGithubRepos"
+                    label="关联 GitHub 仓库"
+                >
+                    <Form.List name="relatedGithubRepos">
+                        {(fields, { add, remove }) => (
+                            <div className="space-y-3">
+                                {fields.map(({ key, name, ...restField }) => (
+                                    <div key={key} className="flex gap-2 items-end">
+                                        <Form.Item
+                                            {...restField}
+                                            name={[name, 'repoName']}
+                                            label={key === 0 ? "仓库名称" : ""}
+                                            style={{ flex: 1 }}
+                                            rules={[{ required: true, message: '请输入仓库名称' }]}
+                                        >
+                                            <Input placeholder="例如：facebook/react" />
+                                        </Form.Item>
+
+                                        <Form.Item
+                                            {...restField}
+                                            name={[name, 'repoUrl']}
+                                            label={key === 0 ? "仓库链接" : ""}
+                                            style={{ flex: 1 }}
+                                            rules={[
+                                                { required: true, message: '请输入仓库链接' },
+                                                { type: 'url', message: '请输入有效的URL' }
+                                            ]}
+                                        >
+                                            <Input placeholder="https://github.com/facebook/react" />
+                                        </Form.Item>
+
+                                        <Form.Item label={key === 0 ? " " : ""}>
+                                            <Button
+                                                type="text"
+                                                danger
+                                                icon={<Trash2 size={14} />}
+                                                onClick={() => remove(name)}
+                                            />
+                                        </Form.Item>
+                                    </div>
+                                ))}
+                                <Button
+                                    type="dashed"
+                                    onClick={() => add()}
+                                    icon={<Plus size={14} />}
+                                    className="w-full"
+                                >
+                                    添加 GitHub 仓库
+                                </Button>
+                            </div>
+                        )}
+                    </Form.List>
+                </Form.Item>
+
                 <div style={{ display: 'flex', gap: '16px' }}>
                     <Form.Item
                         name="startDate"

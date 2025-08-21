@@ -13,6 +13,7 @@ import {
     Settings,
     ChevronDown,
     ChevronUp,
+    Github,
 } from "lucide-react";
 import { IProjectRequirements, ProjectRequirementsStatus } from "@/app/model/types/project-requirements";
 import { ITodo, TodoStatus } from "@/app/model/types/todo";
@@ -192,6 +193,14 @@ export const ProjectRequirementItem = ({
                             </span>
                         )}
 
+                        {/* 关联 GitHub 仓库 */}
+                        {requirement.relatedGithubRepos && requirement.relatedGithubRepos.length > 0 && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-900 text-white">
+                                <Github size={12} className="mr-1" />
+                                {requirement.relatedGithubRepos.length} 仓库
+                            </span>
+                        )}
+
                         {/* 关联 Todo 数量 */}
                         <div className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer" onClick={toggleShowTodos}>
                             <Target size={14} />
@@ -303,7 +312,7 @@ export const ProjectRequirementItem = ({
                 )}
 
                 {/* 技术栈详情和技术难点 */}
-                {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0)) && (
+                {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0) || (requirement.relatedGithubRepos && requirement.relatedGithubRepos.length > 0)) && (
                     <div className="mt-4 pt-4 border-t border-gray-200 ml-10">
                         <div className="space-y-4">
                             {/* 技术栈 */}
@@ -379,6 +388,29 @@ export const ProjectRequirementItem = ({
                                     </div>
                                 </div>
                             )}
+
+                            {/* 关联 GitHub 仓库 */}
+                            {requirement.relatedGithubRepos && requirement.relatedGithubRepos.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-700 mb-2">关联 GitHub 仓库</h4>
+                                    <div className="space-y-2">
+                                        {requirement.relatedGithubRepos.map((repo, index) => (
+                                            <div key={index} className="flex items-center gap-2 text-sm">
+                                                <Github size={14} className="text-gray-600 flex-shrink-0" />
+                                                <a
+                                                    href={repo.repoUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-gray-700 hover:text-gray-900 underline truncate"
+                                                >
+                                                    {repo.repoName}
+                                                </a>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 )}

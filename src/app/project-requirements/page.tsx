@@ -233,6 +233,7 @@ export default function ProjectRequirementsPage() {
       endDate: requirement.endDate ? dayjs(requirement.endDate) : null,
       techStack: requirement.techStack || [],
       relatedDocs: requirement.relatedDocs || [],
+      relatedGithubRepos: requirement.relatedGithubRepos || [],
     });
   };
 
@@ -251,6 +252,7 @@ export default function ProjectRequirementsPage() {
         ...(values.difficulty && { difficulty: values.difficulty }),
         ...(values.techStack && { techStack: values.techStack }),
         relatedDocs: values.relatedDocs || [],
+        relatedGithubRepos: values.relatedGithubRepos || [],
       };
 
       await projectRequirementsBusiness.updateProjectRequirement(editingRequirement._id, requirementData);
@@ -285,6 +287,7 @@ export default function ProjectRequirementsPage() {
         ...(values.difficulty && { difficulty: values.difficulty }),
         ...(values.techStack && { techStack: values.techStack }),
         relatedDocs: values.relatedDocs || [],
+        relatedGithubRepos: values.relatedGithubRepos || [],
       };
 
       await projectRequirementsBusiness.createProjectRequirement(requirementData);

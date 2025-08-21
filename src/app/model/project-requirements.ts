@@ -26,6 +26,10 @@ const projectRequirementsSchema = new Schema<IProjectRequirements>(
       value: { type: String, required: true, trim: true },
       title: { type: String, required: true, trim: true }
     }],
+    relatedGithubRepos: [{
+      repoName: { type: String, required: true, trim: true },
+      repoUrl: { type: String, required: true, trim: true }
+    }],
   },
   { timestamps: true }  // 自动添加 createdAt 和 updatedAt 字段
 );

@@ -5,6 +5,7 @@ import {
     Calendar,
     BookOpen,
     ExternalLink,
+    Github,
 } from "lucide-react";
 import Image from "next/image";
 import { IProjectRequirements, ProjectRequirementsStatus } from "@/app/model/types/project-requirements";
@@ -146,7 +147,7 @@ export const TimelineRequirementItem = ({
                     </div>
 
                     {/* 技术栈详情和技术难点 */}
-                    {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0)) && (
+                    {(getProjectStacks().length > 0 || requirement.difficulty || (requirement.relatedDocs && requirement.relatedDocs.length > 0) || (requirement.relatedGithubRepos && requirement.relatedGithubRepos.length > 0)) && (
                         <div className="ml-10 mt-3 pt-3 border-t border-gray-100">
                             <div className="space-y-3">
                                 {/* 技术栈 */}
@@ -216,6 +217,28 @@ export const TimelineRequirementItem = ({
                                                             {doc.title}
                                                         </a>
                                                     )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 关联 GitHub 仓库 */}
+                                {requirement.relatedGithubRepos && requirement.relatedGithubRepos.length > 0 && (
+                                    <div>
+                                        <h5 className="text-xs font-medium text-gray-600 mb-2">关联 GitHub 仓库</h5>
+                                        <div className="space-y-1">
+                                            {requirement.relatedGithubRepos.map((repo, index) => (
+                                                <div key={index} className="flex items-center gap-2 text-xs">
+                                                    <Github size={12} className="text-gray-600 flex-shrink-0" />
+                                                    <a
+                                                        href={repo.repoUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-gray-700 hover:text-gray-900 underline truncate"
+                                                    >
+                                                        {repo.repoName}
+                                                    </a>
                                                 </div>
                                             ))}
                                         </div>
