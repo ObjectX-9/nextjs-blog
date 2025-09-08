@@ -23,6 +23,8 @@ import {
   Lightbulb, // 添加 Lightbulb 图标
   CheckSquare, // 添加 CheckSquare 图标用于 Todo
   Target, // 添加 Target 图标用于项目需求
+  Dumbbell, // 添加 Dumbbell 图标用于健身记录
+  Plane, // 添加 Plane 图标用于旅行记录
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -47,6 +49,8 @@ const baseNavList = [
   },
   { title: "技术文章", href: "/articles", prefix: <BookOpen size={16} /> },
   { title: "生活相册", href: "/album", prefix: <Camera size={16} /> },
+  { title: "健身打卡", href: "/fitness", prefix: <Dumbbell size={16} /> },
+  { title: "旅行记录", href: "/travel", prefix: <Plane size={16} /> },
   { title: "工作空间", href: "/workspace", prefix: <Laptop size={16} /> },
   { title: "导航站", href: "/bookmarks", prefix: <FolderHeart size={16} /> },
   { title: "时间笔记", href: "/timeline", prefix: <History size={16} /> },

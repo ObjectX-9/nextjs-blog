@@ -12,6 +12,8 @@ import { IBookmark, IBookmarkCategory } from "@/app/model/bookmark";
 import { ITimelineEvent } from "@/app/model/timeline";
 import { ITodo } from "@/app/model/todo";
 import { IProjectRequirements } from "@/app/model/types/project-requirements";
+import { IFitnessRecord } from "@/app/model/fitness";
+import { ITravelRecord } from "@/app/model/travel";
 
 // 文章分类接口
 export interface IArticleCategory {
@@ -71,3 +73,9 @@ export const todoDb = createDbHelper<ITodo>("todos");
 
 // 项目需求
 export const projectRequirementsDb = createDbHelper<IProjectRequirements>("projectRequirements");
+
+// 健身记录
+export const fitnessRecordDb = createDbHelper<IFitnessRecord>("fitnessRecords");
+
+// 旅行记录
+export const travelRecordDb = createDbHelper<ITravelRecord>("travelRecords");

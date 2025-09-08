@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
-    const type = formData.get("type") as string || "articles"; // 默认为 articles 目录
+    const directory = formData.get("directory") as string || "articles"; // 获取目录参数
 
     if (!file) {
       return NextResponse.json(
@@ -79,14 +79,14 @@ export async function POST(request: Request) {
     }
 
     // 检查文件类型
-    const allowedTypes = ["text/markdown", "text/plain", "image/"];
-    const isAllowedType = allowedTypes.some(type => 
+    const allowedTypes = ["text/markdown", "text/plain", "image/", "video/"];
+    const isAllowedType = allowedTypes.some(type =>
       file.type.startsWith(type) || file.name.endsWith(".md")
     );
 
     if (!isAllowedType) {
       return NextResponse.json(
-        { error: "Only markdown and image files are allowed" },
+        { error: "Only markdown, image and video files are allowed" },
         { status: 400 }
       );
     }
@@ -101,8 +101,13 @@ export async function POST(request: Request) {
     }
 
     // 根据文件类型决定存储路径
-    const basePath = file.type.startsWith("image/") ? "images" : "articles";
-    const filename = `${basePath}/${type}/${uuidv4()}.${extension}`;
+    let basePath = "articles";
+    if (file.type.startsWith("image/")) {
+      basePath = "images";
+    } else if (file.type.startsWith("video/")) {
+      basePath = "videos";
+    }
+    const filename = `${basePath}/${directory}/${uuidv4()}.${extension}`;
 
     // 读取文件内容
     const buffer = Buffer.from(await file.arrayBuffer());
