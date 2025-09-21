@@ -146,7 +146,7 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
               />
             </Form.Item>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-2">
             <Form.Item label="文章分类">
               <Select
                 value={article.categoryId || undefined}
@@ -164,7 +164,14 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
                       key={category.categoryId}
                       value={category.categoryId}
                     >
-                      {category.categoryName}
+                      <div className="flex items-center justify-between">
+                        <span>{category.categoryName}</span>
+                        {category.isAdminOnly && (
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                            管理员可见
+                          </span>
+                        )}
+                      </div>
                     </Select.Option>
                   ))
                 ) : (
@@ -172,6 +179,28 @@ const EditArticlePage = ({ params }: { params: { id: string } }) => {
                     暂无分类
                   </Select.Option>
                 )}
+              </Select>
+            </Form.Item>
+          </div>
+          <div>
+            <Form.Item label="发布状态">
+              <Select
+                value={article.status}
+                onChange={value => setArticle({ ...article, status: value })}
+                style={{ width: '100%' }}
+              >
+                <Select.Option value={ArticleStatus.DRAFT}>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                    <span>草稿</span>
+                  </div>
+                </Select.Option>
+                <Select.Option value={ArticleStatus.PUBLISHED}>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>已发布</span>
+                  </div>
+                </Select.Option>
               </Select>
             </Form.Item>
           </div>
