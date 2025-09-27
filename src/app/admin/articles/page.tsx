@@ -226,7 +226,7 @@ const ArticlesPage = () => {
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [sortBy, setSortBy] = useState<'latest' | 'order'>('latest');
+  const [sortBy, setSortBy] = useState<'latest' | 'order'>('order');
 
   // 分页状态
   const [pagination, setPagination] = useState({
