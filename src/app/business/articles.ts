@@ -161,6 +161,16 @@ class ArticlesBusiness {
     const response = await request.delete<void>(`articles/categories?id=${id}`);
     return response.data;
   }
+
+  /**
+   * 批量更新文章排序
+   */
+  async updateArticlesOrder(articles: Array<{ _id: string, order: number }>): Promise<{ modifiedCount: number, matchedCount: number }> {
+    const response = await request.patch<{ modifiedCount: number, matchedCount: number }>('articles', {
+      articles
+    });
+    return response.data;
+  }
 }
 
 export const articlesService = new ArticlesBusiness();

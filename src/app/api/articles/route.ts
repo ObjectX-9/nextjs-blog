@@ -8,7 +8,7 @@ import { createApiParams, parseRequestBody, RequestValidator } from "@/utils/api
 import { UpdateFilter } from "mongodb";
 import { articleDb } from "@/utils/db-instances";
 import { verifyAdmin } from "@/utils/auth";
-import { createDbHelper } from "@/utils/db-helpers";
+import { createDbHelper, IdHelper } from "@/utils/db-helpers";
 
 const articleCategoryDb = createDbHelper("articleCategories");
 
@@ -212,4 +212,44 @@ export const DELETE = withErrorHandler(async (request: Request) => {
   }
 
   return successResponse(null, '文章删除成功');
+});
+
+// 批量更新文章排序
+export const PATCH = withErrorHandler(async (request: Request) => {
+  const body = await parseRequestBody(request);
+  const { articles } = body;
+
+  // 验证输入
+  if (!Array.isArray(articles) || articles.length === 0) {
+    throw ApiErrors.BAD_REQUEST('articles 参数必须是非空数组');
+  }
+
+  // 验证每个文章项
+  for (const article of articles) {
+    if (!article._id || typeof article.order !== 'number') {
+      throw ApiErrors.VALIDATION_ERROR('每个文章项必须包含 _id 和 order 字段');
+    }
+  }
+
+  // 批量更新
+  const bulkOps = articles.map(article => ({
+    updateOne: {
+      filter: { _id: IdHelper.toObjectId(article._id) },
+      update: {
+        $set: {
+          order: article.order,
+          updatedAt: new Date().toISOString()
+        }
+      }
+    }
+  }));
+
+  // 获取原生collection进行批量操作
+  const collection = await articleDb.getRawCollection();
+  const result = await collection.bulkWrite(bulkOps);
+
+  return successResponse({
+    modifiedCount: result.modifiedCount,
+    matchedCount: result.matchedCount
+  }, '文章排序更新成功');
 });
