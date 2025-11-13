@@ -7,6 +7,7 @@ import { useState } from "react";
 const navItems = [
   { name: "网站信息管理", href: "/admin/site" },
   { name: "文章管理", href: "/admin/articles" },
+  { name: "收录文章", href: "/admin/external-articles" },
   { name: "书签管理", href: "/admin/bookmarks" },
   { name: "友链管理", href: "/admin/friends" },
   { name: "相册管理", href: "/admin/photos" },

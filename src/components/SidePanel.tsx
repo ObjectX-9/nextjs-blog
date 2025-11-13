@@ -25,6 +25,7 @@ import {
   Target, // 添加 Target 图标用于项目需求
   Dumbbell, // 添加 Dumbbell 图标用于健身记录
   Plane, // 添加 Plane 图标用于旅行记录
+  ExternalLink, // 添加 ExternalLink 图标用于外部文章
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -48,6 +49,7 @@ const baseNavList = [
     prefix: <Lightbulb size={16} />,
   },
   { title: "技术文章", href: "/articles", prefix: <BookOpen size={16} /> },
+  { title: "收录文章", href: "/external-articles", prefix: <ExternalLink size={16} /> },
   { title: "生活相册", href: "/album", prefix: <Camera size={16} /> },
   { title: "健身打卡", href: "/fitness", prefix: <Dumbbell size={16} /> },
   { title: "旅行记录", href: "/travel", prefix: <Plane size={16} /> },
