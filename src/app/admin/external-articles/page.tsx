@@ -154,20 +154,19 @@ export default function ExternalArticlesAdminPage() {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
+      width: 200,
       render: (text: string, record: IExternalArticle) => (
-        <a href={record.url} target="_blank" rel="noopener noreferrer">
-          <LinkOutlined className="mr-2" />
-          {text}
-        </a>
-      ),
-    },
-    {
-      title: '链接',
-      dataIndex: 'url',
-      key: 'url',
-      render: (url: string) => (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-          {url.length > 50 ? url.substring(0, 50) + '...' : url}
+        <a 
+          href={record.url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          title={text}
+          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          <LinkOutlined className="mr-2 flex-shrink-0" />
+          <span className="truncate">
+            {text.length > 20 ? text.substring(0, 20) + '...' : text}
+          </span>
         </a>
       ),
     },
