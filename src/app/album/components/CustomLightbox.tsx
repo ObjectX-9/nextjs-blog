@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { IPhoto } from '@/app/model/photo';
 import PhotoInfo from './PhotoInfo';
 import dynamic from 'next/dynamic';
+import { throttle } from 'lodash-es';
 
 interface CustomLightboxProps {
     photos: IPhoto[];
@@ -39,8 +40,14 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [lastTap, setLastTap] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [extractedColors, setExtractedColors] = useState<string[]>([]);
+    const [initialPinchDistance, setInitialPinchDistance] = useState(0);
+    const [initialScale, setInitialScale] = useState(1);
     const imageRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+    const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
     const currentPhoto = photos[currentIndex];
 
@@ -120,6 +127,182 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
         }
     }, [currentPhoto?.src, extractColorFromImage]);
 
+    // 缓存Canvas尺寸和设备像素比
+    const canvasSize = useMemo(() => {
+        if (!currentPhoto) return { width: 0, height: 0, devicePixelRatio: 1 };
+
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const maxWidth = window.innerWidth * 0.85;
+        const maxHeight = window.innerHeight * 0.85;
+
+        let { width, height } = currentPhoto;
+
+        if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width *= ratio;
+            height *= ratio;
+        }
+
+        return { width, height, devicePixelRatio };
+    }, [currentPhoto]);
+
+    // 防闪烁的Canvas渲染函数
+    const renderCanvas = useCallback(() => {
+        const canvas = canvasRef.current;
+        const img = imageElement;
+
+        if (!canvas || !img || !currentPhoto) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const { width, height, devicePixelRatio } = canvasSize;
+
+        // 只在Canvas尺寸改变时才重新设置
+        if (canvas.width !== width * devicePixelRatio || canvas.height !== height * devicePixelRatio) {
+            canvas.width = width * devicePixelRatio;
+            canvas.height = height * devicePixelRatio;
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+        }
+
+        // 直接渲染，避免requestAnimationFrame导致的闪烁
+        // 重置变换矩阵
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        // 应用设备像素比缩放
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+
+        // 清除画布
+        ctx.clearRect(0, 0, width, height);
+
+        // 应用用户缩放和平移
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        ctx.translate(centerX + translate.x, centerY + translate.y);
+        ctx.scale(scale, scale);
+        ctx.translate(-centerX, -centerY);
+
+        // 优化图像渲染设置
+        ctx.imageSmoothingEnabled = scale > 1;
+        ctx.imageSmoothingQuality = scale > 2 ? 'high' : 'medium';
+        ctx.drawImage(img, 0, 0, width, height);
+    }, [currentPhoto, scale, translate, imageElement, canvasSize]);
+
+    // 优化的图片加载和缓存，带过渡效果
+    useEffect(() => {
+        if (!currentPhoto?.src) return;
+
+        // 重置缩放和位移状态
+        setScale(1);
+        setTranslate({ x: 0, y: 0 });
+        
+        // 开始过渡
+        setIsTransitioning(true);
+
+        // 检查缓存
+        const cachedImage = imageCache.current.get(currentPhoto.src);
+        if (cachedImage) {
+            // 即使有缓存，也要短暂过渡避免突兀
+            setTimeout(() => {
+                setImageElement(cachedImage);
+                setIsLoading(false);
+                setTimeout(() => setIsTransitioning(false), 50);
+            }, 50);
+            return;
+        }
+
+        setIsLoading(true);
+
+        const img = document.createElement('img') as HTMLImageElement;
+
+        img.onload = () => {
+            // 缓存图片
+            imageCache.current.set(currentPhoto.src, img);
+            
+            // 延迟设置图片，创建平滑过渡
+            setTimeout(() => {
+                setImageElement(img);
+                setIsLoading(false);
+                setTimeout(() => setIsTransitioning(false), 100);
+            }, 100);
+        };
+
+        img.onerror = (error) => {
+            console.error('图片加载失败:', currentPhoto.src, error);
+            setIsLoading(false);
+            setIsTransitioning(false);
+        };
+
+        img.src = currentPhoto.src;
+    }, [currentPhoto?.src]);
+
+    // 预加载相邻图片和内存管理
+    useEffect(() => {
+        if (!photos.length) return;
+
+        const preloadImages = () => {
+            // 预加载前后各2张图片
+            const indicesToPreload = [];
+            for (let i = -2; i <= 2; i++) {
+                const index = currentIndex + i;
+                if (index >= 0 && index < photos.length && index !== currentIndex) {
+                    indicesToPreload.push(index);
+                }
+            }
+
+            // 清理远距离的缓存图片，避免内存泄漏
+            const imagesToKeep = new Set(
+                indicesToPreload.concat([currentIndex]).map(i => photos[i]?.src).filter(Boolean)
+            );
+
+            imageCache.current.forEach((_, src) => {
+                if (!imagesToKeep.has(src)) {
+                    imageCache.current.delete(src);
+                }
+            });
+
+            // 预加载新图片
+            indicesToPreload.forEach(index => {
+                const photo = photos[index];
+                if (photo?.src && !imageCache.current.has(photo.src)) {
+                    const img = document.createElement('img') as HTMLImageElement;
+                    img.onload = () => {
+                        imageCache.current.set(photo.src, img);
+                    };
+                    img.onerror = () => {
+                        // 加载失败时不缓存
+                    };
+                    img.src = photo.src;
+                }
+            });
+        };
+
+        // 延迟预加载，避免影响当前图片加载
+        const timeoutId = setTimeout(preloadImages, 500);
+        return () => clearTimeout(timeoutId);
+    }, [currentIndex, photos]);
+
+    // 组件卸载时清理缓存
+    useEffect(() => {
+        return () => {
+            if (!isOpen) {
+                imageCache.current.clear();
+            }
+        };
+    }, [isOpen]);
+
+    // 监听缩放状态变化
+    useEffect(() => {
+        // 可以在这里添加缩放状态变化的处理逻辑
+    }, [scale, translate]);
+
+    // 当缩放或平移改变时重新渲染
+    useEffect(() => {
+        renderCanvas();
+    }, [renderCanvas]);
+
     // 根据图片主色调生成动态背景
     const dynamicBackground = useMemo(() => {
         // 使用提取的颜色或预设颜色
@@ -171,11 +354,17 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
         setTranslate({ x: 0, y: 0 });
     }, []);
 
-    // 处理键盘事件
+    // 处理键盘事件和禁用浏览器缩放
     useEffect(() => {
         if (!isOpen) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            // 禁用浏览器缩放快捷键
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+                e.preventDefault();
+                return;
+            }
+
             switch (e.key) {
                 case 'Escape':
                     onClose();
@@ -199,26 +388,84 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
             }
         };
 
+        // 禁用触摸板双指缩放
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        };
+
+        // 禁用鼠标滚轮的浏览器缩放
+        const handleWheel = (e: WheelEvent) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+            }
+        };
+
         document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('wheel', handleWheel, { passive: false });
         document.body.style.overflow = 'hidden';
+
+        // 添加viewport meta标签禁用缩放
+        const viewport = document.querySelector('meta[name="viewport"]');
+        const originalContent = viewport?.getAttribute('content') || '';
+        if (viewport) {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        }
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('wheel', handleWheel);
             document.body.style.overflow = 'unset';
+
+            // 恢复原始viewport设置
+            if (viewport && originalContent) {
+                viewport.setAttribute('content', originalContent);
+            }
         };
     }, [isOpen, currentIndex, photos.length, onClose, onIndexChange, resetTransform, showPhotoInfo]);
 
+    // 节流处理滚轮事件
+    const throttledHandleWheel = useCallback(
+        throttle((e: React.WheelEvent) => {
+            e.preventDefault();
+
+            // 优化缩放速率：使用指数缩放，更自然的缩放体验
+            const zoomIntensity = 0.05;
+            const wheel = e.deltaY < 0 ? 1 : -1;
+            const zoom = Math.exp(wheel * zoomIntensity);
+
+            // 计算新的缩放值，限制在合理范围内
+            const newScale = Math.max(0.1, Math.min(5, scale * zoom));
+
+            // 获取鼠标相对于图片的位置，实现以鼠标为中心的缩放
+            const rect = e.currentTarget.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left - rect.width / 2;
+            const mouseY = e.clientY - rect.top - rect.height / 2;
+
+            // 计算缩放后的平移偏移
+            const scaleChange = newScale / scale;
+            const newTranslateX = translate.x - mouseX * (scaleChange - 1);
+            const newTranslateY = translate.y - mouseY * (scaleChange - 1);
+
+            // 当缩放非常接近1时，自动重置到中心位置
+            if (Math.abs(newScale - 1) < 0.01) {
+                setScale(1);
+                setTranslate({ x: 0, y: 0 });
+            } else {
+                setScale(newScale);
+                setTranslate({ x: newTranslateX, y: newTranslateY });
+            }
+        }, 16), // 约60fps
+        [scale, translate]
+    );
+
     // 处理滚轮缩放
     const handleWheel = useCallback((e: React.WheelEvent) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        const newScale = Math.max(0.5, Math.min(3, scale + delta));
-        setScale(newScale);
-
-        if (newScale === 1) {
-            setTranslate({ x: 0, y: 0 });
-        }
-    }, [scale]);
+        throttledHandleWheel(e);
+    }, [throttledHandleWheel]);
 
     // 处理鼠标拖拽
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -244,43 +491,77 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
         setIsDragging(false);
     }, []);
 
+    // 计算两个触摸点之间的距离
+    const getTouchDistance = useCallback((touches: React.TouchList) => {
+        if (touches.length < 2) return 0;
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }, []);
+
     // 处理触摸事件（移动端）
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
         const now = Date.now();
         const timeDiff = now - lastTap;
 
-        if (timeDiff < 300 && timeDiff > 0) {
-            // 双击缩放
-            if (scale === 1) {
-                setScale(2);
-            } else {
-                resetTransform();
+        if (e.touches.length === 2) {
+            // 双指缩放开始
+            const distance = getTouchDistance(e.touches);
+            setInitialPinchDistance(distance);
+            setInitialScale(scale);
+            setIsDragging(false);
+        } else if (e.touches.length === 1) {
+            // 单指操作
+            if (timeDiff < 300 && timeDiff > 0) {
+                // 双击缩放
+                if (scale === 1) {
+                    setScale(2.5);
+                } else {
+                    resetTransform();
+                }
+            }
+
+            setLastTap(now);
+
+            if (scale > 1) {
+                setIsDragging(true);
+                setDragStart({
+                    x: e.touches[0].clientX - translate.x,
+                    y: e.touches[0].clientY - translate.y,
+                });
             }
         }
-
-        setLastTap(now);
-
-        if (e.touches.length === 1 && scale > 1) {
-            setIsDragging(true);
-            setDragStart({
-                x: e.touches[0].clientX - translate.x,
-                y: e.touches[0].clientY - translate.y,
-            });
-        }
-    }, [lastTap, scale, translate, resetTransform]);
+    }, [lastTap, scale, translate, resetTransform, getTouchDistance]);
 
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        if (isDragging && scale > 1 && e.touches.length === 1) {
-            e.preventDefault();
+        e.preventDefault();
+
+        if (e.touches.length === 2 && initialPinchDistance > 0) {
+            // 双指缩放
+            const currentDistance = getTouchDistance(e.touches);
+            const scaleChange = currentDistance / initialPinchDistance;
+            const newScale = Math.max(0.1, Math.min(5, initialScale * scaleChange));
+
+            // 当缩放接近1时，自动重置
+            if (Math.abs(newScale - 1) < 0.01) {
+                setScale(1);
+                setTranslate({ x: 0, y: 0 });
+            } else {
+                setScale(newScale);
+            }
+        } else if (isDragging && scale > 1 && e.touches.length === 1) {
+            // 单指拖拽
             setTranslate({
                 x: e.touches[0].clientX - dragStart.x,
                 y: e.touches[0].clientY - dragStart.y,
             });
         }
-    }, [isDragging, scale, dragStart]);
+    }, [isDragging, scale, dragStart, initialPinchDistance, initialScale, getTouchDistance]);
 
     const handleTouchEnd = useCallback(() => {
         setIsDragging(false);
+        setInitialPinchDistance(0);
+        setInitialScale(1);
     }, []);
 
     // 切换照片信息显示
@@ -316,15 +597,8 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
         return params.join(' · ');
     };
 
-    console.log('CustomLightbox渲染检查:', {
-        isOpen,
-        currentIndex,
-        photosLength: photos.length,
-        currentPhoto: currentPhoto ? '存在' : '不存在'
-    });
-
+    // 早期返回优化
     if (!isOpen || !currentPhoto) {
-        console.log('CustomLightbox不渲染，原因:', { isOpen, currentPhoto: !!currentPhoto });
         return null;
     }
 
@@ -350,7 +624,9 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
                 right: 0,
                 bottom: 0,
                 zIndex: 9999,
-                overflow: 'hidden'
+                overflow: 'hidden',
+                touchAction: 'none', // 禁用触摸手势
+                userSelect: 'none',  // 禁用文本选择
             }}
         >
             {/* 背景图片层 */}
@@ -499,7 +775,7 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
                     </>
                 )}
 
-                {/* 图片容器 */}
+                {/* Canvas 图片容器 */}
                 <div
                     ref={imageRef}
                     className="absolute inset-0 flex items-center justify-center cursor-pointer"
@@ -516,32 +792,58 @@ const CustomLightbox: React.FC<CustomLightboxProps> = ({
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                 >
-                    <div
-                        className="transition-transform duration-200 ease-out"
+                    {/* Canvas渲染 */}
+                    <canvas
+                        ref={canvasRef}
+                        className={`max-w-[85vw] max-h-[85vh] drop-shadow-2xl transition-opacity duration-200 ${
+                            imageElement && !isTransitioning ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        width={800}
+                        height={600}
                         style={{
-                            transform: `scale(${scale}) translate(${translate.x}px, ${translate.y}px)`,
                             cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+                            backgroundColor: 'transparent',
                         }}
-                    >
-                        <Image
-                            src={currentPhoto.src}
-                            alt={currentPhoto.title || ''}
-                            width={currentPhoto.width}
-                            height={currentPhoto.height}
-                            className="max-w-[85vw] max-h-[85vh] object-contain drop-shadow-2xl"
-                            priority
-                            draggable={false}
-                            onLoad={() => setIsLoading(false)}
-                        />
-                    </div>
+                    />
+
+                    {/* 备用Image渲染 */}
+                    {!imageElement && (
+                        <div
+                            className={`transition-all duration-200 ease-out ${
+                                isTransitioning ? 'opacity-50' : 'opacity-100'
+                            }`}
+                            style={{
+                                transform: `scale(${scale}) translate(${translate.x}px, ${translate.y}px)`,
+                                cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+                            }}
+                        >
+                            <Image
+                                src={currentPhoto.src}
+                                alt={currentPhoto.title || ''}
+                                width={currentPhoto.width}
+                                height={currentPhoto.height}
+                                className="max-w-[85vw] max-h-[85vh] object-contain drop-shadow-2xl"
+                                priority
+                                draggable={false}
+                                onLoad={() => setIsLoading(false)}
+                            />
+                        </div>
+                    )}
 
                     {/* 加载状态 */}
-                    {isLoading && (
+                    {(isLoading || isTransitioning) && (
                         <div
-                            className="absolute inset-0 flex items-center justify-center"
-                            style={{ background: 'rgba(0, 0, 0, 0.3)' }}
+                            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                                isLoading ? 'opacity-100' : 'opacity-30'
+                            }`}
+                            style={{ 
+                                background: isLoading ? 'rgba(0, 0, 0, 0.3)' : 'transparent',
+                                pointerEvents: 'none'
+                            }}
                         >
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-white ${
+                                isTransitioning && !isLoading ? 'opacity-50' : 'opacity-100'
+                            }`}></div>
                         </div>
                     )}
                 </div>
