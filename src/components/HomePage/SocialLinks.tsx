@@ -1,5 +1,8 @@
+'use client';
+
 import Image from "next/image";
 import React from "react";
+import { trackEvent } from "@/lib/analytics";
 
 interface SocialLink {
   name: string;
@@ -25,6 +28,10 @@ export const SocialLinks = ({ links }: SocialLinksProps) => {
             href={link.url}
             className="flex items-center gap-1 px-2 py-1 rounded text-gray-600 hover:text-gray-900"
             style={{ backgroundColor: link.bgColor }}
+            onClick={() => trackEvent('social_link_click', {
+              category: 'click',
+              properties: { platform: link.name, url: link.url }
+            })}
           >
             <div className="relative w-4 h-4 rounded overflow-hidden flex items-center justify-center">
               <Image

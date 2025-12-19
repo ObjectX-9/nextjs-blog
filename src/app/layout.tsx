@@ -10,6 +10,7 @@ import GoogleTagManagerHead from "@/components/GoogleTagManagerHead";
 import GoogleTagManagerBody from "@/components/GoogleTagManagerBody";
 import Loading from "./Loading";
 import { Suspense } from "react";
+import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -85,11 +86,15 @@ export default function RootLayout({
       <body className={`${cn(inter.className)} h-dvh w-dvw`}>
         <SiteProvider>
           <GoogleTagManagerBody />
-          <LayoutWrapper>
-            <Suspense fallback={<Loading />}>
-              {children}
-            </Suspense>
-          </LayoutWrapper>
+          <Suspense fallback={null}>
+            <AnalyticsProvider>
+              <LayoutWrapper>
+                <Suspense fallback={<Loading />}>
+                  {children}
+                </Suspense>
+              </LayoutWrapper>
+            </AnalyticsProvider>
+          </Suspense>
         </SiteProvider>
       </body>
     </html>

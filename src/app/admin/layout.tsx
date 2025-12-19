@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const navItems = [
+  { name: "数据分析", href: "/admin/analytics" },
   { name: "网站信息管理", href: "/admin/site" },
   { name: "文章管理", href: "/admin/articles" },
   { name: "收录文章", href: "/admin/external-articles" },

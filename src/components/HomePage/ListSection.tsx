@@ -1,8 +1,11 @@
+'use client';
+
 import Link from "next/link";
 import ViewCounter from "./ViewCounter";
 import LikeButton from "./LikeButton";
 import { Article } from "@/app/model/article";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
+import { trackEvent } from "@/lib/analytics";
 
 interface ListSectionProps {
   title: string;
@@ -41,6 +44,10 @@ export const ListSection = ({ title, titleLink, items }: ListSectionProps) => {
                 key={item._id?.toString() || ""}
                 href={`/articles/${item._id?.toString() || ""}`}
                 className="col-span-6 hover:text-gray-700"
+                onClick={() => trackEvent('article_click', {
+                  category: 'click',
+                  properties: { articleId: item._id, title: item.title }
+                })}
               >
                 <div className="grid grid-cols-6">
                   <div

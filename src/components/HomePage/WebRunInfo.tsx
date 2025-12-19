@@ -2,13 +2,12 @@
 
 import { useSiteStore } from "@/store/site";
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
-import { Heart, Eye, QrCode, X } from "lucide-react";
+import { Heart, Eye, QrCode, X, Users } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import StatIndicator from "./StatIndicator";
 import Divider from "./Divider";
 
-const VISIT_KEY = "site_visited_date";
 const LIKE_KEY = "site_liked";
 
 // 图片预览组件
@@ -276,13 +275,20 @@ const QrcodeModal = memo(({ site, onClose }: { site: any; onClose: () => void })
 QrcodeModal.displayName = 'QrcodeModal';
 
 export const WebRunInfo = () => {
-  const { site, updateVisitCount, updateLikeCount } = useSiteStore();
+  const { site, updateLikeCount } = useSiteStore();
 
   const [state, setState] = useState({
     isLiking: false,
     hasLiked: false,
     showQrcode: false,
     isMobile: false
+  });
+
+  // 埋点统计数据
+  const [analyticsData, setAnalyticsData] = useState({
+    pageViews: 0,
+    uniqueVisitors: 0,
+    realtimeCount: 0,
   });
 
   const qrcodeRef = useRef<HTMLDivElement>(null);
@@ -314,52 +320,29 @@ export const WebRunInfo = () => {
     }
   }, []);
 
-  // 更新访问量
+  // 获取埋点统计数据
   useEffect(() => {
-    const checkAndUpdateVisit = async () => {
+    const fetchAnalytics = async () => {
       try {
-        const lastVisitData = localStorage.getItem(VISIT_KEY);
-        const now = new Date();
-        const today = now.toDateString();
-        const currentTime = now.getTime();
-
-        let shouldUpdate = false;
-
-        if (!lastVisitData) {
-          shouldUpdate = true;
-        } else {
-          try {
-            const { date, timestamp } = JSON.parse(lastVisitData);
-            // 如果是新的一天或者距离上次访问超过12小时
-            if (date !== today || currentTime - timestamp > 12 * 60 * 60 * 1000) {
-              shouldUpdate = true;
-            }
-          } catch {
-            shouldUpdate = true;
-          }
-        }
-
-        if (shouldUpdate) {
-          await updateVisitCount();
-          localStorage.setItem(
-            VISIT_KEY,
-            JSON.stringify({
-              date: today,
-              timestamp: currentTime,
-            })
-          );
-        }
+        const res = await fetch('/api/analytics/stats?range=all');
+        const data = await res.json();
+        setAnalyticsData({
+          pageViews: data.overview?.pageViews || 0,
+          uniqueVisitors: data.overview?.uniqueVisitors || 0,
+          realtimeCount: data.realtimeCount?.count || 0,
+        });
       } catch (error) {
-        console.error(
-          "访问统计更新失败:",
-          error instanceof Error ? error.message : "未知错误"
-        );
+        console.error('获取统计数据失败:', error);
       }
     };
 
-    const timeoutId = setTimeout(checkAndUpdateVisit, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [updateVisitCount]);
+    fetchAnalytics();
+    // 每30秒刷新一次实时在线人数
+    const interval = setInterval(fetchAnalytics, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+
 
   // 处理点赞
   const handleLike = useCallback(async () => {
@@ -462,9 +445,21 @@ export const WebRunInfo = () => {
       <StatIndicator
         icon={<Eye />}
         label="访问量"
-        value={site?.visitCount || 0}
+        value={analyticsData.uniqueVisitors}
         bgColor="bg-[#48bfaf]/20"
         iconColor="text-[#48bfaf]"
+        title={`页面浏览量: ${analyticsData.pageViews}`}
+      />
+
+      <Divider />
+
+      <StatIndicator
+        icon={<Users />}
+        label="在线"
+        value={analyticsData.realtimeCount}
+        bgColor="bg-blue-500/20"
+        iconColor="text-blue-500"
+        title="当前在线人数"
       />
 
       <Divider />

@@ -21,6 +21,7 @@ import { message } from "antd";
 import { socialLinkBusiness } from "@/app/business/social-link";
 import { workExperienceBusiness } from "@/app/business/work-experience";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { trackEvent } from "@/lib/analytics";
 
 interface HomePageClientProps {
 
@@ -131,6 +132,15 @@ export default function HomePageClient({ }: HomePageClientProps) {
     };
 
     fetchInitialData();
+  }, []);
+
+  // 埋点：首页加载完成（单独 useEffect 避免重复）
+  useEffect(() => {
+    const tracked = sessionStorage.getItem('_home_tracked');
+    if (!tracked) {
+      trackEvent('home_page_loaded', { category: 'page' });
+      sessionStorage.setItem('_home_tracked', '1');
+    }
   }, []);
 
 
