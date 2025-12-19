@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { Funnel } from '@/app/model/analytics';
 
 // 获取漏斗列表或分析结果
 export async function GET(request: NextRequest) {
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
 
         const db = await getDb();
 
-        const funnel: Funnel = {
+        const funnel = {
             name,
             steps,
             createdAt: new Date(),
@@ -101,7 +100,7 @@ export async function DELETE(request: NextRequest) {
     }
 }
 
-async function analyzeFunnel(db: any, funnel: Funnel, startDate: Date) {
+async function analyzeFunnel(db: any, funnel: any, startDate: Date) {
     const steps = funnel.steps;
     const results: any[] = [];
 
@@ -132,16 +131,17 @@ async function analyzeFunnel(db: any, funnel: Funnel, startDate: Date) {
             matchFilter
         );
 
-        const visitorSet = new Set(visitors);
+        const visitorSet = new Set<string>(visitors as string[]);
 
         // 如果不是第一步，只计算同时完成了上一步的访客
         let count: number;
         if (previousVisitors === null) {
             count = visitorSet.size;
         } else {
-            count = [...visitorSet].filter(v => previousVisitors!.has(v)).length;
+            const visitorArray = Array.from(visitorSet);
+            count = visitorArray.filter(v => previousVisitors!.has(v)).length;
             // 更新为交集
-            const intersection = new Set([...visitorSet].filter(v => previousVisitors!.has(v)));
+            const intersection = new Set<string>(visitorArray.filter(v => previousVisitors!.has(v)));
             previousVisitors = intersection;
         }
 
