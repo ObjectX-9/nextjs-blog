@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 // 获取自定义事件统计
 export async function GET(request: NextRequest) {
     try {

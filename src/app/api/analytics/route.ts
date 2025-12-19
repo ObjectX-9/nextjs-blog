@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { parseUserAgent, getTrafficSource, getGeoFromIP } from './utils';
 
+export const dynamic = 'force-dynamic';
+
 // 收集页面访问
 export async function POST(request: NextRequest) {
     try {

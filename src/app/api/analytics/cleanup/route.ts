@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 // 清理过期的埋点数据（保留最近90天）
 export async function POST(request: NextRequest) {
     try {

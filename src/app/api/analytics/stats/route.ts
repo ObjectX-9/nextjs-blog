@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 // 获取统计数据
 export async function GET(request: NextRequest) {
     try {
