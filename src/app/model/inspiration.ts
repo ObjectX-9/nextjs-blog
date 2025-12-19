@@ -1,10 +1,18 @@
 import { PaginatedData } from ".";
 
+export interface IInspirationVideo {
+  url: string;
+  title?: string;
+  thumbnail?: string;
+  isDouyin?: boolean; // 是否是抖音链接
+}
+
 export interface IInspiration {
   _id?: string;
   title: string;
   content: string;
   images?: string[]; // 图片URL数组
+  videos?: IInspirationVideo[]; // 视频数组（支持抖音）
   createdAt: Date;
   updatedAt: Date;
   likes: number;

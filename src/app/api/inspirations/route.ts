@@ -54,6 +54,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     likes: 0,
     views: 0,
     images: data.images || [],
+    videos: data.videos || [],
   };
 
   const result = await inspirationDb.insertOne(inspiration);
@@ -76,7 +77,7 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
   RequestValidator.validateRequired(data, ['title', 'content']);
 
   const updateData = {
-    ...RequestValidator.sanitize(data, ['title', 'content', 'status', 'tags', 'images']),
+    ...RequestValidator.sanitize(data, ['title', 'content', 'status', 'tags', 'images', 'videos', 'links', 'bilibili']),
     updatedAt: new Date(),
   };
 

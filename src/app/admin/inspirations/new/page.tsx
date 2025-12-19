@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Form, Input, Select, Upload, Button, Card, message, Space, Alert } from 'antd';
-import { PlusOutlined, LoadingOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
+import { Form, Input, Select, Upload, Button, Card, message, Space, Alert, Typography } from 'antd';
+import { PlusOutlined, LoadingOutlined, DeleteOutlined, LinkOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { DouyinVideoPreview } from '@/components/DouyinVideoPreview';
+import { IInspirationVideo } from '@/app/model/inspiration';
 import type { RcFile } from 'antd/es/upload';
 import { extractBilibiliInfo } from '@/app/utils/bilibili';
 
@@ -14,10 +16,12 @@ export default function NewInspiration() {
   const [form] = Form.useForm();
   const router = useRouter();
   const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<IInspirationVideo[]>([]);
   const [links, setLinks] = useState<Array<{ title: string; url: string; icon?: string }>>([]);
   const [uploading, setUploading] = useState(false);
   const [bilibiliInfo, setBilibiliInfo] = useState<{ bvid: string; page?: number } | null>(null);
   const [bilibiliError, setBilibiliError] = useState<string>('');
+  const [douyinUrl, setDouyinUrl] = useState('');
 
   const handleImageUpload = async (file: RcFile) => {
     if (bilibiliInfo) {
@@ -75,6 +79,24 @@ export default function NewInspiration() {
     }
   };
 
+  const handleAddDouyinVideo = () => {
+    if (!douyinUrl.trim()) {
+      message.warning('请输入抖音视频链接');
+      return;
+    }
+    if (!douyinUrl.includes('douyin.com') && !douyinUrl.includes('v.douyin.com')) {
+      message.warning('请输入有效的抖音视频链接');
+      return;
+    }
+    setVideos([...videos, { url: douyinUrl.trim(), isDouyin: true }]);
+    setDouyinUrl('');
+    message.success('抖音视频已添加');
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos(videos.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (values: any) => {
     const newInspiration = {
       title: values.title,
@@ -82,6 +104,7 @@ export default function NewInspiration() {
       status: values.status,
       tags: values.tags || [],
       images: images,
+      videos: videos,
       bilibili: bilibiliInfo,
       links: links
     };
@@ -144,7 +167,7 @@ export default function NewInspiration() {
               >
                 {uploadButton}
               </Upload>
-              
+
               {bilibiliInfo && (
                 <Alert
                   message="已添加视频，不能上传图片"
@@ -153,7 +176,7 @@ export default function NewInspiration() {
                   className="mb-4"
                 />
               )}
-              
+
               {images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                   {images.map((image, index) => (
@@ -186,6 +209,46 @@ export default function NewInspiration() {
               rules={[{ required: true, message: '请输入内容' }]}
             >
               <TextArea rows={4} />
+            </Form.Item>
+
+            <Form.Item label="抖音视频">
+              <div className="space-y-4">
+                {videos.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {videos.map((video, index) => (
+                      <div key={index} className="relative aspect-video">
+                        <DouyinVideoPreview url={video.url} />
+                        <Button
+                          type="primary"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          className="absolute top-2 right-2 z-10"
+                          onClick={() => removeVideo(index)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    placeholder="粘贴抖音视频链接，如: https://v.douyin.com/xxxxx/"
+                    value={douyinUrl}
+                    onChange={(e) => setDouyinUrl(e.target.value)}
+                    onPressEnter={handleAddDouyinVideo}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<VideoCameraOutlined />}
+                    onClick={handleAddDouyinVideo}
+                  >
+                    添加
+                  </Button>
+                </Space.Compact>
+                <Typography.Text type="secondary" className="text-xs">
+                  支持抖音分享链接，视频将在展示时自动解析
+                </Typography.Text>
+              </div>
             </Form.Item>
 
             <Form.Item

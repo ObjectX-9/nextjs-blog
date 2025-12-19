@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ITravelRecord } from "@/app/model/travel";
 import { useState } from "react";
+import { DouyinVideoPlayer } from "@/components/DouyinVideoPreview";
 
 interface TravelRecordCardProps {
     record: ITravelRecord;
@@ -184,27 +185,31 @@ export function TravelRecordCard({ record }: TravelRecordCardProps) {
                 {record.videos && record.videos.length > 0 && (
                     <div className="mb-4">
                         <div className={`grid gap-3 ${record.videos.length === 1
-                                ? "grid-cols-1"
-                                : "grid-cols-1 md:grid-cols-2"
+                            ? "grid-cols-1"
+                            : "grid-cols-1 md:grid-cols-2"
                             }`}>
                             {record.videos.map((video, index) => (
-                                <div key={index} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50 shadow-sm">
-                                    <video
-                                        src={video.url}
-                                        controls
-                                        className="w-full h-full object-cover"
-                                        poster={video.thumbnail}
-                                        preload="metadata"
-                                    >
-                                        <source src={video.url} />
-                                        您的浏览器不支持视频播放
-                                    </video>
-                                    {video.title && (
-                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-2">
-                                            <p className="text-white text-sm font-medium">{video.title}</p>
-                                        </div>
-                                    )}
-                                </div>
+                                video.isDouyin ? (
+                                    <DouyinVideoPlayer key={index} url={video.url} title={video.title} thumbnail={video.thumbnail} />
+                                ) : (
+                                    <div key={index} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50 shadow-sm">
+                                        <video
+                                            src={video.url}
+                                            controls
+                                            className="w-full h-full object-cover"
+                                            poster={video.thumbnail}
+                                            preload="metadata"
+                                        >
+                                            <source src={video.url} />
+                                            您的浏览器不支持视频播放
+                                        </video>
+                                        {video.title && (
+                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-2">
+                                                <p className="text-white text-sm font-medium">{video.title}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
                             ))}
                         </div>
                     </div>

@@ -10,6 +10,7 @@ export interface ITravelVideo {
     url: string;
     title?: string;
     thumbnail?: string; // 视频缩略图
+    isDouyin?: boolean; // 是否是抖音链接
 }
 
 // 前端使用的接口，符合 FrontendDocument 约束
@@ -60,7 +61,8 @@ const travelImageSchema = new Schema<ITravelImage>({
 const travelVideoSchema = new Schema<ITravelVideo>({
     url: { type: String, required: true },
     title: { type: String },
-    thumbnail: { type: String } // 视频缩略图
+    thumbnail: { type: String }, // 视频缩略图
+    isDouyin: { type: Boolean, default: false } // 是否是抖音链接
 });
 
 const travelRecordSchema = new Schema<ITravelRecordDocument>({

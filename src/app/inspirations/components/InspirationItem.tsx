@@ -9,6 +9,7 @@ import InspirationHeader from "@/components/inspirations/InspirationHeader";
 import TagsList from "@/components/inspirations/TagsList";
 import ActionButtons from "@/components/inspirations/ActionButtons";
 import { useInspirationView } from "../hooks/useInspirationView";
+import { DouyinVideoPlayer } from "@/components/DouyinVideoPreview";
 
 interface InspirationItemProps {
     inspiration: IInspiration;
@@ -81,6 +82,26 @@ export const InspirationItem = memo<InspirationItemProps>(({
                                 title={inspiration.bilibili.title}
                                 isMobile={isMobile}
                             />
+                        )}
+
+                        {inspiration.videos && inspiration.videos.length > 0 && (
+                            <div className={`grid gap-3 mb-3 ${inspiration.videos.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}>
+                                {inspiration.videos.map((video, index) => (
+                                    video.isDouyin ? (
+                                        <DouyinVideoPlayer key={index} url={video.url} title={video.title} thumbnail={video.thumbnail} />
+                                    ) : (
+                                        <div key={index} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50 shadow-sm">
+                                            <video
+                                                src={video.url}
+                                                controls
+                                                className="w-full h-full object-cover"
+                                                poster={video.thumbnail}
+                                                preload="metadata"
+                                            />
+                                        </div>
+                                    )
+                                ))}
+                            </div>
                         )}
 
                         {inspiration.images && inspiration.images.length > 0 && (

@@ -27,7 +27,9 @@ import {
     TeamOutlined,
     DollarOutlined,
     StarOutlined,
+    VideoCameraOutlined,
 } from "@ant-design/icons";
+import { DouyinVideoPreview } from "@/components/DouyinVideoPreview";
 import dayjs from "dayjs";
 import { travelBusiness } from "@/app/business/travel";
 import { ITravelRecord, ITravelImage, ITravelVideo } from "@/app/model/travel";
@@ -48,6 +50,7 @@ export default function TravelAdmin() {
     const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
     const [videoPreviewUrls, setVideoPreviewUrls] = useState<string[]>([]);
     const [isCompressing, setIsCompressing] = useState(false);
+    const [douyinUrl, setDouyinUrl] = useState('');
 
     // Fetch records on component mount
     const fetchRecords = useCallback(async () => {
@@ -271,6 +274,28 @@ export default function TravelAdmin() {
         setSelectedVideos([]);
         setImagePreviewUrls([]);
         setVideoPreviewUrls([]);
+        setDouyinUrl('');
+    };
+
+    const handleAddDouyinVideo = () => {
+        if (!douyinUrl.trim()) {
+            message.warning('请输入抖音视频链接');
+            return;
+        }
+        if (!douyinUrl.includes('douyin.com') && !douyinUrl.includes('v.douyin.com')) {
+            message.warning('请输入有效的抖音视频链接');
+            return;
+        }
+        const newVideo: ITravelVideo = {
+            url: douyinUrl.trim(),
+            isDouyin: true,
+        };
+        setEditingRecord(prev => prev ? {
+            ...prev,
+            videos: [...(prev.videos || []), newVideo]
+        } : null);
+        setDouyinUrl('');
+        message.success('抖音视频已添加');
     };
 
     const sortRecords = (records: ITravelRecord[]) => {
@@ -444,14 +469,18 @@ export default function TravelAdmin() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                         {record.videos.map((video, vidIndex) => (
                                             <div key={vidIndex} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50">
-                                                <video
-                                                    src={video.url}
-                                                    controls
-                                                    className="w-full h-full object-cover"
-                                                    poster={video.thumbnail}
-                                                >
-                                                    您的浏览器不支持视频播放
-                                                </video>
+                                                {video.isDouyin ? (
+                                                    <DouyinVideoPreview url={video.url} />
+                                                ) : (
+                                                    <video
+                                                        src={video.url}
+                                                        controls
+                                                        className="w-full h-full object-cover"
+                                                        poster={video.thumbnail}
+                                                    >
+                                                        您的浏览器不支持视频播放
+                                                    </video>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -719,18 +748,22 @@ export default function TravelAdmin() {
                         <Form.Item label="当前视频">
                             <div className="grid grid-cols-2 gap-2">
                                 {editingRecord.videos.map((video, index) => (
-                                    <div key={index} className="relative">
-                                        <video
-                                            src={video.url}
-                                            controls
-                                            className="w-full h-32 object-cover rounded"
-                                        />
+                                    <div key={index} className="relative aspect-video">
+                                        {video.isDouyin ? (
+                                            <DouyinVideoPreview url={video.url} />
+                                        ) : (
+                                            <video
+                                                src={video.url}
+                                                controls
+                                                className="w-full h-full object-cover rounded"
+                                            />
+                                        )}
                                         <Button
                                             type="text"
                                             danger
                                             icon={<DeleteOutlined />}
                                             size="small"
-                                            className="absolute top-0 right-0"
+                                            className="absolute top-0 right-0 z-10"
                                             onClick={() => removeVideo(index, false)}
                                         />
                                     </div>
@@ -739,8 +772,8 @@ export default function TravelAdmin() {
                         </Form.Item>
                     )}
 
-                    {/* 新增视频 */}
-                    <Form.Item label="添加视频">
+                    {/* 新增视频文件 */}
+                    <Form.Item label="添加视频文件">
                         <div className="space-y-2">
                             <input
                                 type="file"
@@ -770,6 +803,30 @@ export default function TravelAdmin() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    </Form.Item>
+
+                    {/* 添加抖音视频 */}
+                    <Form.Item label="添加抖音视频">
+                        <div className="space-y-2">
+                            <Space.Compact style={{ width: '100%' }}>
+                                <Input
+                                    placeholder="粘贴抖音视频链接，如: https://v.douyin.com/xxxxx/"
+                                    value={douyinUrl}
+                                    onChange={(e) => setDouyinUrl(e.target.value)}
+                                    onPressEnter={handleAddDouyinVideo}
+                                />
+                                <Button
+                                    type="primary"
+                                    icon={<VideoCameraOutlined />}
+                                    onClick={handleAddDouyinVideo}
+                                >
+                                    添加
+                                </Button>
+                            </Space.Compact>
+                            <Text type="secondary" className="text-xs">
+                                支持抖音分享链接，视频将在展示时自动解析
+                            </Text>
                         </div>
                     </Form.Item>
                 </Form>

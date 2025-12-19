@@ -1,12 +1,19 @@
 import { NextRequest } from "next/server";
-import { createApiParams } from "@/utils/api-helpers";
 import { ApiErrors, successResponse, withErrorHandler } from "../../data";
 import { inspirationDb } from "@/utils/db-instances";
 
+// 从 URL 中提取 id
+function getIdFromUrl(request: NextRequest): string {
+  const url = new URL(request.url);
+  const pathParts = url.pathname.split('/');
+  const id = pathParts[pathParts.length - 1];
+  if (!id) throw ApiErrors.BAD_REQUEST("缺少 id 参数");
+  return id;
+}
+
 // 获取单个灵感笔记
 export const GET = withErrorHandler(async (request: NextRequest) => {
-  const params = createApiParams(request);
-  const id = params.getRequiredString("id");
+  const id = getIdFromUrl(request);
   const inspiration = await inspirationDb.findById(id);
 
   if (!inspiration) {
@@ -18,8 +25,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
 
 // 更新灵感笔记
 export const PUT = withErrorHandler(async (request: NextRequest) => {
-  const params = createApiParams(request);
-  const id = params.getRequiredString("id");
+  const id = getIdFromUrl(request);
   const data = await request.json();
   const inspiration = await inspirationDb.findById(id);
 
@@ -65,9 +71,9 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
 
 // 点赞和浏览量接口
 export const POST = withErrorHandler(async (request: NextRequest) => {
-  const params = createApiParams(request);
-  const id = params.getRequiredString("id");
-  const type = params.getString("type");
+  const id = getIdFromUrl(request);
+  const url = new URL(request.url);
+  const type = url.searchParams.get("type");
   const inspiration = await inspirationDb.findById(id);
 
   if (!inspiration) {
@@ -96,8 +102,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
 // 删除灵感笔记
 export const DELETE = withErrorHandler(async (request: NextRequest) => {
-  const params = createApiParams(request);
-  const id = params.getRequiredString("id");
+  const id = getIdFromUrl(request);
   const result = await inspirationDb.deleteById(id);
 
   if (!result) {

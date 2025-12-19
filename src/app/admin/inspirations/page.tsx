@@ -24,6 +24,7 @@ import {
   DeleteOutlined,
   SendOutlined,
 } from "@ant-design/icons";
+import { DouyinVideoPreview } from "@/components/DouyinVideoPreview";
 import { RcFile } from "antd/es/upload";
 
 const { TextArea } = Input;
@@ -278,7 +279,11 @@ export default function InspirationManagement() {
                   </div>
                 )}
 
-                {inspiration.images && inspiration.images.length > 0 ? (
+                {inspiration.videos && inspiration.videos.length > 0 ? (
+                  <div className="relative aspect-video mb-3">
+                    <DouyinVideoPreview url={inspiration.videos[0].url} />
+                  </div>
+                ) : inspiration.images && inspiration.images.length > 0 ? (
                   <div className="relative aspect-video mb-3">
                     <Image
                       src={inspiration.images[0]}

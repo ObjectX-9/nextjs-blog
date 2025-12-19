@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IInspiration } from '@/app/model/inspiration';
 import Image from 'next/image';
-import { Form, Input, Select, Upload, Button, Spin, Card, message, Space, InputNumber } from 'antd';
-import { PlusOutlined, LoadingOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
+import { Form, Input, Select, Upload, Button, Spin, Card, message, Space, InputNumber, Typography } from 'antd';
+import { PlusOutlined, LoadingOutlined, DeleteOutlined, LinkOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { DouyinVideoPreview } from '@/components/DouyinVideoPreview';
+import { IInspirationVideo } from '@/app/model/inspiration';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { RcFile } from 'antd/es/upload';
 
@@ -22,18 +24,25 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
   const [inspiration, setInspiration] = useState<IInspiration | null>(null);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<IInspirationVideo[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [douyinUrl, setDouyinUrl] = useState('');
   const router = useRouter();
 
   useEffect(() => {
     const fetchInspiration = async () => {
       try {
         const response = await fetch(`/api/inspirations/${params.id}`);
-        const data = await response.json();
+        const result = await response.json();
+        console.log('result', result)
+        const data = result.data || result; // 兼容包装和非包装格式
         setInspiration(data);
         if (data.images) {
           setImages(data.images);
+        }
+        if (data.videos) {
+          setVideos(data.videos);
         }
         if (data.links) {
           setLinks(data.links);
@@ -85,6 +94,24 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
     return false;
   };
 
+  const handleAddDouyinVideo = () => {
+    if (!douyinUrl.trim()) {
+      message.warning('请输入抖音视频链接');
+      return;
+    }
+    if (!douyinUrl.includes('douyin.com') && !douyinUrl.includes('v.douyin.com')) {
+      message.warning('请输入有效的抖音视频链接');
+      return;
+    }
+    setVideos([...videos, { url: douyinUrl.trim(), isDouyin: true }]);
+    setDouyinUrl('');
+    message.success('抖音视频已添加');
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos(videos.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (values: any) => {
     const updatedInspiration = {
       title: values.title,
@@ -92,7 +119,8 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
       status: values.status,
       tags: values.tags?.split(',').map((tag: string) => tag.trim()).filter(Boolean) || [],
       images: images,
-      links: links.filter(link => link.title && link.url), // 只保存有标题和URL的链接
+      videos: videos,
+      links: links.filter(link => link.title && link.url),
       views: values.views,
       likes: values.likes
     };
@@ -166,7 +194,7 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
               >
                 {uploadButton}
               </Upload>
-              
+
               {images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                   {images.map((image, index) => (
@@ -191,6 +219,46 @@ export default function EditInspiration({ params }: { params: { id: string } }) 
                   ))}
                 </div>
               )}
+            </Form.Item>
+
+            <Form.Item label="抖音视频">
+              <div className="space-y-4">
+                {videos.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {videos.map((video, index) => (
+                      <div key={index} className="relative aspect-video">
+                        <DouyinVideoPreview url={video.url} />
+                        <Button
+                          type="primary"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          className="absolute top-2 right-2 z-10"
+                          onClick={() => removeVideo(index)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    placeholder="粘贴抖音视频链接，如: https://v.douyin.com/xxxxx/"
+                    value={douyinUrl}
+                    onChange={(e) => setDouyinUrl(e.target.value)}
+                    onPressEnter={handleAddDouyinVideo}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<VideoCameraOutlined />}
+                    onClick={handleAddDouyinVideo}
+                  >
+                    添加
+                  </Button>
+                </Space.Compact>
+                <Typography.Text type="secondary" className="text-xs">
+                  支持抖音分享链接，视频将在展示时自动解析
+                </Typography.Text>
+              </div>
             </Form.Item>
 
             <Form.Item label="链接">
