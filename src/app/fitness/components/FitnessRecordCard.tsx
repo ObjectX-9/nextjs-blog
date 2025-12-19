@@ -1,9 +1,50 @@
 import Image from "next/image";
-import { IFitnessRecord } from "@/app/model/fitness";
-import { useState } from "react";
+import { IFitnessRecord, IFitnessVideo } from "@/app/model/fitness";
+import { useState, useEffect } from "react";
+
+interface DouyinVideoInfo {
+    videoUrl: string;
+    coverUrl: string;
+    title: string;
+    author: string;
+}
 
 interface FitnessRecordCardProps {
     record: IFitnessRecord;
+}
+
+// 解析抖音视频的 hook
+function useDouyinVideo(video: IFitnessVideo | undefined) {
+    const [videoInfo, setVideoInfo] = useState<DouyinVideoInfo | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!video?.isDouyin || !video.url) return;
+
+        const fetchDouyinVideo = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await fetch('/api/douyin/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: video.url }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                setVideoInfo(data);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : '解析失败');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDouyinVideo();
+    }, [video?.isDouyin, video?.url]);
+
+    return { videoInfo, loading, error };
 }
 
 export function FitnessRecordCard({ record }: FitnessRecordCardProps) {
@@ -138,23 +179,27 @@ export function FitnessRecordCard({ record }: FitnessRecordCardProps) {
                             : "grid-cols-1 md:grid-cols-2"
                             }`}>
                             {record.videos.map((video, index) => (
-                                <div key={index} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50 shadow-sm">
-                                    <video
-                                        src={video.url}
-                                        controls
-                                        className="w-full h-full object-cover"
-                                        poster={video.thumbnail}
-                                        preload="metadata"
-                                    >
-                                        <source src={video.url} />
-                                        您的浏览器不支持视频播放
-                                    </video>
-                                    {video.title && (
-                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-2">
-                                            <p className="text-white text-sm font-medium">{video.title}</p>
-                                        </div>
-                                    )}
-                                </div>
+                                video.isDouyin ? (
+                                    <DouyinVideoPlayer key={index} video={video} />
+                                ) : (
+                                    <div key={index} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50 shadow-sm">
+                                        <video
+                                            src={video.url}
+                                            controls
+                                            className="w-full h-full object-cover"
+                                            poster={video.thumbnail}
+                                            preload="metadata"
+                                        >
+                                            <source src={video.url} />
+                                            您的浏览器不支持视频播放
+                                        </video>
+                                        {video.title && (
+                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-2">
+                                                <p className="text-white text-sm font-medium">{video.title}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
                             ))}
                         </div>
                     </div>
@@ -229,4 +274,82 @@ export function FitnessRecordCard({ record }: FitnessRecordCardProps) {
             )}
         </div>
     );
-} 
+}
+
+// 抖音视频播放器组件
+function DouyinVideoPlayer({ video }: { video: IFitnessVideo }) {
+    const { videoInfo, loading, error } = useDouyinVideo(video);
+
+    if (loading) {
+        return (
+            <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-100 shadow-sm flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+                    <p className="text-gray-500 text-sm">正在解析抖音视频...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-100 shadow-sm flex items-center justify-center">
+                <div className="text-center p-4">
+                    <p className="text-red-500 text-sm mb-2">视频解析失败</p>
+                    <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 text-sm hover:underline"
+                    >
+                        点击查看原视频 →
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (!videoInfo?.videoUrl) {
+        return (
+            <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-100 shadow-sm flex items-center justify-center">
+                <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 text-sm hover:underline"
+                >
+                    点击查看抖音视频 →
+                </a>
+            </div>
+        );
+    }
+
+    // 使用代理地址解决跨域问题
+    const proxyVideoUrl = `/api/douyin/proxy?url=${encodeURIComponent(videoInfo.videoUrl)}`;
+
+    return (
+        <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-50 shadow-sm">
+            <video
+                src={proxyVideoUrl}
+                controls
+                className="w-full h-full object-contain bg-black"
+                poster={videoInfo.coverUrl || video.thumbnail}
+                preload="metadata"
+                playsInline
+                crossOrigin="anonymous"
+            >
+                您的浏览器不支持视频播放
+            </video>
+            {(video.title || videoInfo.title) && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                    <p className="text-white text-sm font-medium truncate">
+                        {video.title || videoInfo.title}
+                    </p>
+                    {videoInfo.author && (
+                        <p className="text-white/70 text-xs">@{videoInfo.author}</p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}

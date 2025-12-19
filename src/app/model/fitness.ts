@@ -10,6 +10,7 @@ export interface IFitnessVideo {
     url: string;
     title?: string;
     thumbnail?: string; // 视频缩略图
+    isDouyin?: boolean; // 是否是抖音链接，需要解析
 }
 
 // 前端使用的接口，符合 FrontendDocument 约束
@@ -46,7 +47,8 @@ const fitnessImageSchema = new Schema<IFitnessImage>({
 const fitnessVideoSchema = new Schema<IFitnessVideo>({
     url: { type: String, required: true },
     title: { type: String },
-    thumbnail: { type: String } // 视频缩略图
+    thumbnail: { type: String }, // 视频缩略图
+    isDouyin: { type: Boolean, default: false } // 是否是抖音链接
 });
 
 const fitnessRecordSchema = new Schema<IFitnessRecordDocument>({

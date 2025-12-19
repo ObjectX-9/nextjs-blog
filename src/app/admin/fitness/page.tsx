@@ -9,7 +9,6 @@ import {
     Form,
     Input,
     DatePicker,
-    Upload,
     Space,
     Card,
     message,
@@ -21,7 +20,6 @@ import {
     PlusOutlined,
     EditOutlined,
     DeleteOutlined,
-    UploadOutlined,
     VideoCameraOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -29,6 +27,68 @@ import { fitnessBusiness } from "@/app/business/fitness";
 import { IFitnessRecord, IFitnessImage, IFitnessVideo } from "@/app/model/fitness";
 
 const { Text, Paragraph } = Typography;
+
+// 抖音视频预览组件 - 自动加载
+function DouyinVideoPreview({ url }: { url: string }) {
+    const [videoInfo, setVideoInfo] = useState<{ videoUrl: string; coverUrl: string; title: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchVideo = async () => {
+            try {
+                const res = await fetch('/api/douyin/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                setVideoInfo(data);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : '解析失败');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchVideo();
+    }, [url]);
+
+    if (loading) {
+        return (
+            <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto mb-2"></div>
+                    <Text className="text-xs text-gray-500">解析中...</Text>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !videoInfo?.videoUrl) {
+        return (
+            <div className="w-full h-full bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg flex flex-col items-center justify-center">
+                <VideoCameraOutlined className="text-3xl text-pink-500 mb-2" />
+                <Text className="text-sm text-gray-600">抖音视频</Text>
+                {error && <Text className="text-xs text-red-500 mt-1">{error}</Text>}
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 mt-2 hover:underline">
+                    查看原视频 →
+                </a>
+            </div>
+        );
+    }
+
+    const proxyUrl = `/api/douyin/proxy?url=${encodeURIComponent(videoInfo.videoUrl)}`;
+    return (
+        <video
+            src={proxyUrl}
+            controls
+            className="w-full h-full object-contain bg-black rounded-lg"
+            poster={videoInfo.coverUrl}
+            playsInline
+        />
+    );
+}
 
 export default function FitnessAdmin() {
     const [form] = Form.useForm();
@@ -43,6 +103,7 @@ export default function FitnessAdmin() {
     const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
     const [videoPreviewUrls, setVideoPreviewUrls] = useState<string[]>([]);
     const [isCompressing, setIsCompressing] = useState(false);
+    const [douyinUrl, setDouyinUrl] = useState('');
 
     // Fetch records on component mount
     const fetchRecords = useCallback(async () => {
@@ -251,6 +312,33 @@ export default function FitnessAdmin() {
         setSelectedVideos([]);
         setImagePreviewUrls([]);
         setVideoPreviewUrls([]);
+        setDouyinUrl('');
+    };
+
+    const handleAddDouyinVideo = () => {
+        if (!douyinUrl.trim()) {
+            message.warning('请输入抖音视频链接');
+            return;
+        }
+
+        // 验证是否是抖音链接
+        if (!douyinUrl.includes('douyin.com') && !douyinUrl.includes('v.douyin.com')) {
+            message.warning('请输入有效的抖音视频链接');
+            return;
+        }
+
+        const newVideo: IFitnessVideo = {
+            url: douyinUrl.trim(),
+            isDouyin: true,
+        };
+
+        setEditingRecord(prev => prev ? {
+            ...prev,
+            videos: [...(prev.videos || []), newVideo]
+        } : null);
+
+        setDouyinUrl('');
+        message.success('抖音视频已添加');
     };
 
     const sortRecords = (records: IFitnessRecord[]) => {
@@ -410,14 +498,18 @@ export default function FitnessAdmin() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                         {record.videos.map((video, vidIndex) => (
                                             <div key={vidIndex} className="relative aspect-video overflow-hidden rounded-lg bg-gray-50">
-                                                <video
-                                                    src={video.url}
-                                                    controls
-                                                    className="w-full h-full object-cover"
-                                                    poster={video.thumbnail}
-                                                >
-                                                    您的浏览器不支持视频播放
-                                                </video>
+                                                {video.isDouyin ? (
+                                                    <DouyinVideoPreview url={video.url} />
+                                                ) : (
+                                                    <video
+                                                        src={video.url}
+                                                        controls
+                                                        className="w-full h-full object-cover"
+                                                        poster={video.thumbnail}
+                                                    >
+                                                        您的浏览器不支持视频播放
+                                                    </video>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -601,11 +693,15 @@ export default function FitnessAdmin() {
                             <div className="grid grid-cols-2 gap-2">
                                 {editingRecord.videos.map((video, index) => (
                                     <div key={index} className="relative">
-                                        <video
-                                            src={video.url}
-                                            controls
-                                            className="w-full h-32 object-cover rounded"
-                                        />
+                                        {video.isDouyin ? (
+                                            <DouyinVideoPreview url={video.url} />
+                                        ) : (
+                                            <video
+                                                src={video.url}
+                                                controls
+                                                className="w-full h-32 object-cover rounded"
+                                            />
+                                        )}
                                         <Button
                                             type="text"
                                             danger
@@ -621,7 +717,7 @@ export default function FitnessAdmin() {
                     )}
 
                     {/* 新增视频 */}
-                    <Form.Item label="添加视频">
+                    <Form.Item label="添加视频文件">
                         <div className="space-y-2">
                             <input
                                 type="file"
@@ -651,6 +747,30 @@ export default function FitnessAdmin() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    </Form.Item>
+
+                    {/* 添加抖音视频 */}
+                    <Form.Item label="添加抖音视频">
+                        <div className="space-y-2">
+                            <Space.Compact style={{ width: '100%' }}>
+                                <Input
+                                    placeholder="粘贴抖音视频链接，如: https://v.douyin.com/xxxxx/"
+                                    value={douyinUrl}
+                                    onChange={(e) => setDouyinUrl(e.target.value)}
+                                    onPressEnter={handleAddDouyinVideo}
+                                />
+                                <Button
+                                    type="primary"
+                                    icon={<VideoCameraOutlined />}
+                                    onClick={handleAddDouyinVideo}
+                                >
+                                    添加
+                                </Button>
+                            </Space.Compact>
+                            <Text type="secondary" className="text-xs">
+                                支持抖音分享链接，视频将在展示时自动解析
+                            </Text>
                         </div>
                     </Form.Item>
                 </Form>
