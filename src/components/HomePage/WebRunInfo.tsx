@@ -444,10 +444,10 @@ export const WebRunInfo = () => {
 
       <StatIndicator
         icon={<Eye />}
-        label="访问量"
-        value={analyticsData.uniqueVisitors}
-        bgColor="bg-[#48bfaf]/20"
-        iconColor="text-[#48bfaf]"
+        label="访问人数"
+        value={(site?.visitCount || 0) + analyticsData.uniqueVisitors}
+        bgColor="bg-blue-500/20"
+        iconColor="text-blue-500"
         title={`页面浏览量: ${analyticsData.pageViews}`}
       />
 
@@ -455,10 +455,10 @@ export const WebRunInfo = () => {
 
       <StatIndicator
         icon={<Users />}
-        label="在线"
+        label="在线人数"
         value={analyticsData.realtimeCount}
-        bgColor="bg-blue-500/20"
-        iconColor="text-blue-500"
+        bgColor="bg-[#48bfaf]/20"
+        iconColor="text-[#48bfaf]"
         title="当前在线人数"
       />
 
