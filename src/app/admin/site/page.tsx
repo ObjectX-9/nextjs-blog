@@ -17,6 +17,7 @@ import { AuthorInfoTab } from "./components/AuthorInfoTab";
 import { SeoSettingsTab } from "./components/SeoSettingsTab";
 import { VerificationTab } from "./components/VerificationTab";
 import { AnalyticsTab } from "./components/AnalyticsTab";
+import { CommentsTab } from "./components/CommentsTab";
 import { ImageUpload } from "./components/ImageUpload";
 import { useSiteManagement } from "./hooks/useSiteManagement";
 import { api } from "./api";
@@ -120,6 +121,17 @@ export default function SiteManagementPage() {
         label: "统计分析",
         children: (
           <AnalyticsTab
+            editedSite={editedSite}
+            isEditing={isEditing}
+            handleInputChange={handleInputChange}
+          />
+        ),
+      },
+      {
+        key: "comments",
+        label: "评论配置",
+        children: (
+          <CommentsTab
             editedSite={editedSite}
             isEditing={isEditing}
             handleInputChange={handleInputChange}

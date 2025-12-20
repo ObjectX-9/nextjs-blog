@@ -36,6 +36,12 @@ export interface ISite {
   googleTagManagerId?: string; // 谷歌标签管理器ID
   isOpenAdsense?: boolean; // 是否开启 AdSense
   googleAdsenseId?: string; // 谷歌广告 ID
+  // Giscus 评论配置
+  isOpenGiscus?: boolean; // 是否开启 Giscus 评论
+  giscusRepo?: string; // Giscus 仓库名 (格式: owner/repo)
+  giscusRepoId?: string; // Giscus 仓库 ID
+  giscusCategory?: string; // Giscus 分类名
+  giscusCategoryId?: string; // Giscus 分类 ID
 }
 
 const siteSchema = new Schema<ISite>({
@@ -72,6 +78,12 @@ const siteSchema = new Schema<ISite>({
   googleAdsenseId: { type: String },
   workspaceBgUrl1: { type: String, required: true },
   workspaceBgUrl2: { type: String, required: true },
+  // Giscus 评论配置
+  isOpenGiscus: { type: Boolean, default: false },
+  giscusRepo: { type: String },
+  giscusRepoId: { type: String },
+  giscusCategory: { type: String },
+  giscusCategoryId: { type: String },
 });
 
 export const Site = models.Site || model<ISite>("Site", siteSchema);

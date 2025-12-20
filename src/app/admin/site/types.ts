@@ -16,6 +16,12 @@ export interface EditableSite extends Omit<ISite, "visitCount" | "likeCount"> {
   googleAdsenseId?: string;
   isOpenGtm?: boolean;
   isOpenAdsense?: boolean;
+  // Giscus 评论配置
+  isOpenGiscus?: boolean;
+  giscusRepo?: string;
+  giscusRepoId?: string;
+  giscusCategory?: string;
+  giscusCategoryId?: string;
 }
 
 export interface CaptchaDetail {

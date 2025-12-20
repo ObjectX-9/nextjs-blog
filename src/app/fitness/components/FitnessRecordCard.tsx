@@ -285,7 +285,7 @@ function DouyinVideoPlayer({ video }: { video: IFitnessVideo }) {
             <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-100 shadow-sm flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
-                    <p className="text-gray-500 text-sm">正在解析抖音视频...</p>
+                    <p className="text-gray-500 text-sm">正在解析视频...</p>
                 </div>
             </div>
         );
@@ -318,7 +318,7 @@ function DouyinVideoPlayer({ video }: { video: IFitnessVideo }) {
                     rel="noopener noreferrer"
                     className="text-blue-500 text-sm hover:underline"
                 >
-                    点击查看抖音视频 →
+                    点击查看视频 →
                 </a>
             </div>
         );

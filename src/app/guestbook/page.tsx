@@ -90,7 +90,14 @@ export default function GuestbookPage() {
                 </div>
 
                 {/* 评论区 */}
-                <GiscusComments className="mt-0 pt-0 border-t-0" />
+                <GiscusComments
+                    className="mt-0 pt-0 border-t-0"
+                    isOpenGiscus={site?.isOpenGiscus}
+                    giscusRepo={site?.giscusRepo}
+                    giscusRepoId={site?.giscusRepoId}
+                    giscusCategory={site?.giscusCategory}
+                    giscusCategoryId={site?.giscusCategoryId}
+                />
             </div>
         </div>
     );

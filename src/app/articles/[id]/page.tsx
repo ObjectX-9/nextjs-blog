@@ -466,7 +466,13 @@ export default function ArticleDetailPage() {
             <div className="prose max-w-none">{renderArticleContent()}</div>
             {/* 评论区 - 仅在已验证或未开启验证时显示 */}
             {(!site?.isOpenVerifyArticle || isVerified) && (
-              <GiscusComments />
+              <GiscusComments
+                isOpenGiscus={site?.isOpenGiscus}
+                giscusRepo={site?.giscusRepo}
+                giscusRepoId={site?.giscusRepoId}
+                giscusCategory={site?.giscusCategory}
+                giscusCategoryId={site?.giscusCategoryId}
+              />
             )}
           </div>
         </div>
@@ -596,7 +602,13 @@ export default function ArticleDetailPage() {
             {renderArticleContent()}
             {/* 评论区 - 仅在已验证或未开启验证时显示 */}
             {(!site?.isOpenVerifyArticle || isVerified) && (
-              <GiscusComments />
+              <GiscusComments
+                isOpenGiscus={site?.isOpenGiscus}
+                giscusRepo={site?.giscusRepo}
+                giscusRepoId={site?.giscusRepoId}
+                giscusCategory={site?.giscusCategory}
+                giscusCategoryId={site?.giscusCategoryId}
+              />
             )}
           </div>
         </div>
