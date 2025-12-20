@@ -461,7 +461,7 @@ export default function ArticleDetailPage() {
         </div>
 
         {/* 文章内容 */}
-        <div className="flex-1  custom-scrollbar-thin pt-24 pb-20">
+        <div className="flex-1 overflow-y-auto custom-scrollbar-thin pt-24 pb-20">
           <div className="p-4">
             <div className="prose max-w-none">{renderArticleContent()}</div>
             {/* 评论区 - 仅在已验证或未开启验证时显示 */}
