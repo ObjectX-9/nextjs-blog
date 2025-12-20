@@ -4,6 +4,13 @@ const ANALYTICS_ENDPOINT = '/api/analytics';
 const HEARTBEAT_INTERVAL = 30000; // 30秒心跳
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30分钟会话超时
 
+// 频率限制配置
+const RATE_LIMIT = {
+    maxRequests: 20,      // 时间窗口内最大请求数
+    windowMs: 60000,      // 时间窗口（1分钟）
+    minInterval: 500,     // 最小请求间隔（500ms）
+};
+
 class Analytics {
     private visitorId: string = '';
     private sessionId: string = '';
@@ -11,6 +18,10 @@ class Analytics {
     private pageEnterTime: number = 0;
     private heartbeatTimer: NodeJS.Timeout | null = null;
     private initialized: boolean = false;
+
+    // 频率限制相关
+    private requestTimestamps: number[] = [];
+    private lastRequestTime: number = 0;
 
     // 初始化
     init() {
@@ -64,7 +75,7 @@ class Analytics {
         }
 
         // 创建新会话
-        const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 11);
         sessionStorage.setItem('_sid', id);
         sessionStorage.setItem('_lastActive', Date.now().toString());
         return id;
@@ -95,8 +106,47 @@ class Analytics {
         };
     }
 
+    // 检查是否超过频率限制
+    private isRateLimited(): boolean {
+        const now = Date.now();
+
+        // 检查最小间隔
+        if (now - this.lastRequestTime < RATE_LIMIT.minInterval) {
+            return true;
+        }
+
+        // 清理过期的时间戳
+        this.requestTimestamps = this.requestTimestamps.filter(
+            ts => now - ts < RATE_LIMIT.windowMs
+        );
+
+        // 检查时间窗口内的请求数
+        if (this.requestTimestamps.length >= RATE_LIMIT.maxRequests) {
+            console.warn('Analytics: Rate limit exceeded, request dropped');
+            return true;
+        }
+
+        return false;
+    }
+
+    // 记录请求时间
+    private recordRequest() {
+        const now = Date.now();
+        this.lastRequestTime = now;
+        this.requestTimestamps.push(now);
+    }
+
     // 发送数据
     private async send(type: string, data: any) {
+        // 心跳和页面卸载时的 duration 不受频率限制
+        const bypassRateLimit = type === 'heartbeat' || type === 'duration';
+
+        if (!bypassRateLimit && this.isRateLimited()) {
+            return;
+        }
+
+        this.recordRequest();
+
         try {
             await fetch(ANALYTICS_ENDPOINT, {
                 method: 'POST',
