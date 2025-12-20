@@ -16,9 +16,15 @@ export default function ShareButton({ title, description = '', url }: ShareButto
     const [copied, setCopied] = useState(false);
     const [qrCodeUrl, setQrCodeUrl] = useState('');
     const [showQrModal, setShowQrModal] = useState(false);
+    const [canNativeShare, setCanNativeShare] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const shareUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
+
+    // 检测是否支持原生分享
+    useEffect(() => {
+        setCanNativeShare(typeof navigator !== 'undefined' && !!navigator.share);
+    }, []);
 
     // 点击外部关闭菜单
     useEffect(() => {
@@ -30,6 +36,23 @@ export default function ShareButton({ title, description = '', url }: ShareButto
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // 使用原生分享 API（移动端调起 App）
+    const handleNativeShare = async () => {
+        try {
+            await navigator.share({
+                title: title,
+                text: description || title,
+                url: shareUrl,
+            });
+            setIsOpen(false);
+        } catch (err) {
+            // 用户取消分享不算错误
+            if ((err as Error).name !== 'AbortError') {
+                console.error('分享失败:', err);
+            }
+        }
+    };
 
     // 生成微信二维码并复制链接
     const generateQrCode = async () => {
@@ -90,6 +113,19 @@ export default function ShareButton({ title, description = '', url }: ShareButto
             {/* 分享菜单 */}
             {isOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    {/* 原生分享（移动端优先显示） */}
+                    {canNativeShare && (
+                        <>
+                            <button
+                                onClick={handleNativeShare}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                            >
+                                <Share2 size={16} />
+                                分享到...
+                            </button>
+                            <div className="border-t border-gray-100 my-1"></div>
+                        </>
+                    )}
                     <button
                         onClick={generateQrCode}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
