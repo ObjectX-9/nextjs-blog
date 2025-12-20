@@ -4,6 +4,7 @@ import InspirationSkeleton from "@/components/inspirations/InspirationSkeleton";
 import { InspirationItem } from "./components/InspirationItem";
 import { useInspirations } from "./hooks/useInspirations";
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import PageHeader from "@/components/PageHeader";
 
 const LoadingSpinner = memo(() => (
     <div className="text-center text-gray-500 py-4">
@@ -79,14 +80,10 @@ export const WebInspirationsView = memo(() => {
                 className="h-full overflow-y-auto custom-scrollbar-thin px-4 py-16"
             >
                 <div className="w-full max-w-3xl mx-auto">
-                    <header className="mb-6">
-                        <h1 className="text-3xl font-bold mb-2">
-                            灵感笔记
-                        </h1>
-                        <p className="text-base text-gray-600">
-                            记录生活中的灵感和想法
-                        </p>
-                    </header>
+                    <PageHeader
+                        title="灵感笔记"
+                        description="记录生活中的灵感和想法"
+                    />
 
                     <div className="space-y-6">
                         {inspirations.map((inspiration) => (

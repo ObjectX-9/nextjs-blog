@@ -4,6 +4,7 @@ import { TravelRecordCard } from "./components/TravelRecordCard";
 import { ITravelRecord } from "@/app/model/travel";
 import { travelBusiness } from "@/app/business/travel";
 import { useState, useEffect } from 'react';
+import PageHeader from "@/components/PageHeader";
 
 export default function Travel() {
     const [travelRecords, setTravelRecords] = useState<ITravelRecord[]>([]);
@@ -80,12 +81,10 @@ export default function Travel() {
         <main className="flex-1 h-screen overflow-hidden">
             <div className="h-full overflow-y-auto custom-scrollbar-thin px-4 sm:px-4 py-8 sm:py-16">
                 <div className="w-full max-w-4xl mx-auto">
-                    <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
-                        旅行记录
-                    </h1>
-                    <div className="mb-4 sm:mb-6 last:mb-0 text-sm sm:text-base text-gray-600">
-                        记录旅行的美好时光，分享沿途的精彩瞬间
-                    </div>
+                    <PageHeader
+                        title="旅行记录"
+                        description="记录旅行的美好时光，分享沿途的精彩瞬间"
+                    />
                     {months.map((month) => {
                         const [year, monthNum] = month.split('-');
                         const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('zh-CN', {

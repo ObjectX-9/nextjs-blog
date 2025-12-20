@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import "./styles.css";
+import ShareButton from "@/components/ShareButton";
 
 interface FriendWithId extends Friend {
   _id: string;
@@ -450,12 +451,15 @@ export default function Friends() {
       <section className="speakers py-8 px-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">🔗 友情链接</h1>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            提交友链
-          </button>
+          <div className="flex items-center gap-2">
+            <ShareButton title="友情链接" />
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              提交友链
+            </button>
+          </div>
         </div>
         <div className="mb-6 last:mb-0">友情链接，记录生活中的朋友们。</div>
 

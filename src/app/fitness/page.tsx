@@ -4,6 +4,7 @@ import { FitnessRecordCard } from "./components/FitnessRecordCard";
 import { IFitnessRecord } from "@/app/model/fitness";
 import { fitnessBusiness } from "@/app/business/fitness";
 import { useState, useEffect } from 'react';
+import PageHeader from "@/components/PageHeader";
 
 export default function Fitness() {
     const [fitnessRecords, setFitnessRecords] = useState<IFitnessRecord[]>([]);
@@ -80,12 +81,10 @@ export default function Fitness() {
         <main className="flex-1 h-screen overflow-hidden">
             <div className="h-full overflow-y-auto custom-scrollbar-thin px-4 sm:px-4 py-8 sm:py-16">
                 <div className="w-full max-w-4xl mx-auto">
-                    <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
-                        健身打卡
-                    </h1>
-                    <div className="mb-4 sm:mb-6 last:mb-0 text-sm sm:text-base text-gray-600">
-                        记录健身的每一天，见证成长的足迹
-                    </div>
+                    <PageHeader
+                        title="健身打卡"
+                        description="记录健身的每一天，见证成长的足迹"
+                    />
                     {months.map((month) => {
                         const [year, monthNum] = month.split('-');
                         const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('zh-CN', {

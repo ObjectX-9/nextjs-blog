@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from "react";
 import { truncateText } from "@/utils/text";
 import { stacksBusiness } from "../business/stacks";
 import { message } from "antd";
+import PageHeader from "@/components/PageHeader";
 
 // 骨架屏组件
 const StackSkeleton = () => {
@@ -48,10 +49,10 @@ export default function Stack() {
 
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto custom-scrollbar-thin py-8 px-8">
-      <h1 className="text-3xl font-bold mb-6">技术栈</h1>
-      <div className="mb-4 last:mb-0">
-        这里是我的常用栈，我使用这些工具来构建和维护我的项目。
-      </div>
+      <PageHeader
+        title="技术栈"
+        description="这里是我的常用栈，我使用这些工具来构建和维护我的项目。"
+      />
       <ul className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
         {loading ? (
           // 显示骨架屏

@@ -6,6 +6,7 @@ import LoadingSkeleton from "./components/LoadingSkeleton";
 import ErrorMessage from "./components/ErrorMessage";
 import PhotoGrid from "./components/PhotoGrid";
 import CustomLightbox from "./components/CustomLightbox";
+import PageHeader from "@/components/PageHeader";
 
 export default function Album() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -44,17 +45,10 @@ export default function Album() {
   return (
     <main className="flex h-screen w-full box-border flex-col overflow-y-auto py-8 px-8">
       {/* 页面头部 */}
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">生活相册</h1>
-        <p className="text-gray-600 mb-2">
-          这里是我的生活相册，记录了我的生活中的美好时刻。
-        </p>
-        {photos.length > 0 && (
-          <p className="text-sm text-gray-500">
-            共 {photos.length} 张照片
-          </p>
-        )}
-      </header>
+      <PageHeader
+        title="生活相册"
+        description={`记录生活中的美好时刻${photos.length > 0 ? `，共 ${photos.length} 张照片` : ''}`}
+      />
 
       {/* 照片网格 */}
       <PhotoGrid

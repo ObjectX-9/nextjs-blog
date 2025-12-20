@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { ISocialLink } from '@/app/model/social-link';
 import { socialLinkBusiness } from '@/app/business/social-link';
 import { MessageCircle, Bug, Users, Star } from 'lucide-react';
+import ShareButton from '@/components/ShareButton';
 
 export default function GuestbookPage() {
     const { site } = useSiteStore();
@@ -38,7 +39,10 @@ export default function GuestbookPage() {
         <div className="h-screen w-full overflow-y-auto custom-scrollbar-thin">
             <div className="max-w-4xl mx-auto px-6 py-8">
                 {/* 页面标题 */}
-                <h1 className="text-2xl font-bold mb-8">📝 留言板</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-2xl font-bold">📝 留言板</h1>
+                    <ShareButton title="留言板" />
+                </div>
 
                 {/* 欢迎卡片 */}
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-8">

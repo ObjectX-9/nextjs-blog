@@ -12,6 +12,7 @@ import { articlesService } from "@/app/business/articles";
 import { verifyService } from "@/app/business/verify";
 import { scrollToHeading } from "@/utils/heading-utils";
 import GiscusComments from "@/components/GiscusComments";
+import ShareButton from "@/components/ShareButton";
 
 // 动态导入 MarkdownRenderer 组件，禁用 SSR
 const MarkdownRenderer = dynamic(
@@ -396,9 +397,12 @@ export default function ArticleDetailPage() {
             }`}
         >
           <div className="p-4 border-b">
-            <h1 className="text-xl font-bold mb-4 text-center truncate px-12">
-              {article.title}
-            </h1>
+            <div className="flex items-center justify-between mb-4 px-12">
+              <h1 className="text-xl font-bold text-center truncate flex-1">
+                {article.title}
+              </h1>
+              <ShareButton title={article.title} description={article.content?.slice(0, 100)} />
+            </div>
 
             {/* 目录切换按钮 */}
             <button
@@ -598,7 +602,10 @@ export default function ArticleDetailPage() {
                 </svg>
               </button>
             )}
-            <h1 className="text-4xl font-bold mb-8">{article.title}</h1>
+            <div className="flex items-start justify-between gap-4 mb-8">
+              <h1 className="text-4xl font-bold">{article.title}</h1>
+              <ShareButton title={article.title} description={article.content?.slice(0, 100)} />
+            </div>
             {renderArticleContent()}
             {/* 评论区 - 仅在已验证或未开启验证时显示 */}
             {(!site?.isOpenVerifyArticle || isVerified) && (
