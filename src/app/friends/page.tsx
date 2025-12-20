@@ -386,198 +386,204 @@ export default function Friends() {
   // Loading skeleton
   if (loading) {
     return (
-      <section className="speakers py-8 px-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="h-8 bg-gray-200 rounded w-32"></div>
-          <div className="h-10 bg-gray-200 rounded w-24"></div>
-        </div>
-        <div className="h-5 bg-gray-200 rounded w-64 mb-8"></div>
+      <div className="h-screen w-full overflow-y-auto custom-scrollbar-thin">
+        <section className="speakers py-8 px-8">
+          <div className="flex justify-between items-center mb-6">
+            <div className="h-8 bg-gray-200 rounded w-32"></div>
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+          </div>
+          <div className="h-5 bg-gray-200 rounded w-64 mb-8"></div>
 
-        {isMobile ? (
-          <div className="grid grid-cols-1 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-white rounded-lg shadow-sm p-3 flex items-center gap-4">
-                  <div className="h-16 w-16 bg-gray-200 rounded-full flex-shrink-0"></div>
-                  <div className="flex-grow">
-                    <div className="h-5 bg-gray-200 rounded w-24 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-20"></div>
+          {isMobile ? (
+            <div className="grid grid-cols-1 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-white rounded-lg shadow-sm p-3 flex items-center gap-4">
+                    <div className="h-16 w-16 bg-gray-200 rounded-full flex-shrink-0"></div>
+                    <div className="flex-grow">
+                      <div className="h-5 bg-gray-200 rounded w-24 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="container hidden md:block animate-pulse">
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-gray-200 rounded-lg"
+                  ></div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="container hidden md:block animate-pulse">
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="aspect-square bg-gray-200 rounded-lg"
-                ></div>
-              ))}
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-6 bg-gray-200 rounded w-full"></div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-6 bg-gray-200 rounded w-full"></div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <section className="speakers py-8 px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">🔗 友情链接</h1>
-        </div>
-        <div className="text-red-500">Error: {error}</div>
-      </section>
+      <div className="h-screen w-full overflow-y-auto custom-scrollbar-thin">
+        <section className="speakers py-8 px-8">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">🔗 友情链接</h1>
+          </div>
+          <div className="text-red-500">Error: {error}</div>
+        </section>
+      </div>
     );
   }
 
   return (
-    <section className="speakers py-8 px-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">🔗 友情链接</h1>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          提交友链
-        </button>
-      </div>
-      <div className="mb-6 last:mb-0">友情链接，记录生活中的朋友们。</div>
+    <div className="h-screen w-full overflow-y-auto custom-scrollbar-thin">
+      <section className="speakers py-8 px-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">🔗 友情链接</h1>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            提交友链
+          </button>
+        </div>
+        <div className="mb-6 last:mb-0">友情链接，记录生活中的朋友们。</div>
 
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">提交友链</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.avatar}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, avatar: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="头像URL"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.name}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, name: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="名字"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.title}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, title: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="标题"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.description}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, description: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="描述"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.link}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, link: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="链接"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.position}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, position: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="职位（可选）"
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={newFriend.location}
-                  onChange={(e) =>
-                    setNewFriend({ ...newFriend, location: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                  placeholder="地点（可选）"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800 transition-colors disabled:bg-gray-300"
-                >
-                  {isSubmitting ? "提交中..." : "提交"}
-                </button>
-              </div>
-            </form>
+        {showAddForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">提交友链</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.avatar}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, avatar: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="头像URL"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.name}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, name: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="名字"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.title}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, title: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="标题"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.description}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, description: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="描述"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.link}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, link: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="链接"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.position}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, position: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="职位（可选）"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newFriend.location}
+                    onChange={(e) =>
+                      setNewFriend({ ...newFriend, location: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                    placeholder="地点（可选）"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(false)}
+                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800 transition-colors disabled:bg-gray-300"
+                  >
+                    {isSubmitting ? "提交中..." : "提交"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {isMobile ? (
-        <div className="grid grid-cols-1 gap-6">
-          {friends.map((friend, index) => (
-            <MobileCard
-              key={`mobile-${friend.name}-${index}`}
-              friend={friend}
-            />
-          ))}
-        </div>
-      ) : (
-        <DesktopView
-          friends={friends}
-          hoveredName={hoveredName}
-          setHoveredName={setHoveredName}
-        />
-      )}
-    </section>
+        {isMobile ? (
+          <div className="grid grid-cols-1 gap-6">
+            {friends.map((friend, index) => (
+              <MobileCard
+                key={`mobile-${friend.name}-${index}`}
+                friend={friend}
+              />
+            ))}
+          </div>
+        ) : (
+          <DesktopView
+            friends={friends}
+            hoveredName={hoveredName}
+            setHoveredName={setHoveredName}
+          />
+        )}
+      </section>
+    </div>
   );
 }

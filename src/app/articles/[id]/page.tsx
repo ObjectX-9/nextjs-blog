@@ -11,6 +11,7 @@ import { useLocalCache } from "@/app/hooks/useLocalCache";
 import { articlesService } from "@/app/business/articles";
 import { verifyService } from "@/app/business/verify";
 import { scrollToHeading } from "@/utils/heading-utils";
+import GiscusComments from "@/components/GiscusComments";
 
 // 动态导入 MarkdownRenderer 组件，禁用 SSR
 const MarkdownRenderer = dynamic(
@@ -460,9 +461,13 @@ export default function ArticleDetailPage() {
         </div>
 
         {/* 文章内容 */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar-thin pt-24 pb-20">
+        <div className="flex-1  custom-scrollbar-thin pt-24 pb-20">
           <div className="p-4">
             <div className="prose max-w-none">{renderArticleContent()}</div>
+            {/* 评论区 - 仅在已验证或未开启验证时显示 */}
+            {(!site?.isOpenVerifyArticle || isVerified) && (
+              <GiscusComments />
+            )}
           </div>
         </div>
       </div>
@@ -589,6 +594,10 @@ export default function ArticleDetailPage() {
             )}
             <h1 className="text-4xl font-bold mb-8">{article.title}</h1>
             {renderArticleContent()}
+            {/* 评论区 - 仅在已验证或未开启验证时显示 */}
+            {(!site?.isOpenVerifyArticle || isVerified) && (
+              <GiscusComments />
+            )}
           </div>
         </div>
       </div>

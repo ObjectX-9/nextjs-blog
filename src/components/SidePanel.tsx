@@ -26,6 +26,7 @@ import {
   Dumbbell, // 添加 Dumbbell 图标用于健身记录
   Plane, // 添加 Plane 图标用于旅行记录
   ExternalLink, // 添加 ExternalLink 图标用于外部文章
+  MessageSquare, // 添加 MessageSquare 图标用于留言板
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -58,6 +59,7 @@ const baseNavList = [
   { title: "时间笔记", href: "/timeline", prefix: <History size={16} /> },
   { title: "项目", href: "/projects", prefix: <Folder size={16} /> },
   { title: "demo", href: "/demos", prefix: <Blocks size={16} /> },
+  { title: "留言板", href: "/guestbook", prefix: <MessageSquare size={16} /> },
   { title: "友链", href: "/friends", prefix: <Users size={16} /> },
 ];
 
