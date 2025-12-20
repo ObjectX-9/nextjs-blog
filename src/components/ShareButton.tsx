@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Share2, Link, Check, X } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -127,10 +128,16 @@ export default function ShareButton({ title, description = '', url }: ShareButto
                 </div>
             )}
 
-            {/* 微信二维码弹窗 */}
-            {showQrModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowQrModal(false)}>
-                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+            {/* 微信二维码弹窗 - 使用 Portal 渲染到 body */}
+            {showQrModal && typeof document !== 'undefined' && createPortal(
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
+                    onClick={() => setShowQrModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl p-6 w-[280px] max-w-[90vw]"
+                        onClick={e => e.stopPropagation()}
+                    >
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold">微信扫码分享</h3>
                             <button onClick={() => setShowQrModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -143,7 +150,8 @@ export default function ShareButton({ title, description = '', url }: ShareButto
                         <p className="text-center text-sm text-gray-500 mb-2">打开微信扫一扫，分享给好友</p>
                         <p className="text-center text-xs text-green-600">✓ 链接已复制到剪贴板</p>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
